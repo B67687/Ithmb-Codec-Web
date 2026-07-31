@@ -4,6 +4,8 @@
 
 Free, private, browser-based .ithmb file decoder.
 
+[**Try it live → ithmb-codec.dev**](https://ithmb-codec.dev/ithmb-decoder/)  |  [How to open .ithmb files (guide)](https://ithmb-codec.dev/guide/how-to-open-ithmb-files)
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Built with WebAssembly](https://img.shields.io/badge/Built%20with-WebAssembly-654FF0?logo=webassembly&logoColor=white)](https://webassembly.org/)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/thumbnami)
@@ -32,7 +34,7 @@ ITHMB files are Apple iThumbnail images found in iPod Classic, iPod Nano, and ot
 
 ## How to use
 
-Go to [https://ithmb-codec.dev/](https://ithmb-codec.dev/) and drag your .ithmb files
+Go to [https://ithmb-codec.dev/ithmb-decoder/](https://ithmb-codec.dev/ithmb-decoder/) and drag your .ithmb files
 onto the page. They decode instantly — no upload, no waiting. Download individual
 images or grab them all as a ZIP archive.
 
