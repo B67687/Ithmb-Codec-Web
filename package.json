@@ -1,0 +1,28 @@
+{
+  "name": "ithmb-codec-web",
+  "version": "1.0.0",
+  "description": "Free private browser-based .ithmb (Apple iThumbnail) file decoder.",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "playwright test",
+    "test:pages": "playwright test tests/pages.spec.js",
+    "test:decoder": "playwright test tests/ithmb-decoder.spec.js",
+    "test:gallery": "playwright test tests/gallery.spec.js",
+    "test:stress": "playwright test tests/stress.spec.js",
+    "test:upload": "playwright test tests/upload.spec.js",
+    "ci": "playwright test",
+    "lint:modules": "for f in ithmb-decoder/*.js; do npx --yes acorn --ecma2022 --module \"$f\" 2>/dev/null || { echo \"FAIL: $f\"; exit 1; }; done; echo \"All modules pass\""
+  },
+  "homepage": "https://ithmb-codec.dev",
+  "keywords": [],
+  "author": "ITHMB Codec",
+  "license": "MIT",
+  "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
+    "@playwright/test": "^1.61.1",
+    "acorn": "^8.18.0",
+    "playwright": "^1.61.1"
+  }
+}

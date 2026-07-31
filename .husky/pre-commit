@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+echo "=== Running pre-commit Playwright smoke tests ==="
+python3 -m http.server 8899 &
+SERVER_PID=$!
+sleep 2
+npx playwright test tests/pages.spec.js tests/ithmb-decoder.spec.js tests/gallery.spec.js --reporter=list
+result=$?
+kill $SERVER_PID 2>/dev/null
+echo "=== Smoke tests completed (exit=$result) ==="
+exit $result
