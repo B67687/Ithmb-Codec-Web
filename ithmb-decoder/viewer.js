@@ -1,5 +1,6 @@
-import { S, successfulDecodes } from "./state.js";
+import { S, successfulDecodes, failedDecodes, KNOWN_PREFIXES } from "./state.js";
 import { escapeHtml } from "./utils.js";
+import { createShareBox, createReportLink } from "./share-actions.js";
 
 const fileList = document.getElementById("file-list");
 
@@ -34,8 +35,12 @@ export function openViewer(index) {
   populateViewerHeader(card);
   const srcCanvas = card.querySelector(".preview canvas");
 
-  // Simple canvas rendering — no scroll container
+  // Simple canvas rendering — no scroll container. Wrap content in a
+  // column so the contextual share/report UI (when present) sits BELOW
+  // the image instead of beside it.
   stage.innerHTML = "";
+  const stageContent = document.createElement("div");
+  stageContent.className = "viewer-stage-content";
   if (srcCanvas) {
     const newCanvas = document.createElement("canvas");
     newCanvas.width = srcCanvas.width;
@@ -44,7 +49,7 @@ export function openViewer(index) {
     newCanvas.style.height = srcCanvas.style.height;
     const newCtx = newCanvas.getContext("2d");
     newCtx.drawImage(srcCanvas, 0, 0);
-    stage.appendChild(newCanvas);
+    stageContent.appendChild(newCanvas);
   }
   if (!srcCanvas) {
     const oldPlaceholder = stage.querySelector(".viewer-placeholder");
@@ -60,11 +65,43 @@ export function openViewer(index) {
         <div class="placeholder-title">Decode Failed</div>
         <div class="placeholder-msg">${escapeHtml(statusText)}</div>
       `;
-      stage.appendChild(placeholder);
+      stageContent.appendChild(placeholder);
     } else if (!statusText || statusText.includes("Decoding...")) {
       // Still decoding — show spinner
-      stage.innerHTML =
+      stageContent.innerHTML =
         '<div class="viewer-placeholder"><div class="placeholder-spinner"></div><div class="placeholder-msg">Decoding...</div></div>';
+    }
+  }
+  stage.appendChild(stageContent);
+
+  // Contextual share/report: the viewer mirrors the active card. Failed
+  // cards get the same share box, success cards the same report link
+  // (identical dedup keys + honest failure semantics via share-actions).
+  const viewerCardId = card.dataset.cardId;
+  const failedEntry = failedDecodes.find((f) => f.cardId === viewerCardId);
+  if (failedEntry) {
+    stageContent.appendChild(
+      createShareBox({
+        cardId: viewerCardId,
+        bytes: failedEntry.bytes,
+        prefix: failedEntry.prefix,
+        isKnown: KNOWN_PREFIXES.has(failedEntry.prefix),
+        fileSize: failedEntry.fileSize,
+      }),
+    );
+  } else {
+    const successEntry = successfulDecodes.find(
+      (s) => s.cardId === viewerCardId,
+    );
+    if (successEntry) {
+      stageContent.appendChild(
+        createReportLink({
+          cardId: viewerCardId,
+          bytes: successEntry.bytes,
+          prefix: successEntry.prefix,
+          fileSize: successEntry.fileSize,
+        }),
+      );
     }
   }
 
@@ -268,6 +305,8 @@ export function populateViewerStageForCard(vCard) {
     stage.querySelector(".viewer-placeholder")
   ) {
     stage.innerHTML = "";
+    const stageContent = document.createElement("div");
+    stageContent.className = "viewer-stage-content";
     const newCanvas = document.createElement("canvas");
     newCanvas.width = srcCanvas.width;
     newCanvas.height = srcCanvas.height;
@@ -275,7 +314,25 @@ export function populateViewerStageForCard(vCard) {
     newCanvas.style.height = srcCanvas.style.height;
     const newCtx = newCanvas.getContext("2d");
     newCtx.drawImage(srcCanvas, 0, 0);
-    stage.appendChild(newCanvas);
+    stageContent.appendChild(newCanvas);
+
+    // Mirror the success-card report link in the viewer stage.
+    const viewerCardId = vCard.dataset.cardId;
+    const successEntry = successfulDecodes.find(
+      (s) => s.cardId === viewerCardId,
+    );
+    if (successEntry) {
+      stageContent.appendChild(
+        createReportLink({
+          cardId: viewerCardId,
+          bytes: successEntry.bytes,
+          prefix: successEntry.prefix,
+          fileSize: successEntry.fileSize,
+        }),
+      );
+    }
+
+    stage.appendChild(stageContent);
     populateViewerHeader(vCard);
   }
 }

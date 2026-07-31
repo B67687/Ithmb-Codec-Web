@@ -1,8 +1,8 @@
-import { S, successfulDecodes, sharedFileIds } from "./state.js";
-import { formatLabels, extMap, formatSize, bytesToHex, showToast } from "./utils.js";
+import { S, successfulDecodes } from "./state.js";
+import { formatLabels, extMap, formatSize } from "./utils.js";
 import { addFilmstripThumb, populateViewerStageForCard } from "./viewer.js";
 import { get_encoding_name } from "./ithmb_wasm.js";
-import { submitTelemetry } from "./telemetry.js";
+import { createReportLink } from "./share-actions.js";
 
 export function renderSuccessCard(
   cardId,
@@ -56,7 +56,6 @@ export function renderSuccessCard(
         <option value="image/webp">WebP</option>
       </select>
     </div>
-    <div class="success-report"><a href="#" data-report="${cardId}">Image looks wrong? Share the first 16 bytes</a></div>
   `;
 
   previewEl.innerHTML = "";
@@ -111,31 +110,9 @@ export function renderSuccessCard(
     );
   });
 
-  // 'Image looks wrong?' — shares the first 16 bytes, one per file per session
-  const reportLink = infoDiv.querySelector("[data-report]");
-  if (reportLink) {
-    const fbKey = "fb-" + cardId;
-    reportLink.addEventListener("click", async (e) => {
-      e.preventDefault();
-      if (sharedFileIds.has(fbKey)) return;
-      // Mark synchronously so a fast second click cannot double-submit
-      // while the POST is in flight.
-      sharedFileIds.add(fbKey);
-      const ok = await submitTelemetry({
-        prefix,
-        fileSize: file.size,
-        status: "success",
-        header: bytesToHex(bytes.slice(0, 16), ""),
-      });
-      if (!ok) {
-        // Roll back the guard so the user can retry, and tell the truth.
-        sharedFileIds.delete(fbKey);
-        showToast("Share failed — the server rejected this file");
-        return;
-      }
-      reportLink.textContent = "Thanks — shared ✓";
-      reportLink.style.pointerEvents = "none";
-      showToast("16 bytes shared — thank you!");
-    });
-  }
+  // 'Image looks wrong?' — shares the first 16 bytes, one per file per session.
+  // Shared builder also used by the viewer stage (same fb-<cardId> dedup key).
+  infoDiv.appendChild(
+    createReportLink({ cardId, bytes, prefix, fileSize: file.size }),
+  );
 }

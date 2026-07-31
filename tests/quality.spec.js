@@ -474,3 +474,61 @@ test.describe("Quiet-by-default", () => {
     await expect(page.locator("#contributeModal")).toHaveCount(0);
   });
 });
+// ─── Viewer contextual share/report (mirrors card actions) ────────────────
+
+test.describe("Viewer contextual share/report", () => {
+  test("viewer stage shows share box for a failed card", async ({ page }) => {
+    const corruptFile = path.join(FIXTURES, "corrupt-viewer.ithmb");
+    fs.writeFileSync(
+      corruptFile,
+      fs.readFileSync(path.join(FIXTURES, "test1.ithmb")).subarray(0, 100),
+    );
+    await page.goto("/ithmb-decoder/");
+    const [fc] = await Promise.all([
+      page.waitForEvent("filechooser"),
+      page.locator("#dropzone").click(),
+    ]);
+    await fc.setFiles([corruptFile]);
+
+    const card = page.locator(".file-card");
+    await expect(card.locator(".share-box")).toBeVisible({ timeout: 10000 });
+    // Viewer auto-opens for the first batch — stage mirrors the card's share box
+    await expect(page.locator("#viewer-stage .share-box")).toBeVisible();
+    await expect(page.locator("#viewer-stage [data-share=header]")).toHaveText("Share 16 bytes");
+    await expect(page.locator("#viewer-stage [data-share=full]")).toHaveText("Share full file");
+    fs.rmSync(corruptFile, { force: true });
+  });
+
+  test("viewer stage report link posts header for a success card", async ({ page }) => {
+    await page.goto("/ithmb-decoder/");
+    const [fc] = await Promise.all([
+      page.waitForEvent("filechooser"),
+      page.locator("#dropzone").click(),
+    ]);
+    await fc.setFiles([path.join(FIXTURES, "test1.ithmb")]);
+
+    const card = page.locator(".file-card");
+    await expect(card.locator("[data-save]")).toBeVisible({ timeout: 10000 });
+
+    const posted = [];
+    await page.route(
+      "**/ithmb-telemetry.ithmb-codec.workers.dev/**",
+      async (route) => {
+        if (route.request().method() === "POST") {
+          posted.push(JSON.parse(route.request().postData() || "{}"));
+        }
+        await route.fulfill({ status: 200, contentType: "application/json", headers: { "Access-Control-Allow-Origin": "*" }, body: '{"ok":true}' });
+      },
+    );
+
+    const viewerLink = page.locator("#viewer-stage [data-report]");
+    await expect(viewerLink).toBeVisible();
+    await expect(viewerLink).toHaveText(/Image looks wrong\?/);
+    await viewerLink.click();
+    await expect(viewerLink).toHaveText("Thanks — shared ✓");
+
+    await expect.poll(() => posted.length, { timeout: 5000 }).toBe(1);
+    expect(posted[0].header).toMatch(/^[0-9a-f]{32}$/);
+    expect(posted[0].status).toBe("success");
+  });
+});
