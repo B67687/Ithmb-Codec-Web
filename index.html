@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ITHMB Codec</title>
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://ithmb-telemetry.ithmb-codec.workers.dev"
+    />
+    <meta name="google-site-verification" content="6TGpFnLw-D-nzVIF6TVc4ayVt5PQMWhtoV-yEIsY_NQ" />
+    <link rel="canonical" href="https://ithmb-codec.dev/" />
+    <meta
+      name="description"
+      content="Free online ITHMB and IPM thumbnail decoder. Convert Apple iPod/iPhone .ithmb files to JPEG instantly in your browser. 100% private, no uploads."
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta
+      property="og:title"
+      content="ITHMB Codec — free, private, browser-based .ithmb decoder"
+    />
+    <meta
+      property="og:description"
+      content="Decode Apple Icons + Thumbnails binary format (.ithmb, .ipm) directly in your browser. No uploads, 100% private."
+    />
+    <meta property="og:image" content="https://ithmb-codec.dev/thumb-decoder-preview.png" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta property="og:url" content="https://ithmb-codec.dev/" />
+    <meta property="og:site_name" content="ITHMB Codec" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/ithmb-decoder/styles.css?v=2" />
+    <style>
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+
+      /* ─── Cards ─── */
+
+      .cards {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        margin-bottom: 48px;
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 24px 28px;
+        transition:
+          box-shadow 0.2s,
+          transform 0.2s;
+        display: block;
+        text-decoration: none;
+        color: inherit;
+      }
+
+      .card:hover {
+        box-shadow: var(--shadow);
+        transform: translateY(-2px);
+      }
+
+      .card h2 {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 6px;
+        color: var(--text);
+      }
+
+      .card h2 .arrow {
+        color: var(--accent);
+        margin-left: 4px;
+        transition: margin 0.2s;
+      }
+
+      .card:hover h2 .arrow {
+        margin-left: 8px;
+      }
+
+      .card p {
+        font-size: 0.92rem;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .card .badge {
+        display: inline-block;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 2px 8px;
+        border-radius: 4px;
+        background: #e8f0fe;
+        color: var(--accent);
+        margin-bottom: 8px;
+      }
+
+      .card-decoder .badge {
+        background: #e8f0fe;
+        color: #0071e3;
+      }
+      .card-guide .badge {
+        background: #e8f0fe;
+        color: #0071e3;
+      }
+      .card-enterprise .badge {
+        background: #f5f3ff;
+        color: #7c3aed;
+      }
+
+      /* ─── About ─── */
+
+      .about {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 28px;
+        margin-bottom: 48px;
+      }
+
+      .about h2 {
+        font-size: 1rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text);
+        margin-bottom: 12px;
+      }
+
+      .about p {
+        font-size: 0.92rem;
+        color: var(--text);
+        line-height: 1.65;
+      }
+
+      .about p + p {
+        margin-top: 10px;
+      }
+
+      .about a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+
+      .about a:hover {
+        text-decoration: underline;
+      }
+
+      /* ─── Responsive ─── */
+
+      @media (max-width: 768px) {
+        .card {
+          padding: 20px;
+        }
+
+        .about {
+          padding: 20px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .cards {
+          gap: 12px;
+          margin-bottom: 36px;
+        }
+
+        .card {
+          padding: 16px;
+        }
+
+        .card h2 {
+          font-size: 1.05rem;
+        }
+
+        .card p {
+          font-size: 0.85rem;
+        }
+
+        .about {
+          padding: 16px;
+          margin-bottom: 36px;
+        }
+
+        .about p {
+          font-size: 0.85rem;
+        }
+      }
+    </style>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is an ITHMB file?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "ITHMB (short for iThumbnail) is Apple's thumbnail image format used in iPods and iPhones to cache cover art and photo thumbnails."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How do I convert ITHMB to JPG?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Drag your .ithmb or .ipm file onto the decoder at ithmb-codec.dev. The tool processes everything in your browser using WebAssembly — no files are uploaded to any server. Click Save to download as JPEG."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is the ITHMB decoder free?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, completely free and open source under the MIT license. All decoding is done client-side in WebAssembly, so your files never leave your computer."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I decode multiple ITHMB files at once?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. Drop multiple .ithmb or .ipm files at once. Each file appears in a gallery view. You can view decoded images, download them individually, or batch download all as a ZIP archive."
+          }
+        }
+      ]
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "ITHMB Codec",
+      "url": "https://ithmb-codec.dev/",
+      "description": "Free online ITHMB and IPM thumbnail decoder. Convert Apple iPod/iPhone .ithmb files to JPEG instantly in your browser. 100% private, no uploads.",
+      "applicationCategory": "Multimedia",
+      "operatingSystem": "All",
+      "browserRequirements": "Requires JavaScript",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "ITHMB Codec"
+      }
+    }
+    </script>
+  </head>
+  <body>
+    <script src="/nav.js?v=2"></script>
+
+    <div class="container">
+      <header>
+        <div class="logo">
+          <div class="logo-icon">
+            <svg viewBox="0 0 64 64">
+              <rect width="64" height="64" rx="12" fill="var(--accent)"/>
+              <text x="32" y="42" text-anchor="middle" font-family="system-ui" font-weight="700" font-size="28" fill="#fff">iT</text>
+            </svg>
+          </div>
+          <h1 class="logo-text">ITHMB Codec</h1>
+        </div>
+        <p class="subtitle">
+          Decode Apple thumbnail files (.ithmb, .ipm) &mdash; free, private,
+          browser-based
+        </p>
+      </header>
+      <main>
+
+      <div class="cards">
+        <a href="/ithmb-decoder/" class="card card-decoder">
+          <div style="display: flex; gap: 6px">
+            <span class="badge" style="background: #f0fdf4; color: #16a34a"
+              >Free</span
+            ><span class="badge" style="background: #fff7ed; color: #ea580c"
+              >Popular</span
+            >
+          </div>
+          <h2>
+            <span>ITHMB Decoder <span class="arrow">&rarr;</span></span>
+          </h2>
+          <p>
+            Free online decoder. Drop .ithmb or .ipm files and get JPEG images
+            instantly. All processing happens in your browser.
+          </p>
+        </a>
+        <a href="/guide/how-to-open-ithmb-files" class="card card-guide">
+          <span class="badge">Guide</span>
+          <h2>
+            <span>About ITHMB Files <span class="arrow">&rarr;</span></span>
+          </h2>
+          <p>
+            Learn what .ithmb files are, how to decode them, and why this tool
+            exists.
+          </p>
+        </a>
+        <a href="/enterprise/" class="card card-enterprise">
+          <span class="badge">Enterprise</span>
+          <h2>
+            Enterprise Licensing <span class="arrow">&rarr;</span>
+          </h2>
+          <p>
+            Custom integration and licensing for organizations.
+          </p>
+        </a>
+
+      </div>
+      </main>
+
+      <script src="/footer.js?v=2"></script>
+    </div>
+  </body>
+</html>

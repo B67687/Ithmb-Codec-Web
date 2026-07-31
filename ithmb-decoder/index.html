@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ITHMB Decoder — free online converter</title>
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://ithmb-telemetry.ithmb-codec.workers.dev"
+    />
+    <meta
+      name="description"
+      content="Decode Apple iPod/iPhone .ithmb and .ipm thumbnail files directly in your browser. Free, private, open source. No uploads required."
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta
+      property="og:title"
+      content="ITHMB Decoder — free .ithmb file viewer"
+    />
+    <meta
+      property="og:description"
+      content="Decode Apple iPod/iPhone thumbnail files (.ithmb, .ipm) directly in your browser. No uploads, 100% private."
+    />
+    <meta property="og:image" content="https://ithmb-codec.dev/thumb-decoder-preview.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://ithmb-codec.dev/ithmb-decoder/" />
+    <meta property="og:site_name" content="ITHMB Codec" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary" />
+    <link rel="canonical" href="https://ithmb-codec.dev/ithmb-decoder/" />
+    <link rel="stylesheet" href="styles.css?v=2" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "ITHMB Decoder",
+      "url": "https://ithmb-codec.dev/ithmb-decoder/",
+      "description": "Decode Apple iPod/iPhone .ithmb and .ipm thumbnail files directly in your browser. Free, private, open source. No uploads required.",
+      "applicationCategory": "Multimedia",
+      "operatingSystem": "All",
+      "browserRequirements": "Requires JavaScript",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+    </script>
+  </head>
+  <body>
+    <script src="/nav.js?v=2"></script>
+
+    <!-- Full-page drop overlay -->
+    <div class="drop-overlay" id="dropOverlay">
+      <div style="text-align: center">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M12 2a1 1 0 011 1v6.5l2.5-2.5a1 1 0 111.414 1.414L12 12.828 7.086 7.914A1 1 0 118.5 6.5L11 9V3a1 1 0 011-1zM3 12a1 1 0 011 1v5a2 2 0 002 2h12a2 2 0 002-2v-5a1 1 0 112 0v5a4 4 0 01-4 4H6a4 4 0 01-4-4v-5a1 1 0 011-1z"
+          />
+        </svg>
+        <p>Drop .ithmb or .ipm file anywhere</p>
+      </div>
+    </div>
+
+    <div class="container">
+      <header>
+        <h1>ITHMB Decoder</h1>
+        <p>
+          Free, private, browser-based <code>.ithmb</code> &amp;
+          <code>.ipm</code> file decoder —
+          <a href="https://github.com/B67687/Ithmb-Codec">open source</a>
+        </p>
+      </header>
+
+      <div id="dropzone">
+        <div class="icon">&#x1F4C1;</div>
+        <div class="label">Drop .ithmb or .ipm files here</div>
+        <div class="hint">
+          or click to browse — all processing happens in your browser
+        </div>
+      </div>
+
+      <div id="toolbar" class="toolbar">
+        <div
+          class="toolbar-row toolbar-actions"
+          style="justify-content: space-between; flex-wrap: wrap"
+        >
+          <button
+            class="btn btn-outline btn-small"
+            id="helpBtn"
+            title="Keyboard shortcuts"
+            style="display: none; margin-right: auto"
+          >
+            ?
+          </button>
+          <div style="display: flex; align-items: center; gap: 8px">
+            <button
+
+              class="btn btn-outline btn-small"
+
+              id="viewToggleBtn"
+
+              title="Toggle grid (Esc)"
+
+              style="display: none"
+
+            >
+
+              Grid view
+
+            </button>
+
+            <div class="viewer-nav" id="viewerNav" style="display: none">
+
+              <button
+
+                class="btn btn-outline btn-small"
+
+                id="prevBtn"
+
+                title="Previous (←)"
+
+              >
+
+                ◀
+
+              </button>
+
+              <span
+
+                id="viewerPos"
+
+                style="
+
+                  font-size: 0.85rem;
+
+                  color: var(--muted);
+
+                  min-width: 48px;
+
+                  text-align: center;
+
+                "
+
+                >0 / 0</span
+
+              >
+
+              <button
+
+                class="btn btn-outline btn-small"
+
+                id="nextBtn"
+
+                title="Next (→)"
+
+              >
+
+                ▶
+
+              </button>
+
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px">
+            <button
+              class="btn btn-primary btn-small"
+              id="downloadAllBtn"
+              style="display: none"
+            >
+              Download All
+            </button>
+            <select
+              id="downloadFormatSelect"
+              style="
+                display: none;
+                font-size: 0.8rem;
+                padding: 4px 4px;
+                border: 1px solid var(--border);
+                border-radius: 4px;
+                background: var(--surface);
+                color: var(--text);
+                margin-left: 4px;
+              "
+            >
+              <option value="image/jpeg" selected>JPEG</option>
+              <option value="image/png">PNG</option>
+              <option value="image/bmp">BMP</option>
+              <option value="image/webp">WebP</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div id="viewer-container" style="display: none">
+        <!-- Populated by openViewer() with filename, dims, encoding -->
+        <div id="viewer-header">
+          <span class="vh-enc" id="vhEnc"></span>
+          <span class="vh-file" id="vhFile"></span>
+          <span class="vh-dims" id="vhDims"></span>
+        </div>
+        <div id="viewer-main">
+          <div id="viewer-stage"></div>
+          <button
+            class="viewer-arrow"
+            type="button"
+            id="viewerArrowLeft"
+            title="Previous (←)"
+            aria-label="Previous image"
+          >
+            ◀
+          </button>
+          <button
+            class="viewer-arrow"
+            type="button"
+            id="viewerArrowRight"
+            title="Next (→)"
+            aria-label="Next image"
+          >
+            ▶
+          </button>
+        </div>
+        <div id="viewer-filmstrip"></div>
+      </div>
+
+      <div id="file-list" class="file-list"></div>
+
+      <div id="backToTop" style="display: none">
+        <a href="#" id="backToTopLink" title="Back to top">↑</a>
+      </div>
+      <div id="backToPosition" style="display: none">
+        <a href="#" id="backToPositionLink" title="Back to last position">↓</a>
+      </div>
+
+      <script src="/footer.js?v=2"></script>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"
+      integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG"
+      crossorigin="anonymous"
+    ></script>
+    <script type="module" src="app.js?v=2"></script>
+  </body>
+</html>

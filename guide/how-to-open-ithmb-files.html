@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>How to Open ITHMB Files — Guide</title>
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://ithmb-telemetry.ithmb-codec.workers.dev"
+    />
+    <meta
+      name="description"
+      content="Free online tool to open and convert Apple iPod/iPhone .ithmb thumbnail files to JPEG. No uploads, 100% private, works in your browser."
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link
+      rel="canonical"
+      href="https://ithmb-codec.dev/guide/how-to-open-ithmb-files"
+    />
+
+    <meta
+      property="og:title"
+      content="How to Open .ITHMB Files — Free Online ITHMB Decoder"
+    />
+    <meta
+      property="og:description"
+      content="Free online tool to open and convert Apple iPod/iPhone .ithmb thumbnail files to JPEG. No uploads, 100% private, works in your browser."
+    />
+    <meta property="og:image" content="https://ithmb-codec.dev/thumb-decoder-preview.png" />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:url"
+      content="https://ithmb-codec.dev/guide/how-to-open-ithmb-files"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta property="og:site_name" content="ITHMB Codec" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/ithmb-decoder/styles.css?v=2" />
+    <style>
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+
+      .article,
+      .article p,
+      .article li,
+      .article ul,
+      .article ol,
+      .article h1,
+      .article h2,
+      .article strong,
+      .faq-question,
+      .faq-answer,
+      .logo-text,
+      header .subtitle {
+        -webkit-user-select: text;
+        user-select: text;
+      }
+
+      /* ─── Article Content ─── */
+
+      .article {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 40px 44px;
+        margin-bottom: 48px;
+      }
+
+      .article h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1.3;
+        margin-bottom: 20px;
+        color: var(--text);
+      }
+
+      .article h2 {
+        font-size: 1.35rem;
+        font-weight: 600;
+        margin-top: 36px;
+        margin-bottom: 12px;
+        color: var(--text);
+        letter-spacing: -0.01em;
+      }
+      .article h2:first-of-type {
+        margin-top: 0;
+      }
+
+      .article p {
+        font-size: 0.95rem;
+        color: var(--text);
+        line-height: 1.7;
+        margin-bottom: 16px;
+      }
+
+      .article a {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .article a:hover {
+        text-decoration: underline;
+      }
+
+      .article ul,
+      .article ol {
+        margin: 0 0 16px 0;
+        padding-left: 24px;
+      }
+
+      .article li {
+        font-size: 0.95rem;
+        color: var(--text);
+        line-height: 1.7;
+        margin-bottom: 6px;
+      }
+
+      .article li:last-child {
+        margin-bottom: 0;
+      }
+
+      .article strong {
+        font-weight: 600;
+      }
+
+      /* ─── Lead ─── */
+
+      .lead {
+        font-size: 1.05rem !important;
+        color: var(--muted) !important;
+        line-height: 1.7 !important;
+        margin-bottom: 24px !important;
+      }
+
+      /* ─── Steps ─── */
+
+      .steps {
+        counter-reset: step;
+        list-style: none;
+        padding-left: 0 !important;
+      }
+
+      .steps li {
+        counter-increment: step;
+        position: relative;
+        padding-left: 40px;
+        margin-bottom: 14px !important;
+        min-height: 32px;
+      }
+
+      .steps li::before {
+        content: counter(step);
+        position: absolute;
+        left: 0;
+        top: 1px;
+        width: 28px;
+        height: 28px;
+        background: var(--accent);
+        color: #fff;
+        font-size: 0.82rem;
+        font-weight: 600;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      /* ─── FAQ ─── */
+
+      .faq-item {
+        border-bottom: 1px solid var(--border);
+        padding: 18px 0;
+      }
+
+      .faq-item:first-of-type {
+        padding-top: 0;
+      }
+
+      .faq-item:last-of-type {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
+
+      .faq-question {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 6px;
+      }
+
+      .faq-answer {
+        font-size: 0.92rem;
+        color: var(--muted);
+        line-height: 1.65;
+      }
+
+      .faq-answer a {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .faq-answer a:hover {
+        text-decoration: underline;
+      }
+
+      /* ─── Responsive ─── */
+
+      @media (max-width: 768px) {
+        .article {
+          padding: 28px 24px;
+        }
+
+        .article h1 {
+          font-size: 1.6rem;
+        }
+
+        .article h2 {
+          font-size: 1.15rem;
+        }
+
+        .article p,
+        .article li {
+          font-size: 0.9rem;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .article {
+          padding: 20px 16px;
+          margin-bottom: 36px;
+        }
+
+        .article h1 {
+          font-size: 1.35rem;
+        }
+
+        .article h2 {
+          font-size: 1.05rem;
+          margin-top: 28px;
+        }
+
+        .article p,
+        .article li {
+          font-size: 0.85rem;
+        }
+
+        .faq-item {
+          padding: 14px 0;
+        }
+      }
+    </style>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      "headline": "How to Open ITHMB Files — Guide",
+      "description": "Free online tool to open and convert Apple iPod/iPhone .ithmb thumbnail files to JPEG. No uploads, 100% private, works in your browser.",
+      "image": "https://ithmb-codec.dev/thumb-decoder-preview.png",
+      "author": { "@type": "Organization", "name": "ITHMB Codec" }
+    }
+    </script>
+  </head>
+  <body>
+    <script src="/nav.js?v=2"></script>
+
+    <div class="container">
+      <header>
+        <div class="logo">
+          <div class="logo-icon">
+            <svg viewBox="0 0 64 64">
+              <rect width="64" height="64" rx="12" fill="var(--accent)"/>
+              <text x="32" y="42" text-anchor="middle" font-family="system-ui" font-weight="700" font-size="28" fill="#fff">iT</text>
+            </svg>
+          </div>
+          <span class="logo-text">ITHMB Codec</span>
+        </div>
+        <p class="subtitle">
+          Guides &amp; documentation for the Apple thumbnail decoder
+        </p>
+      </header>
+
+      <main class="article">
+        <h1>How to Open .ITHMB Files</h1>
+
+        <p class="lead">
+          ITHMB (short for iThumbnail — Apple's thumbnail image format) is a
+          binary container format used by Apple's iOS and macOS to store
+          thumbnail caches. You'll find these files scattered inside PhotoData
+          folders on old iPods, iPhones, and Macs when recovering data,
+          migrating devices, or digging through backups. They don't open with a
+          regular image viewer. This guide shows you how to decode them.
+        </p>
+
+        <h2>What Is an ITHMB File?</h2>
+
+        <p>
+          Apple created the ITHMB format to batch-store small thumbnail images
+          in a single file. Apps like Photos, Preview, and Finder use it to
+          serve up thumbnail previews without loading the full-resolution
+          originals. The format packs multiple JPEG images together with a
+          binary index, which is why double-clicking an .ithmb file does nothing
+          useful on its own.
+        </p>
+
+        <p>
+          ITHMB files are most commonly encountered when extracting data from
+          older Apple devices (iPhone 3G through iPhone 5-era, early iPod Touch
+          models, and Macs running macOS 10.4 through 10.14). If you've ever
+          copied a &ldquo;PhotoData&rdquo; folder from an iPod or iPhone backup,
+          you've probably seen them. The closely related
+          <strong>.ipm</strong> format works the same way for iPod Photo caches.
+        </p>
+
+        <h2>How to Use the Free Online Decoder</h2>
+
+        <p>
+          The fastest way to <strong>open ithmb online</strong> is the
+          <a href="https://ithmb-codec.dev/ithmb-decoder/"
+            >free ITHMB to JPEG converter</a
+          >
+          built by the Ithmb-Codec project. It runs entirely in your browser and
+          needs no installation. Here's how:
+        </p>
+
+        <ol class="steps">
+          <li>
+            <strong>Go to the decoder.</strong> Open
+            <a href="https://ithmb-codec.dev/ithmb-decoder/"
+              >ithmb-codec.dev/ithmb-decoder</a
+            >
+            in any modern browser (Chrome, Firefox, Safari, Edge).
+          </li>
+          <li>
+            <strong>Drag and drop your .ithmb files.</strong> You can drag one
+            file or many at once. The decoder also accepts .ipm files.
+          </li>
+          <li>
+            <strong>View and download as JPEG.</strong> Each thumbnail in the
+            container is extracted and displayed. Download individual images or
+            grab them all at once as a ZIP archive.
+          </li>
+        </ol>
+
+        <p>
+          That's it. No account, no upload button, no waiting. The decoder is
+          the most straightforward
+          <strong>online ITHMB viewer</strong> available.
+        </p>
+
+        <h2>Why Use This Decoder?</h2>
+
+        <ul>
+          <li>
+            <strong>Private.</strong> No data leaves your computer by default. The
+            decoder runs via WebAssembly with zero automatic uploads. Your
+            thumbnail files never touch a network unless you click a
+            one-click &ldquo;Share&rdquo; button to contribute anonymous format
+            signatures.
+          </li>
+          <li>
+            <strong>Fast.</strong> The WebAssembly core processes files locally
+            at near-native speed. Even large .ithmb containers decode in
+            seconds.
+          </li>
+          <li>
+            <strong>Free.</strong> No paywalls, no limits on file size or batch
+            count. It always works at zero cost.
+          </li>
+          <li>
+            <strong>Open source.</strong> Every line of code is public on
+            GitHub. No hidden tracking, no analytics, no data collection.
+          </li>
+          <li>
+            <strong>Batch support.</strong> Drop multiple .ithmb files at once
+            and download them all as a single ZIP.
+          </li>
+        </ul>
+
+        <p>
+          If you're looking to <strong>convert ithmb to jpg</strong> in bulk or
+          just need to <strong>extract iPod photos</strong> from an old backup,
+          this is the simplest tool for the job.
+        </p>
+
+        <h2>About the ITHMB Codec Project</h2>
+
+        <p>
+          Ithmb-Codec is an open-source reverse-engineering effort to document
+          and decode Apple's proprietary thumbnail container formats. The
+          project maintains the reference decoder library (written in Rust,
+          compiled to WebAssembly), the browser-based decoder linked above, and
+          format documentation for researchers and digital archivists.
+        </p>
+
+        <p>
+          Bug reports and format samples are always welcome &mdash; open an
+          issue on
+          <a href="https://github.com/B67687/Ithmb-Codec">GitHub</a> and we'll
+          investigate. The project is open for everyone.
+        </p>
+
+        <h2>Frequently Asked Questions</h2>
+
+        <div class="faq-item">
+          <p class="faq-question">
+            Can I convert multiple .ithmb files at once?
+          </p>
+          <p class="faq-answer">
+            Yes. Drag multiple files into the decoder and it processes them all.
+            After decoding, click the download button to save every extracted
+            image as a ZIP archive.
+          </p>
+        </div>
+
+        <div class="faq-item">
+          <p class="faq-question">Are my files uploaded to a server?</p>
+          <p class="faq-answer">
+            No. The decoder runs entirely in your browser using WebAssembly.
+            Your files are never sent over the network. All processing stays
+            local, which makes this a fully private
+            <strong>free ITHMB converter</strong>.
+          </p>
+        </div>
+
+        <div class="faq-item">
+          <p class="faq-question">What about .ipm files?</p>
+          <p class="faq-answer">
+            They're supported too. The decoder handles both .ithmb and .ipm
+            formats, since they share the same underlying container structure
+            used by Apple's iPod Photo cache system.
+          </p>
+        </div>
+
+        <div class="faq-item">
+          <p class="faq-question">Is this tool free?</p>
+          <p class="faq-answer">
+            Always. The tool is and will remain free, open source, and free of
+            usage limits. If you'd like to support development, you can
+            <a href="https://buymeacoffee.com/ThumbNami"
+              >buy the author a coffee</a
+            >
+          </p>
+        </div>
+      </main>
+
+      <script src="/footer.js?v=2"></script>
+    </div>
+  </body>
+</html>

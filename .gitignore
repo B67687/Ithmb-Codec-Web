@@ -1,0 +1,61 @@
+# Whitelist .gitignore — ignore everything except required files
+# Only files explicitly listed will be tracked by git.
+
+# Ignore everything by default
+*
+
+# Allow top-level project files
+!index.html
+!README.md
+!CHANGELOG.md
+!CNAME
+!favicon.svg
+!bmc-icon.svg
+!thumb-decoder-preview.png
+!nav.js
+!footer.js
+!robots.txt
+!sitemap.xml
+!404.html
+!package.json
+!AGENTS.md
+!LICENSE
+!package-lock.json
+!playwright.config.js
+!FEATURES.md
+
+# Allow directory contents
+!ithmb-decoder/
+!ithmb-decoder/*
+!guide/
+!guide/*
+!enterprise/
+!enterprise/*
+!tests/
+!tests/**
+!docs/
+!docs/**
+!workers/
+!workers/**
+!.github/
+!.github/**
+!.husky/
+!.husky/*
+
+# Allow dotfiles needed for builds
+!.gitignore
+
+# Wrangler local state (workers/telemetry)
+workers/telemetry/.wrangler/
+
+# Ignore OS and editor artifacts
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Environment files
+.env
+.env.*
+*.env
