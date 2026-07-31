@@ -1,0 +1,9 @@
+name = "ithmb-telemetry"
+main = "src/worker.js"
+
+compatibility_date = "2026-07-13"
+
+[[kv_namespaces]]
+binding = "FORMAT_TELEMETRY"
+id = "2c00d892cdc74a6c8a2b1054ae5bd374"
+preview_id = "2c00d892cdc74a6c8a2b1054ae5bd374"
