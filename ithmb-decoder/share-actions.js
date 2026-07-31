@@ -95,6 +95,9 @@ export function createShareBox({ cardId, bytes, prefix, isKnown, fileSize }) {
 
 // Build the success "Image looks wrong?" report link. Used by the success
 // card AND the viewer stage (same fb-<cardId> dedup key, honest feedback).
+// Clicking the link expands an inline MCQ form — a decoded-but-wrong file
+// has a VALID header, so the 16 bytes alone are useless; what the visitor
+// says is wrong (issue + optional detail) is the valuable part.
 export function createReportLink({ cardId, bytes, prefix, fileSize }) {
   const wrap = document.createElement("div");
   wrap.className = "success-report";
@@ -112,10 +115,72 @@ export function createReportLink({ cardId, bytes, prefix, fileSize }) {
     link.style.pointerEvents = "none";
   }
 
-  link.addEventListener("click", async (e) => {
+  const ISSUES = [
+    ["color_space", "Color space"],
+    ["dimensions", "Dimensions"],
+    ["stride", "Stride / padding"],
+    ["offset", "Offset"],
+    ["byte_order", "Byte order"],
+    ["other", "Other"],
+  ];
+
+  // The inline form (hidden until the link is clicked).
+  const form = document.createElement("div");
+  form.className = "report-form";
+  form.hidden = true;
+  const grid = document.createElement("div");
+  grid.className = "report-issues";
+  const group = "report-issue-" + cardId;
+  for (const [value, label] of ISSUES) {
+    const labelEl = document.createElement("label");
+    labelEl.className = "report-issue";
+    const input = document.createElement("input");
+    input.type = "radio";
+    input.name = group;
+    input.value = value;
+    labelEl.appendChild(input);
+    labelEl.appendChild(document.createTextNode(label));
+    grid.appendChild(labelEl);
+  }
+  const detail = document.createElement("input");
+  detail.type = "text";
+  detail.className = "report-detail";
+  detail.maxLength = 200;
+  detail.placeholder = "What looks wrong? (optional)";
+  const actions = document.createElement("div");
+  actions.className = "report-form-actions";
+  const submitBtn = document.createElement("button");
+  submitBtn.type = "button";
+  submitBtn.className = "btn btn-small btn-primary";
+  submitBtn.textContent = "Submit";
+  const cancelBtn = document.createElement("button");
+  cancelBtn.type = "button";
+  cancelBtn.className = "btn btn-small btn-outline";
+  cancelBtn.textContent = "Cancel";
+  actions.appendChild(submitBtn);
+  actions.appendChild(cancelBtn);
+  form.appendChild(grid);
+  form.appendChild(detail);
+  form.appendChild(actions);
+  wrap.appendChild(form);
+
+  link.addEventListener("click", (e) => {
     e.preventDefault();
     if (sharedFileIds.has(fbKey)) return;
-    // Mark synchronously so a fast second click cannot double-submit
+    form.hidden = false;
+  });
+  cancelBtn.addEventListener("click", () => {
+    form.hidden = true;
+  });
+  submitBtn.addEventListener("click", async () => {
+    if (sharedFileIds.has(fbKey)) return;
+    const checked = grid.querySelector("input:checked");
+    if (!checked) {
+      showToast("Please select what looks wrong");
+      return;
+    }
+    const issueDetail = detail.value.trim();
+    // Mark synchronously so a fast second submit cannot double-post
     // while the POST is in flight.
     sharedFileIds.add(fbKey);
     const ok = await submitTelemetry({
@@ -123,6 +188,8 @@ export function createReportLink({ cardId, bytes, prefix, fileSize }) {
       fileSize,
       status: "success",
       header: bytesToHex(bytes.slice(0, 16), ""),
+      issue: checked.value,
+      issue_detail: issueDetail || null,
     });
     if (!ok) {
       // Roll back the guard so the user can retry, and tell the truth.
@@ -130,9 +197,10 @@ export function createReportLink({ cardId, bytes, prefix, fileSize }) {
       showToast("Share failed — the server rejected this file");
       return;
     }
+    form.hidden = true;
     link.textContent = "Thanks — shared ✓";
     link.style.pointerEvents = "none";
-    showToast("16 bytes shared — thank you!");
+    showToast("Report shared — thank you!");
   });
 
   return wrap;

@@ -426,6 +426,10 @@ export default {
         KNOWN_ISSUES.has(body.issue)
           ? body.issue
           : null;
+      const issueDetail =
+        typeof body.issue_detail === "string" && body.issue_detail.length <= 200
+          ? body.issue_detail
+          : null;
       const fileSize =
         typeof body.fileSize === "number" && body.fileSize > 0
           ? body.fileSize
@@ -481,9 +485,9 @@ export default {
         prefix,
         width,
         height,
-        fileSize,
         status,
         issue,
+        issueDetail,
         header,
         fullFile,
         extension,

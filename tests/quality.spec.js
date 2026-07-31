@@ -456,6 +456,14 @@ test.describe("Quiet-by-default", () => {
 
     const reportLink = card.locator("[data-report]");
     await reportLink.click();
+    // Clicking expands the inline MCQ form (no POST yet).
+    const form = card.locator(".report-form");
+    await expect(form).toBeVisible();
+    await expect.poll(() => posted.length).toBe(0);
+    // Select an issue + optional detail, then submit.
+    await card.locator(".report-issue input[value='color_space']").check();
+    await card.locator(".report-detail").fill("green tint on everything");
+    await card.locator(".report-form-actions .btn-primary").click();
     await expect(reportLink).toHaveText("Thanks — shared ✓");
     await expect(page.locator(".toast")).toContainText(/shared/i);
 
@@ -463,6 +471,8 @@ test.describe("Quiet-by-default", () => {
     const body = posted[0];
     expect(body.header).toMatch(/^[0-9a-f]{32}$/);
     expect(body.status).toBe("success");
+    expect(body.issue).toBe("color_space");
+    expect(body.issue_detail).toBe("green tint on everything");
     expect(body.full_file).toBeUndefined();
   });
 
@@ -525,10 +535,17 @@ test.describe("Viewer contextual share/report", () => {
     await expect(viewerLink).toBeVisible();
     await expect(viewerLink).toHaveText(/Image looks wrong\?/);
     await viewerLink.click();
+    // Clicking expands the inline MCQ form (no POST yet).
+    const form = page.locator("#viewer-stage .report-form");
+    await expect(form).toBeVisible();
+    await expect.poll(() => posted.length).toBe(0);
+    await page.locator("#viewer-stage .report-issue input[value='byte_order']").check();
+    await page.locator("#viewer-stage .report-form-actions .btn-primary").click();
     await expect(viewerLink).toHaveText("Thanks — shared ✓");
 
     await expect.poll(() => posted.length, { timeout: 5000 }).toBe(1);
     expect(posted[0].header).toMatch(/^[0-9a-f]{32}$/);
     expect(posted[0].status).toBe("success");
+    expect(posted[0].issue).toBe("byte_order");
   });
 });

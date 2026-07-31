@@ -51,13 +51,22 @@ export function openViewer(index) {
     newCtx.drawImage(srcCanvas, 0, 0);
     stageContent.appendChild(newCanvas);
   }
+  // Look up the active card's failure/success entry up front so the failed
+  // placeholder can embed the share box (one integrated card) and the
+  // success path can attach the report link below the image.
+  const viewerCardId = card.dataset.cardId;
+  const failedEntry = failedDecodes.find((f) => f.cardId === viewerCardId);
+
   if (!srcCanvas) {
     const oldPlaceholder = stage.querySelector(".viewer-placeholder");
     if (oldPlaceholder) oldPlaceholder.remove();
     const status = card.querySelector(".status");
     const statusText = status ? status.textContent : "";
     if (statusText && !statusText.includes("Decoding...")) {
-      // Failed — show placeholder
+      // Failed — show placeholder. Embed the share box inside the same
+      // visual card (when a failed-decode entry exists) so they read as
+      // ONE integrated box rather than two stacked boxes. Error cards
+      // (no failedEntry) show a bare placeholder with no share box.
       const placeholder = document.createElement("div");
       placeholder.className = "viewer-placeholder";
       placeholder.innerHTML = `
@@ -65,6 +74,17 @@ export function openViewer(index) {
         <div class="placeholder-title">Decode Failed</div>
         <div class="placeholder-msg">${escapeHtml(statusText)}</div>
       `;
+      if (failedEntry) {
+        placeholder.appendChild(
+          createShareBox({
+            cardId: viewerCardId,
+            bytes: failedEntry.bytes,
+            prefix: failedEntry.prefix,
+            isKnown: KNOWN_PREFIXES.has(failedEntry.prefix),
+            fileSize: failedEntry.fileSize,
+          }),
+        );
+      }
       stageContent.appendChild(placeholder);
     } else if (!statusText || statusText.includes("Decoding...")) {
       // Still decoding — show spinner
@@ -74,22 +94,10 @@ export function openViewer(index) {
   }
   stage.appendChild(stageContent);
 
-  // Contextual share/report: the viewer mirrors the active card. Failed
-  // cards get the same share box, success cards the same report link
-  // (identical dedup keys + honest failure semantics via share-actions).
-  const viewerCardId = card.dataset.cardId;
-  const failedEntry = failedDecodes.find((f) => f.cardId === viewerCardId);
-  if (failedEntry) {
-    stageContent.appendChild(
-      createShareBox({
-        cardId: viewerCardId,
-        bytes: failedEntry.bytes,
-        prefix: failedEntry.prefix,
-        isKnown: KNOWN_PREFIXES.has(failedEntry.prefix),
-        fileSize: failedEntry.fileSize,
-      }),
-    );
-  } else {
+  // Success path: viewer mirrors the card's "Image looks wrong?" report link
+  // (identical dedup key + honest feedback via share-actions). Failed cards
+  // already got their share box embedded inside the placeholder above.
+  if (!failedEntry) {
     const successEntry = successfulDecodes.find(
       (s) => s.cardId === viewerCardId,
     );
