@@ -7,6 +7,8 @@
 const MAX_BODY_BYTES = 13 * 1024 * 1024;
 const MAX_RECORDS_PER_FP_PER_DAY = 50;
 const RATE_LIMIT_PER_DAY = 100;
+const MAX_RECORDS_PER_IP_PER_DAY = 250;
+const RATE_LIMIT_PER_IP_PER_DAY = 500;
 // base64 length of an 8 MiB file — mirrors client FULL_FILE_MAX_BYTES (app's
 // own decode limit; files larger than 8 MB are rejected by the client anyway).
 const FULL_FILE_B64_MAX = Math.ceil((8 * 1024 * 1024) / 3) * 4;
@@ -331,6 +333,23 @@ export default {
         );
       }
 
+      // ---- Per-IP rate limit (UA rotation can't bypass this) ----
+      const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+      const ipRateKey = `ratelimit-ip:${ip}:${today}`;
+      const ipCount = parseInt(
+        (await env.FORMAT_TELEMETRY.get(ipRateKey)) || "0",
+        10,
+      );
+      if (ipCount >= RATE_LIMIT_PER_IP_PER_DAY) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "rate limited" }),
+          {
+            status: 429,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          },
+        );
+      }
+
       // ---- Batch submission (Send All) ----
       if (body.batch === true && Array.isArray(body.entries)) {
         if (body.entries.length > 500) {
@@ -346,6 +365,11 @@ export default {
           (await env.FORMAT_TELEMETRY.get(batchRecordCountKey)) || "0",
           10,
         );
+        const ipRecordCountKey = `records-ip:${ip}:${today}`;
+        let ipStoredCount = parseInt(
+          (await env.FORMAT_TELEMETRY.get(ipRecordCountKey)) || "0",
+          10,
+        );
         let stored = 0;
         for (const entry of body.entries) {
           const ePrefix = entry.prefix;
@@ -358,6 +382,7 @@ export default {
           const eExisting = await env.FORMAT_TELEMETRY.get(eDedupKey);
           if (eExisting) continue;
           if (storedCount >= MAX_RECORDS_PER_FP_PER_DAY) continue;
+          if (ipStoredCount >= MAX_RECORDS_PER_IP_PER_DAY) continue;
           const eRecord = {
             prefix: ePrefix,
             width:
@@ -377,6 +402,8 @@ export default {
                 ? entry.header
                 : null,
             fullFile:
+              typeof entry.full_file === "string" &&
+              eStatus === "known-failed" &&
               entry.full_file.length <= FULL_FILE_B64_MAX
                 ? entry.full_file
                 : null,
@@ -393,6 +420,7 @@ export default {
           });
           stored++;
           storedCount++;
+          ipStoredCount++;
         }
         if (stored > 0) {
           await env.FORMAT_TELEMETRY.put(
@@ -401,7 +429,15 @@ export default {
             { expirationTtl: 86400 * 2 },
           );
         }
+          await env.FORMAT_TELEMETRY.put(
+            ipRecordCountKey,
+            String(ipStoredCount),
+            { expirationTtl: 86400 * 2 },
+          );
         await env.FORMAT_TELEMETRY.put(rateKey, String(count + 1), {
+          expirationTtl: 86400 * 2,
+        });
+        await env.FORMAT_TELEMETRY.put(ipRateKey, String(ipCount + 1), {
           expirationTtl: 86400 * 2,
         });
         return new Response(JSON.stringify({ ok: true, stored }), {
@@ -443,7 +479,9 @@ export default {
           ? body.header
           : null;
       const fullFile =
-        typeof body.full_file === "string" && body.full_file.length <= FULL_FILE_B64_MAX
+        typeof body.full_file === "string" &&
+        body.full_file.length <= FULL_FILE_B64_MAX &&
+        status === "known-failed"
           ? body.full_file
           : null;
       const extension =
@@ -479,6 +517,21 @@ export default {
           },
         );
       }
+      // ---- Record count cap (per IP per day — UA rotation can't bypass) ----
+      const ipRecordCountKey = `records-ip:${ip}:${today}`;
+      const ipStoredCount = parseInt(
+        (await env.FORMAT_TELEMETRY.get(ipRecordCountKey)) || "0",
+        10,
+      );
+      if (ipStoredCount >= MAX_RECORDS_PER_IP_PER_DAY) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "too many records" }),
+          {
+            status: 429,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          },
+        );
+      }
 
       // ---- Store ----
       const record = {
@@ -501,9 +554,17 @@ export default {
       await env.FORMAT_TELEMETRY.put(recordCountKey, String(storedCount + 1), {
         expirationTtl: 86400 * 2,
       });
+      await env.FORMAT_TELEMETRY.put(
+        ipRecordCountKey,
+        String(ipStoredCount + 1),
+        { expirationTtl: 86400 * 2 },
+      );
 
       // ---- Update rate limit counter ----
       await env.FORMAT_TELEMETRY.put(rateKey, String(count + 1), {
+        expirationTtl: 86400 * 2,
+      });
+      await env.FORMAT_TELEMETRY.put(ipRateKey, String(ipCount + 1), {
         expirationTtl: 86400 * 2,
       });
 
