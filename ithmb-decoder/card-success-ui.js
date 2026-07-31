@@ -115,16 +115,24 @@ export function renderSuccessCard(
   const reportLink = infoDiv.querySelector("[data-report]");
   if (reportLink) {
     const fbKey = "fb-" + cardId;
-    reportLink.addEventListener("click", (e) => {
+    reportLink.addEventListener("click", async (e) => {
       e.preventDefault();
       if (sharedFileIds.has(fbKey)) return;
-      submitTelemetry({
+      // Mark synchronously so a fast second click cannot double-submit
+      // while the POST is in flight.
+      sharedFileIds.add(fbKey);
+      const ok = await submitTelemetry({
         prefix,
         fileSize: file.size,
         status: "success",
         header: bytesToHex(bytes.slice(0, 16), ""),
       });
-      sharedFileIds.add(fbKey);
+      if (!ok) {
+        // Roll back the guard so the user can retry, and tell the truth.
+        sharedFileIds.delete(fbKey);
+        showToast("Share failed — the server rejected this file");
+        return;
+      }
       reportLink.textContent = "Thanks — shared ✓";
       reportLink.style.pointerEvents = "none";
       showToast("16 bytes shared — thank you!");

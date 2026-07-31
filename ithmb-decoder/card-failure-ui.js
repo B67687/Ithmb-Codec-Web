@@ -47,9 +47,12 @@ export function renderFailureCard(cardId, file, bytes, prefix, mode) {
   const setId = (isKnown ? "fail-" : "unknown-") + cardId;
   const headerKey = setId + "-h";
   const fullKey = setId + "-f";
-  const share = (fullFile) => {
+  const share = async (fullFile) => {
     const key = fullFile ? fullKey : headerKey;
     if (sharedFileIds.has(key)) return;
+    // Mark synchronously so a fast second click cannot double-submit
+    // while the POST is in flight.
+    sharedFileIds.add(key);
     const data = {
       prefix,
       fileSize: file.size,
@@ -57,8 +60,15 @@ export function renderFailureCard(cardId, file, bytes, prefix, mode) {
       header: bytesToHex(bytes.slice(0, 16), ""),
     };
     if (fullFile) data.full_file = bytesToBase64(bytes);
-    submitTelemetry(data);
-    sharedFileIds.add(key);
+    const ok = await submitTelemetry(data);
+    if (!ok) {
+      // Server rejected the share (e.g. no valid ithmb header — prefix out
+      // of range). Roll back the guard so the user can retry, and tell the
+      // truth instead of pretending it worked.
+      sharedFileIds.delete(key);
+      showToast("Share failed — the server rejected this file");
+      return;
+    }
     if (fullFile) {
       // Full file includes the header — header share becomes redundant.
       headerBtn.disabled = true;

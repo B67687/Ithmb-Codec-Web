@@ -179,7 +179,7 @@ test.describe("Error states", () => {
       timeout: 10000,
     });
 
-    // Intercept the telemetry POST; abort so the network is never hit
+    // Intercept the telemetry POST; fulfill 200 so the app sees a successful share
     const posted = [];
     await page.route(
       "**/ithmb-telemetry.ithmb-codec.workers.dev/**",
@@ -187,7 +187,7 @@ test.describe("Error states", () => {
         if (route.request().method() === "POST") {
           posted.push(JSON.parse(route.request().postData() || "{}"));
         }
-        await route.abort();
+        await route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' });
       },
     );
 
@@ -233,7 +233,7 @@ test.describe("Error states", () => {
         if (route.request().method() === "POST") {
           posted.push(JSON.parse(route.request().postData() || "{}"));
         }
-        await route.abort();
+        await route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' });
       },
     );
 
@@ -281,7 +281,7 @@ test.describe("Error states", () => {
         if (route.request().method() === "POST") {
           posted.push(JSON.parse(route.request().postData() || "{}"));
         }
-        await route.abort();
+        await route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' });
       },
     );
 
@@ -323,7 +323,7 @@ test.describe("Error states", () => {
         if (route.request().method() === "POST") {
           posted.push(JSON.parse(route.request().postData() || "{}"));
         }
-        await route.abort();
+        await route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' });
       },
     );
 
@@ -359,6 +359,52 @@ test.describe("Error states", () => {
     await page.goto("/ithmb-decoder/");
     const hint = page.locator("#dropzone .hint");
     await expect(hint).toContainText(/click|browse|drop/i);
+  });
+
+  test("server rejection shows honest failure toast, button stays active", async ({
+    page,
+  }) => {
+    await page.goto("/ithmb-decoder/");
+    const corruptFile = path.join(FIXTURES, "corrupt-reject.ithmb");
+    fs.writeFileSync(
+      corruptFile,
+      fs.readFileSync(path.join(FIXTURES, "test1.ithmb")).subarray(0, 100),
+    );
+    const [fc] = await Promise.all([
+      page.waitForEvent("filechooser"),
+      page.locator("#dropzone").click(),
+    ]);
+    await fc.setFiles([corruptFile]);
+
+    const card = page.locator(".file-card");
+    await expect(card.locator('[data-share="header"]')).toBeVisible({
+      timeout: 10000,
+    });
+
+    const posted = [];
+    await page.route(
+      "**/ithmb-telemetry.ithmb-codec.workers.dev/**",
+      async (route) => {
+        if (route.request().method() === "POST") {
+          posted.push(JSON.parse(route.request().postData() || "{}"));
+        }
+        // Simulate the worker rejecting the payload (e.g. invalid prefix)
+        await route.fulfill({
+          status: 400,
+          contentType: "application/json",
+          body: '{"error":"invalid prefix"}',
+        });
+      },
+    );
+
+    const headerBtn = card.locator('[data-share="header"]');
+    await headerBtn.click();
+    await expect(page.locator(".toast")).toContainText(/failed/i);
+    // Honest feedback: no fake success, button stays clickable for retry
+    await expect(headerBtn).toHaveText("Share 16 bytes");
+    await expect(headerBtn).not.toBeDisabled();
+    await expect.poll(() => posted.length, { timeout: 5000 }).toBe(1);
+    fs.rmSync(corruptFile, { force: true });
   });
 });
 
@@ -403,7 +449,7 @@ test.describe("Quiet-by-default", () => {
         if (route.request().method() === "POST") {
           posted.push(JSON.parse(route.request().postData() || "{}"));
         }
-        await route.abort();
+        await route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' });
       },
     );
 
