@@ -108,37 +108,14 @@ test.describe("Stress: Full user flows", () => {
     // Should start at first image
     await expect(page.locator("#viewerPos")).toContainText(/1 \/ 8/);
 
-    // ArrowLeft from first image should wrap around to the LAST thumb in
-    // filmstrip visual order (thumbs append in decode-completion order,
-    // which can differ from card order — derive the expected position).
-    const lastPos = await page.evaluate(() => {
-      const thumbs = Array.from(document.querySelectorAll(".filmstrip-thumb"));
-      const last = thumbs[thumbs.length - 1];
-      const cards = Array.from(document.querySelectorAll(".file-card"));
-      const target = cards.find(
-        (c) => c.dataset.cardId === last.dataset.filmstripCard,
-      );
-      return target ? cards.indexOf(target) + 1 : -1;
-    });
+    // Navigation is unified (filmstrip order === card order === numbering),
+    // so cyclic arrow nav is deterministic: left from 1 wraps to 8,
+    // right from 8 wraps back to 1.
     await page.keyboard.press("ArrowLeft");
-    await expect(page.locator("#viewerPos")).toContainText(
-      new RegExp(`${lastPos} \\/ 8`),
-    );
+    await expect(page.locator("#viewerPos")).toContainText(/8 \/ 8/);
 
-    // ArrowRight from the last thumb should wrap back to the FIRST thumb
-    const firstPos = await page.evaluate(() => {
-      const thumbs = Array.from(document.querySelectorAll(".filmstrip-thumb"));
-      const first = thumbs[0];
-      const cards = Array.from(document.querySelectorAll(".file-card"));
-      const target = cards.find(
-        (c) => c.dataset.cardId === first.dataset.filmstripCard,
-      );
-      return target ? cards.indexOf(target) + 1 : -1;
-    });
     await page.keyboard.press("ArrowRight");
-    await expect(page.locator("#viewerPos")).toContainText(
-      new RegExp(`${firstPos} \\/ 8`),
-    );
+    await expect(page.locator("#viewerPos")).toContainText(/1 \/ 8/);
   });
 
   test("6: Toggle to grid mode and back", async ({ page }) => {

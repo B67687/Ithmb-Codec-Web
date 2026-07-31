@@ -6,7 +6,7 @@ import {
 } from "./state.js";
 import { bytesToHex, escapeHtml, formatSize, showToast } from "./utils.js";
 import { decodeFile } from "./decoder.js";
-import { openViewer, updateToolbar } from "./viewer.js";
+import { openViewer, createFilmstripThumb, updateToolbar } from "./viewer.js";
 
 const fileList = document.getElementById("file-list");
 
@@ -34,6 +34,7 @@ export function addFileCard(file) {
         <div class="preview" style="display:none"></div>
       `;
   fileList.appendChild(card);
+  createFilmstripThumb(cardId);
   return cardId;
 }
 

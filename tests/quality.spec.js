@@ -187,7 +187,7 @@ test.describe("Error states", () => {
         if (route.request().method() === "POST") {
           posted.push(JSON.parse(route.request().postData() || "{}"));
         }
-        await route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' });
+        await route.fulfill({ status: 200, contentType: "application/json", headers: { "Access-Control-Allow-Origin": "*" }, body: '{"ok":true}' });
       },
     );
 
@@ -233,7 +233,7 @@ test.describe("Error states", () => {
         if (route.request().method() === "POST") {
           posted.push(JSON.parse(route.request().postData() || "{}"));
         }
-        await route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' });
+        await route.fulfill({ status: 200, contentType: "application/json", headers: { "Access-Control-Allow-Origin": "*" }, body: '{"ok":true}' });
       },
     );
 
@@ -281,7 +281,7 @@ test.describe("Error states", () => {
         if (route.request().method() === "POST") {
           posted.push(JSON.parse(route.request().postData() || "{}"));
         }
-        await route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' });
+        await route.fulfill({ status: 200, contentType: "application/json", headers: { "Access-Control-Allow-Origin": "*" }, body: '{"ok":true}' });
       },
     );
 
@@ -323,7 +323,7 @@ test.describe("Error states", () => {
         if (route.request().method() === "POST") {
           posted.push(JSON.parse(route.request().postData() || "{}"));
         }
-        await route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' });
+        await route.fulfill({ status: 200, contentType: "application/json", headers: { "Access-Control-Allow-Origin": "*" }, body: '{"ok":true}' });
       },
     );
 
@@ -392,6 +392,7 @@ test.describe("Error states", () => {
         await route.fulfill({
           status: 400,
           contentType: "application/json",
+          headers: { "Access-Control-Allow-Origin": "*" },
           body: '{"error":"invalid prefix"}',
         });
       },
@@ -449,7 +450,7 @@ test.describe("Quiet-by-default", () => {
         if (route.request().method() === "POST") {
           posted.push(JSON.parse(route.request().postData() || "{}"));
         }
-        await route.fulfill({ status: 200, contentType: "application/json", body: '{"ok":true}' });
+        await route.fulfill({ status: 200, contentType: "application/json", headers: { "Access-Control-Allow-Origin": "*" }, body: '{"ok":true}' });
       },
     );
 

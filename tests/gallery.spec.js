@@ -100,43 +100,17 @@ test.describe("Viewer Mode (6+ files)", () => {
     await expect(page.locator("#viewerPos")).toContainText(/1 \/ 8/);
     await page.waitForTimeout(2000);
 
-    // Navigation follows the filmstrip VISUAL order (thumbs append in
-    // decode-completion order, which can differ from card order). Derive
-    // the expected position from the thumb adjacent to the active one.
-    const posAfterRight = await page.evaluate(() => {
-      const thumbs = Array.from(document.querySelectorAll(".filmstrip-thumb"));
-      const active = document.querySelector(".filmstrip-thumb.active");
-      const idx = active ? thumbs.indexOf(active) : 0;
-      const next = thumbs[(idx + 1) % thumbs.length];
-      const cards = Array.from(document.querySelectorAll(".file-card"));
-      const target = cards.find(
-        (c) => c.dataset.cardId === next.dataset.filmstripCard,
-      );
-      return target ? cards.indexOf(target) + 1 : -1;
-    });
+    // Navigation is unified: filmstrip order === card order === viewer
+    // numbering (thumbs are created as placeholders in file order at
+    // card-creation time). So arrow nav is deterministic index arithmetic.
     await page.keyboard.press("ArrowRight");
-    await expect(page.locator("#viewerPos")).toContainText(
-      new RegExp(`${posAfterRight} \\/ 8`),
-    );
+    await expect(page.locator("#viewerPos")).toContainText(/2 \/ 8/);
 
-    const posAfterLeft = await page.evaluate(() => {
-      const thumbs = Array.from(document.querySelectorAll(".filmstrip-thumb"));
-      const active = document.querySelector(".filmstrip-thumb.active");
-      const idx = active ? thumbs.indexOf(active) : 0;
-      const prev = thumbs[(idx - 1 + thumbs.length) % thumbs.length];
-      const cards = Array.from(document.querySelectorAll(".file-card"));
-      const target = cards.find(
-        (c) => c.dataset.cardId === prev.dataset.filmstripCard,
-      );
-      return target ? cards.indexOf(target) + 1 : -1;
-    });
     await page.keyboard.press("ArrowLeft");
-    await expect(page.locator("#viewerPos")).toContainText(
-      new RegExp(`${posAfterLeft} \\/ 8`),
-    );
+    await expect(page.locator("#viewerPos")).toContainText(/1 \/ 8/);
   });
 
-  test("filmstrip reorder: arrow nav follows visual order, not card index", async ({
+  test("filmstrip thumbs appear in file order as placeholders", async ({
     page,
   }) => {
     const fc = page.waitForEvent("filechooser");
@@ -147,6 +121,18 @@ test.describe("Viewer Mode (6+ files)", () => {
     );
     await fileChooser.setFiles(files);
 
+    // Placeholders are created synchronously at card-creation time, BEFORE
+    // decode completes — filmstrip order must equal file-card order.
+    await expect(page.locator(".filmstrip-thumb")).toHaveCount(8);
+    const order = await page.evaluate(() => {
+      const thumbs = Array.from(document.querySelectorAll(".filmstrip-thumb"));
+      const cards = Array.from(document.querySelectorAll(".file-card"));
+      return thumbs.every((t, i) =>
+        cards[i] && t.dataset.filmstripCard === cards[i].dataset.cardId,
+      );
+    });
+    expect(order).toBe(true);
+
     await expect(async () => {
       const statuses = await page
         .locator(".file-card .status")
@@ -154,36 +140,10 @@ test.describe("Viewer Mode (6+ files)", () => {
       expect(statuses.every((s) => !s.includes("Decoding..."))).toBe(true);
     }).toPass({ timeout: 60000 });
 
+    // Arrow nav still steps 1 -> 2 in file order after decode fills thumbs.
     await expect(page.locator("#viewerPos")).toContainText(/1 \/ 8/);
-    await page.waitForTimeout(2000);
-
-    // Move the 2nd thumb to the END of the filmstrip. The visual order now
-    // diverges from the card (file-input) order, so a card-index-based
-    // prev/next would "jump" to a non-adjacent thumbnail.
-    await page.evaluate(() => {
-      const strip = document.querySelector("#viewer-filmstrip");
-      const thumbs = Array.from(strip.querySelectorAll(".filmstrip-thumb"));
-      if (thumbs.length > 1) strip.appendChild(thumbs[1]);
-    });
-
-    // Derive the expected position from the thumb now visually adjacent to
-    // the active one (filmstrip VISUAL order), matching prev/next semantics.
-    const expectedPos = await page.evaluate(() => {
-      const thumbs = Array.from(document.querySelectorAll(".filmstrip-thumb"));
-      const active = document.querySelector(".filmstrip-thumb.active");
-      const idx = active ? thumbs.indexOf(active) : 0;
-      const next = thumbs[(idx + 1) % thumbs.length];
-      const cards = Array.from(document.querySelectorAll(".file-card"));
-      const target = cards.find(
-        (c) => c.dataset.cardId === next.dataset.filmstripCard,
-      );
-      return target ? cards.indexOf(target) + 1 : -1;
-    });
-
     await page.keyboard.press("ArrowRight");
-    await expect(page.locator("#viewerPos")).toContainText(
-      new RegExp(`${expectedPos} \\/ 8`),
-    );
+    await expect(page.locator("#viewerPos")).toContainText(/2 \/ 8/);
   });
 
   test("Escape closes viewer", async ({ page }) => {
@@ -617,24 +577,10 @@ test.describe("New: Additional functionality", () => {
 
     await expect(page.locator("#viewerPos")).toContainText(/1 \/ 8/);
     await page.waitForTimeout(2000);
-    // Filmstrip order = decode-completion order (can differ from card order),
-    // so derive the expected position from the thumb adjacent to the active one
-    // BEFORE pressing the key (the press moves the active thumb).
-    const expectedPos = await page.evaluate(() => {
-      const thumbs = Array.from(document.querySelectorAll(".filmstrip-thumb"));
-      const active = document.querySelector(".filmstrip-thumb.active");
-      const idx = active ? thumbs.indexOf(active) : 0;
-      const next = thumbs[(idx + 1) % thumbs.length];
-      const cards = Array.from(document.querySelectorAll(".file-card"));
-      const target = cards.find(
-        (c) => c.dataset.cardId === next.dataset.filmstripCard,
-      );
-      return target ? cards.indexOf(target) + 1 : -1;
-    });
+    // Navigation is unified (filmstrip order === card order === numbering),
+    // so a single ArrowRight step is deterministic: 1 -> 2.
     await page.keyboard.press("ArrowRight");
-    await expect(page.locator("#viewerPos")).toContainText(
-      new RegExp(`${expectedPos} \\/ 8`),
-    );
+    await expect(page.locator("#viewerPos")).toContainText(/2 \/ 8/);
   });
 
   test("viewer placeholder CSS exists for failed decodes", async ({ page }) => {

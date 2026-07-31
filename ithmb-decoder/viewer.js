@@ -137,46 +137,18 @@ export function populateViewerHeader(card) {
 }
 
 export function prevViewer() {
-  // Navigate in filmstrip VISUAL order (thumbs append in decode-completion
-  // order, which can differ from card/file order when decodes finish out of
-  // sequence). Stepping by card index would "jump" past non-adjacent thumbs.
-  const thumbs = document.querySelectorAll(".filmstrip-thumb");
-  if (thumbs.length === 0) return;
+  // Filmstrip thumbs are created in FILE order at card-creation time, so
+  // filmstrip order === card order === viewer numbering. Simple cyclic step.
   const cards = fileList.querySelectorAll(".file-card");
-  const currentCard = cards[S.viewerIndex];
-  if (!currentCard) {
-    openViewer(0);
-    return;
-  }
-  const currentThumb = Array.from(thumbs).find(
-    (t) => t.dataset.filmstripCard === currentCard.dataset.cardId,
-  );
-  const currIdx = currentThumb ? Array.from(thumbs).indexOf(currentThumb) : 0;
-  const prevThumb = thumbs[(currIdx - 1 + thumbs.length) % thumbs.length];
-  const target = Array.from(cards).find(
-    (c) => c.dataset.cardId === prevThumb.dataset.filmstripCard,
-  );
-  openViewer(target ? Array.from(cards).indexOf(target) : 0);
+  if (cards.length === 0) return;
+  const next = (S.viewerIndex - 1 + cards.length) % cards.length;
+  openViewer(next);
 }
 
 export function nextViewer() {
-  const thumbs = document.querySelectorAll(".filmstrip-thumb");
-  if (thumbs.length === 0) return;
   const cards = fileList.querySelectorAll(".file-card");
-  const currentCard = cards[S.viewerIndex];
-  if (!currentCard) {
-    openViewer(0);
-    return;
-  }
-  const currentThumb = Array.from(thumbs).find(
-    (t) => t.dataset.filmstripCard === currentCard.dataset.cardId,
-  );
-  const currIdx = currentThumb ? Array.from(thumbs).indexOf(currentThumb) : 0;
-  const nextThumb = thumbs[(currIdx + 1) % thumbs.length];
-  const target = Array.from(cards).find(
-    (c) => c.dataset.cardId === nextThumb.dataset.filmstripCard,
-  );
-  openViewer(target ? Array.from(cards).indexOf(target) : 0);
+  if (cards.length === 0) return;
+  openViewer((S.viewerIndex + 1) % cards.length);
 }
 
 export function updateToolbar() {
@@ -211,18 +183,47 @@ if (helpBtn) helpBtn.style.display = S.totalFiles > 0 ? "" : "none";
 
 // ─── Filmstrip helpers (extracted from decoder.js) ───
 
-export function addFilmstripThumb(cardId, canvas) {
+// Create a placeholder thumb in FILE order when a card is created. The
+// thumbnail image is filled in later by addFilmstripThumb() once decode
+// completes. Keeping the thumbs in file order means the filmstrip, the
+// arrow navigation, and the "N / M" viewer numbering all share ONE order.
+export function createFilmstripThumb(cardId) {
   const filmstrip = document.getElementById("viewer-filmstrip");
-  if (
-    !filmstrip ||
-    filmstrip.querySelector(`[data-filmstrip-card="${cardId}"]`)
-  )
-    return;
+  if (!filmstrip) return;
+  if (filmstrip.querySelector(`[data-filmstrip-card="${cardId}"]`)) return;
 
   const thumb = document.createElement("div");
-  thumb.className = "filmstrip-thumb" + (canvas ? "" : " failed");
+  thumb.className = "filmstrip-thumb pending";
   thumb.dataset.filmstripIndex = filmstrip.children.length;
   thumb.dataset.filmstripCard = cardId;
+
+  thumb.addEventListener("click", () => {
+    const allCards = document.querySelectorAll(".file-card");
+    const target = Array.from(allCards).find(
+      (c) => c.dataset.cardId === cardId,
+    );
+    const idx = target ? Array.from(allCards).indexOf(target) : 0;
+    openViewer(idx);
+  });
+
+  filmstrip.appendChild(thumb);
+}
+
+// Fill an existing placeholder thumb with the decoded thumbnail (or the
+// failure icon). Falls back to creating the thumb if no placeholder exists.
+export function addFilmstripThumb(cardId, canvas) {
+  const filmstrip = document.getElementById("viewer-filmstrip");
+  if (!filmstrip) return;
+  let thumb = filmstrip.querySelector(`[data-filmstrip-card="${cardId}"]`);
+  if (!thumb) {
+    createFilmstripThumb(cardId);
+    thumb = filmstrip.querySelector(`[data-filmstrip-card="${cardId}"]`);
+    if (!thumb) return;
+  }
+
+  thumb.classList.remove("pending");
+  thumb.classList.toggle("failed", !canvas);
+  thumb.innerHTML = "";
 
   if (canvas) {
     const isMobile = window.innerWidth <= 480;
@@ -236,26 +237,7 @@ export function addFilmstripThumb(cardId, canvas) {
     thumb.appendChild(thumbCanvas);
   } else {
     thumb.innerHTML =
-      '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.2rem;opacity:0.4">\u26a0</div>';
-  }
-
-  thumb.addEventListener("click", () => {
-    const allCards = document.querySelectorAll(".file-card");
-    const target = Array.from(allCards).find(
-      (c) => c.dataset.cardId === cardId,
-    );
-    const idx = target ? Array.from(allCards).indexOf(target) : 0;
-    openViewer(idx);
-  });
-
-  filmstrip.appendChild(thumb);
-
-  // First thumb opens viewer automatically
-  if (filmstrip.children.length === 1) {
-    const fileList = document.getElementById("file-list");
-    if (fileList.classList.contains("viewer-mode")) {
-      openViewer(0);
-    }
+      '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.2rem;opacity:0.4">⚠</div>';
   }
 
   // Ensure active thumb highlight if this thumb matches current viewer card
