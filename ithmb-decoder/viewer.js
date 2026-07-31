@@ -137,17 +137,46 @@ export function populateViewerHeader(card) {
 }
 
 export function prevViewer() {
+  // Navigate in filmstrip VISUAL order (thumbs append in decode-completion
+  // order, which can differ from card/file order when decodes finish out of
+  // sequence). Stepping by card index would "jump" past non-adjacent thumbs.
+  const thumbs = document.querySelectorAll(".filmstrip-thumb");
+  if (thumbs.length === 0) return;
   const cards = fileList.querySelectorAll(".file-card");
-  if (cards.length === 0) return;
-  const idx = (S.viewerIndex - 1 + cards.length) % cards.length;
-  openViewer(idx);
+  const currentCard = cards[S.viewerIndex];
+  if (!currentCard) {
+    openViewer(0);
+    return;
+  }
+  const currentThumb = Array.from(thumbs).find(
+    (t) => t.dataset.filmstripCard === currentCard.dataset.cardId,
+  );
+  const currIdx = currentThumb ? Array.from(thumbs).indexOf(currentThumb) : 0;
+  const prevThumb = thumbs[(currIdx - 1 + thumbs.length) % thumbs.length];
+  const target = Array.from(cards).find(
+    (c) => c.dataset.cardId === prevThumb.dataset.filmstripCard,
+  );
+  openViewer(target ? Array.from(cards).indexOf(target) : 0);
 }
 
 export function nextViewer() {
+  const thumbs = document.querySelectorAll(".filmstrip-thumb");
+  if (thumbs.length === 0) return;
   const cards = fileList.querySelectorAll(".file-card");
-  if (cards.length === 0) return;
-  const idx = (S.viewerIndex + 1) % cards.length;
-  openViewer(idx);
+  const currentCard = cards[S.viewerIndex];
+  if (!currentCard) {
+    openViewer(0);
+    return;
+  }
+  const currentThumb = Array.from(thumbs).find(
+    (t) => t.dataset.filmstripCard === currentCard.dataset.cardId,
+  );
+  const currIdx = currentThumb ? Array.from(thumbs).indexOf(currentThumb) : 0;
+  const nextThumb = thumbs[(currIdx + 1) % thumbs.length];
+  const target = Array.from(cards).find(
+    (c) => c.dataset.cardId === nextThumb.dataset.filmstripCard,
+  );
+  openViewer(target ? Array.from(cards).indexOf(target) : 0);
 }
 
 export function updateToolbar() {

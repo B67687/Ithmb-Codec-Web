@@ -99,10 +99,91 @@ test.describe("Viewer Mode (6+ files)", () => {
 
     await expect(page.locator("#viewerPos")).toContainText(/1 \/ 8/);
     await page.waitForTimeout(2000);
+
+    // Navigation follows the filmstrip VISUAL order (thumbs append in
+    // decode-completion order, which can differ from card order). Derive
+    // the expected position from the thumb adjacent to the active one.
+    const posAfterRight = await page.evaluate(() => {
+      const thumbs = Array.from(document.querySelectorAll(".filmstrip-thumb"));
+      const active = document.querySelector(".filmstrip-thumb.active");
+      const idx = active ? thumbs.indexOf(active) : 0;
+      const next = thumbs[(idx + 1) % thumbs.length];
+      const cards = Array.from(document.querySelectorAll(".file-card"));
+      const target = cards.find(
+        (c) => c.dataset.cardId === next.dataset.filmstripCard,
+      );
+      return target ? cards.indexOf(target) + 1 : -1;
+    });
     await page.keyboard.press("ArrowRight");
-    await expect(page.locator("#viewerPos")).toContainText(/2 \/ 8/);
+    await expect(page.locator("#viewerPos")).toContainText(
+      new RegExp(`${posAfterRight} \\/ 8`),
+    );
+
+    const posAfterLeft = await page.evaluate(() => {
+      const thumbs = Array.from(document.querySelectorAll(".filmstrip-thumb"));
+      const active = document.querySelector(".filmstrip-thumb.active");
+      const idx = active ? thumbs.indexOf(active) : 0;
+      const prev = thumbs[(idx - 1 + thumbs.length) % thumbs.length];
+      const cards = Array.from(document.querySelectorAll(".file-card"));
+      const target = cards.find(
+        (c) => c.dataset.cardId === prev.dataset.filmstripCard,
+      );
+      return target ? cards.indexOf(target) + 1 : -1;
+    });
     await page.keyboard.press("ArrowLeft");
+    await expect(page.locator("#viewerPos")).toContainText(
+      new RegExp(`${posAfterLeft} \\/ 8`),
+    );
+  });
+
+  test("filmstrip reorder: arrow nav follows visual order, not card index", async ({
+    page,
+  }) => {
+    const fc = page.waitForEvent("filechooser");
+    await page.locator("#dropzone").click();
+    const fileChooser = await fc;
+    const files = Array.from({ length: 8 }, (_, i) =>
+      path.join(FIXTURES, "test" + (i + 1) + ".ithmb"),
+    );
+    await fileChooser.setFiles(files);
+
+    await expect(async () => {
+      const statuses = await page
+        .locator(".file-card .status")
+        .allTextContents();
+      expect(statuses.every((s) => !s.includes("Decoding..."))).toBe(true);
+    }).toPass({ timeout: 60000 });
+
     await expect(page.locator("#viewerPos")).toContainText(/1 \/ 8/);
+    await page.waitForTimeout(2000);
+
+    // Move the 2nd thumb to the END of the filmstrip. The visual order now
+    // diverges from the card (file-input) order, so a card-index-based
+    // prev/next would "jump" to a non-adjacent thumbnail.
+    await page.evaluate(() => {
+      const strip = document.querySelector("#viewer-filmstrip");
+      const thumbs = Array.from(strip.querySelectorAll(".filmstrip-thumb"));
+      if (thumbs.length > 1) strip.appendChild(thumbs[1]);
+    });
+
+    // Derive the expected position from the thumb now visually adjacent to
+    // the active one (filmstrip VISUAL order), matching prev/next semantics.
+    const expectedPos = await page.evaluate(() => {
+      const thumbs = Array.from(document.querySelectorAll(".filmstrip-thumb"));
+      const active = document.querySelector(".filmstrip-thumb.active");
+      const idx = active ? thumbs.indexOf(active) : 0;
+      const next = thumbs[(idx + 1) % thumbs.length];
+      const cards = Array.from(document.querySelectorAll(".file-card"));
+      const target = cards.find(
+        (c) => c.dataset.cardId === next.dataset.filmstripCard,
+      );
+      return target ? cards.indexOf(target) + 1 : -1;
+    });
+
+    await page.keyboard.press("ArrowRight");
+    await expect(page.locator("#viewerPos")).toContainText(
+      new RegExp(`${expectedPos} \\/ 8`),
+    );
   });
 
   test("Escape closes viewer", async ({ page }) => {
@@ -201,8 +282,24 @@ test.describe("Regression: Viewer pixel content", () => {
     });
     expect(hasCanvas).toBe(true);
 
+    // Filmstrip order = decode-completion order (can differ from card order),
+    // so derive the expected position from the thumb adjacent to the active one
+    // BEFORE pressing the key (the press moves the active thumb).
+    const expectedPos = await page.evaluate(() => {
+      const thumbs = Array.from(document.querySelectorAll(".filmstrip-thumb"));
+      const active = document.querySelector(".filmstrip-thumb.active");
+      const idx = active ? thumbs.indexOf(active) : 0;
+      const next = thumbs[(idx + 1) % thumbs.length];
+      const cards = Array.from(document.querySelectorAll(".file-card"));
+      const target = cards.find(
+        (c) => c.dataset.cardId === next.dataset.filmstripCard,
+      );
+      return target ? cards.indexOf(target) + 1 : -1;
+    });
     await page.keyboard.press("ArrowRight");
-    await expect(page.locator("#viewerPos")).toContainText(/2 \/ 8/);
+    await expect(page.locator("#viewerPos")).toContainText(
+      new RegExp(`${expectedPos} \\/ 8`),
+    );
 
     // Verify canvas still rendered after navigation
     const stillHasCanvas = await page.evaluate(() => {
@@ -418,19 +515,29 @@ test.describe("Regression: Batch behavior", () => {
       expect(statuses.every((s) => !s.includes("Decoding..."))).toBe(true);
     }).toPass({ timeout: 60000 });
 
+    // Capture which thumb is active before holding
+    const before = await page.evaluate(() => {
+      const active = document.querySelector(".filmstrip-thumb.active");
+      return active ? active.dataset.filmstripCard : null;
+    });
+
     // Focus the page for keyboard events
     await page.locator("#viewer-stage").click();
     await page.waitForTimeout(200);
 
-    // Keyboard hold should advance past first image
+    // Keyboard hold should advance the viewer
     await page.keyboard.down("ArrowRight");
     await page.waitForTimeout(3000);
     await page.keyboard.up("ArrowRight");
 
-    // Position should have advanced
-    const pos = await page.locator("#viewerPos").textContent();
-    const num = parseInt(pos?.split("/")[0]?.trim() || "0");
-    expect(num).toBeGreaterThan(1);
+    // The active thumb must have changed from the starting one
+    const after = await page.evaluate(() => {
+      const active = document.querySelector(".filmstrip-thumb.active");
+      return active ? active.dataset.filmstripCard : null;
+    });
+    expect(after).not.toBe(before);
+    // And the position indicator shows a valid value
+    await expect(page.locator("#viewerPos")).toContainText(/\d+ \/ 8/);
   });
 
   test("grid mode has format select in file cards", async ({ page }) => {
@@ -510,8 +617,24 @@ test.describe("New: Additional functionality", () => {
 
     await expect(page.locator("#viewerPos")).toContainText(/1 \/ 8/);
     await page.waitForTimeout(2000);
+    // Filmstrip order = decode-completion order (can differ from card order),
+    // so derive the expected position from the thumb adjacent to the active one
+    // BEFORE pressing the key (the press moves the active thumb).
+    const expectedPos = await page.evaluate(() => {
+      const thumbs = Array.from(document.querySelectorAll(".filmstrip-thumb"));
+      const active = document.querySelector(".filmstrip-thumb.active");
+      const idx = active ? thumbs.indexOf(active) : 0;
+      const next = thumbs[(idx + 1) % thumbs.length];
+      const cards = Array.from(document.querySelectorAll(".file-card"));
+      const target = cards.find(
+        (c) => c.dataset.cardId === next.dataset.filmstripCard,
+      );
+      return target ? cards.indexOf(target) + 1 : -1;
+    });
     await page.keyboard.press("ArrowRight");
-    await expect(page.locator("#viewerPos")).toContainText(/2 \/ 8/);
+    await expect(page.locator("#viewerPos")).toContainText(
+      new RegExp(`${expectedPos} \\/ 8`),
+    );
   });
 
   test("viewer placeholder CSS exists for failed decodes", async ({ page }) => {
@@ -657,5 +780,39 @@ test.describe("New: Additional functionality", () => {
     await page.keyboard.press("g");
     await page.waitForTimeout(300);
     await expect(page.locator("#viewer-container")).toBeVisible();
+  });
+
+  test("global download-format select does not override per-card formats", async ({
+    page,
+  }) => {
+    const fc = page.waitForEvent("filechooser");
+    await page.locator("#dropzone").click();
+    const fileChooser = await fc;
+    await fileChooser.setFiles([path.join(FIXTURES, "test1.ithmb")]);
+
+    await expect(async () => {
+      const statuses = await page
+        .locator(".file-card .status")
+        .allTextContents();
+      expect(statuses.every((s) => !s.includes("Decoding..."))).toBe(true);
+    }).toPass({ timeout: 60000 });
+
+    // Baseline: card select defaults to JPEG, save button says Save JPEG
+    const cardSelect = page.locator("select.fmt-select").first();
+    const saveBtn = page.locator("[data-save]").first();
+    await expect(cardSelect).toHaveValue("image/jpeg");
+    await expect(saveBtn).toHaveText("Save JPEG");
+
+    // Changing the GLOBAL selector must NOT touch the per-card select/save button
+    await page.locator("#downloadFormatSelect").selectOption("image/png");
+    await expect(page.locator("#downloadAllBtn")).toHaveAttribute("title", /PNG/);
+    await expect(cardSelect).toHaveValue("image/jpeg");
+    await expect(saveBtn).toHaveText("Save JPEG");
+
+    // Changing the PER-CARD select must NOT touch the global selector/button
+    await cardSelect.selectOption("image/bmp");
+    await expect(saveBtn).toHaveText("Save BMP");
+    await expect(page.locator("#downloadFormatSelect")).toHaveValue("image/png");
+    await expect(page.locator("#downloadAllBtn")).toHaveAttribute("title", /PNG/);
   });
 });
