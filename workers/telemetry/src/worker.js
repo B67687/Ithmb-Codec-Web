@@ -403,7 +403,7 @@ export default {
                 : null,
             fullFile:
               typeof entry.full_file === "string" &&
-              eStatus === "known-failed" &&
+              eStatus !== "success" &&
               entry.full_file.length <= FULL_FILE_B64_MAX
                 ? entry.full_file
                 : null,
@@ -481,7 +481,9 @@ export default {
       const fullFile =
         typeof body.full_file === "string" &&
         body.full_file.length <= FULL_FILE_B64_MAX &&
-        status === "known-failed"
+        status !== "success"
+        // non-success: known-failed (decoder bug) OR unknown (potential new
+        // format) — the full file is where the research value is
           ? body.full_file
           : null;
       const extension =
