@@ -81,6 +81,43 @@ test.describe("Viewer Mode (6+ files)", () => {
     );
   });
 
+  test("viewer stage stays fixed when navigating between different-sized images", async ({
+    page,
+  }) => {
+    // Mixed-size inputs: test1 is 42x30, uyvy is 720x480. The stage must NOT
+    // resize when switching — the gallery height should stay constant.
+    const fc = page.waitForEvent("filechooser");
+    await page.locator("#dropzone").click();
+    const fileChooser = await fc;
+    await fileChooser.setFiles([
+      path.join(FIXTURES, "test1.ithmb"),
+      path.join(FIXTURES, "uyvy.ithmb"),
+    ]);
+
+    await expect(async () => {
+      const statuses = await page
+        .locator(".file-card .status")
+        .allTextContents();
+      expect(statuses.every((s) => !s.includes("Decoding..."))).toBe(true);
+    }).toPass({ timeout: 60000 });
+
+    const stageHeight = async () =>
+      page.evaluate(() => {
+        const el = document.querySelector("#viewer-stage");
+        return el ? Math.round(el.getBoundingClientRect().height) : -1;
+      });
+
+    const firstH = await stageHeight();
+    expect(firstH).toBeGreaterThan(0);
+
+    // Navigate to the second (larger) image
+    await page.locator("#nextBtn").click();
+    await page.waitForTimeout(300);
+    const secondH = await stageHeight();
+
+    expect(secondH).toBe(firstH);
+  });
+
   test("arrow keys navigate between images", async ({ page }) => {
     const fc = page.waitForEvent("filechooser");
     await page.locator("#dropzone").click();
