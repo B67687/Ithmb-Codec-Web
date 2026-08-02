@@ -66,7 +66,7 @@ Deploys a Cloudflare Worker that stores format metadata submissions from the WAS
 # List all keys
 wrangler kv:key list --binding=FORMAT_TELEMETRY
 
-# Get a specific record  
+# Get a specific record
 wrangler kv:key get --binding=FORMAT_TELEMETRY <key>
 
 # Bulk export

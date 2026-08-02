@@ -1,5 +1,32 @@
 # Changelog
 
+## 1.3.0 — 2026-08-02
+
+### Added
+- Static decoder mockup in the guide (toolbar, viewer, filmstrip, grid) using native-resolution synthetic test images — sharp at any zoom, no screenshots
+- Brand logo on the README (padded square mark) and enterprise page
+- Fixed-height gallery stage so the viewer no longer resizes when navigating between differently-sized images
+- Regression test locking the fixed-stage behavior
+
+### Changed
+- Guide privacy wording to match the opt-in sharing model ("Nothing gets uploaded unless you click Share")
+- Home meta/og description: accurate privacy claim
+- README issue link now points at the Rust codec repo
+
+### Fixed
+- Missing closing tags on home meta/og description broke the favicon link
+- Gallery viewer resizing abruptly between images of different sizes
+
+## 1.2.0 — 2026-08-01
+
+### Added
+- SEO structured data: HowTo + FAQPage schema on the guide, BreadcrumbList on home/decoder/guide
+- Cross-platform note in the guide (Windows, macOS, Linux, mobile)
+- "Try it live" CTA + guide link in the README
+
+### Fixed
+- Stray `/>` rendering in the guide head
+- Guide link check (dead/bot-blocked URLs excluded)
 
 ## 1.1.0 — 2026-07-30
 
