@@ -10,7 +10,7 @@
     />
     <meta
       name="description"
-      content="Free online tool to open and convert Apple iPod/iPhone .ithmb thumbnail files to JPEG. No uploads, 100% private, works in your browser."
+      content="Free online tool to open and convert Apple iPod/iPhone .ithmb thumbnail files to JPEG. Private by default — nothing is uploaded unless you opt in to share."
     />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link
@@ -24,7 +24,7 @@
     />
     <meta
       property="og:description"
-      content="Free online tool to open and convert Apple iPod/iPhone .ithmb thumbnail files to JPEG. No uploads, 100% private, works in your browser."
+      content="Free online tool to open and convert Apple iPod/iPhone .ithmb thumbnail files to JPEG. Private by default — nothing is uploaded unless you opt in to share."
     />
     <meta property="og:image" content="https://ithmb-codec.dev/thumb-decoder-preview.png" />
     <meta property="og:type" content="website" />
@@ -268,6 +268,175 @@
         .faq-item {
           padding: 14px 0;
         }
+
+      }
+
+      /* Decoder UI mockup — static, no-JS recreation of the decoder for visual clarity */
+
+      /* Decoder UI mockup — static, no-JS recreation of the decoder for visual clarity */
+      .decoder-mockup {
+        margin: 24px 0;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--bg);
+        padding: 16px;
+      }
+      .mockup-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 14px;
+      }
+      .mockup-toolbar-left, .mockup-toolbar-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .mockup-nav {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .mockup-pos {
+        font-size: 0.8rem;
+        color: var(--text);
+        min-width: 48px;
+        text-align: center;
+      }
+      .mockup-fmt {
+        height: 26px;
+        font-size: 0.75rem;
+        padding: 2px 4px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: var(--surface);
+        color: var(--text);
+      }
+      .mockup-viewer-box {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        text-align: center;
+        width: 100%;
+        margin-bottom: 14px;
+      }
+      .mockup-viewer-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 6px 16px;
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+        font-size: 0.85rem;
+      }
+      .mockup-viewer-head .vh-enc {
+        font-weight: 600;
+      }
+      .mockup-viewer-head .vh-file {
+        color: var(--text);
+      }
+      .mockup-viewer-head .vh-dims {
+        margin-left: auto;
+        color: var(--muted);
+      }
+      .mockup-viewer {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 260px;
+        background: var(--surface);
+        padding: 20px;
+      }
+      .mockup-stage-img {
+        max-width: 100%;
+        max-height: 320px;
+        border-radius: 4px;
+        box-shadow: var(--shadow);
+      }
+      .mockup-filmstrip {
+        display: flex;
+        justify-content: flex-start;
+        gap: 6px;
+        padding: 10px 12px;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        background: var(--bg);
+        border-top: 1px solid var(--border);
+      }
+      .mockup-filmstrip .filmstrip-thumb {
+        flex: 0 0 auto;
+        width: 80px;
+        height: 60px;
+        border-radius: 4px;
+        overflow: hidden;
+        cursor: default;
+        border: 2px solid transparent;
+        opacity: 0.6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg);
+      }
+      .mockup-filmstrip .filmstrip-thumb.active {
+        opacity: 1;
+        border-color: var(--accent);
+      }
+      .mockup-filmstrip .filmstrip-thumb img {
+        width: 80px;
+        height: 60px;
+        object-fit: cover;
+      }
+      .mockup-cards {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .mockup-card {
+        flex: 1 1 200px;
+        min-width: 200px;
+        box-shadow: none;
+        border: 1px solid var(--border);
+      }
+      .mockup-card .preview {
+        justify-content: center;
+      }
+      .mockup-card .preview img {
+        max-width: 100%;
+        border-radius: 8px;
+      }
+      .mockup-cards-grid {
+        margin-top: 0;
+      }
+      /* Disabled but keep original colors — the live .btn:disabled rules grey them out */
+      .decoder-mockup .btn:disabled {
+        opacity: 1;
+        cursor: default;
+      }
+      .decoder-mockup .btn-primary:disabled {
+        background: #3e7cc7;
+        color: #fff;
+      }
+        background: #7fa3c4;
+        color: #fff;
+      }
+        background: var(--accent);
+        color: #fff;
+      }
+      .decoder-mockup .btn-outline:disabled {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text);
+      }
+      .decoder-mockup .mockup-fmt {
+        opacity: 1;
+        cursor: default;
+      }
+      .decoder-mockup select {
+        pointer-events: none;
       }
     </style>
     <script type="application/ld+json">
@@ -275,7 +444,7 @@
       "@context": "https://schema.org",
       "@type": "Article",
       "headline": "How to Open ITHMB Files — Guide",
-      "description": "Free online tool to open and convert Apple iPod/iPhone .ithmb thumbnail files to JPEG. No uploads, 100% private, works in your browser.",
+      "description": "Free online tool to open and convert Apple iPod/iPhone .ithmb thumbnail files to JPEG. Private by default — nothing is uploaded unless you opt in to share.",
       "image": "https://ithmb-codec.dev/thumb-decoder-preview.png",
       "author": { "@type": "Organization", "name": "ITHMB Codec" }
     }
@@ -451,6 +620,40 @@
           </li>
         </ol>
 
+        <div class="decoder-mockup" aria-label="The decoder in action: a UYVY test image displayed in the viewer">
+          <div class="mockup-toolbar">
+            <div class="mockup-toolbar-left">
+              <button class="btn btn-outline btn-small" disabled>Grid view</button>
+              <span class="mockup-nav">
+                <button class="btn btn-outline btn-small" disabled>&#9664;</button>
+                <span class="mockup-pos">1 / 3</span>
+                <button class="btn btn-outline btn-small" disabled>&#9654;</button>
+              </span>
+            </div>
+            <div class="mockup-toolbar-right">
+              <button class="btn btn-primary btn-small" disabled>Download All</button>
+              <select class="mockup-fmt" aria-hidden="true" tabindex="-1">
+                <option selected>JPEG</option><option>PNG</option><option>BMP</option><option>WebP</option>
+              </select>
+            </div>
+          </div>
+          <div class="mockup-viewer-box">
+            <div class="mockup-viewer-head">
+              <span class="vh-enc">UYVY 4:2:2</span>
+              <span class="vh-file">uyvy.ithmb</span>
+              <span class="vh-dims">675.0 KB &#183; 720&#215;480 px</span>
+            </div>
+            <div class="mockup-viewer">
+              <img src="sample-uyvy.png" alt="Decoded UYVY synthetic test image, 720 by 480 pixels" class="mockup-stage-img">
+            </div>
+            <div class="mockup-filmstrip">
+              <span class="filmstrip-thumb active"><img src="sample-uyvy.png" alt="uyvy.ithmb thumbnail"></span>
+              <span class="filmstrip-thumb"><img src="sample-ycbcr420.png" alt="ycbcr420.ithmb thumbnail"></span>
+              <span class="filmstrip-thumb"><img src="sample-rgb555.png" alt="rgb555.ithmb thumbnail"></span>
+            </div>
+          </div>
+        </div>
+
         <p>
           That's it. No account, no upload button, no waiting. The decoder is
           the most straightforward
@@ -458,6 +661,68 @@
         </p>
 
         <h2>Why Use This Decoder?</h2>
+
+        <div class="decoder-mockup" aria-label="Batch of decoded test images in grid view, ready to download">
+          <div class="mockup-cards mockup-cards-grid">
+            <div class="file-card mockup-card">
+              <div class="meta"><span class="name">uyvy.ithmb</span><span class="size">675.0 KB</span></div>
+              <div class="status ok">Decoded &#8212; 720&#215;480</div>
+              <div class="preview">
+                <img src="sample-uyvy.png" alt="UYVY test image thumbnail">
+                <div class="info">
+                  <div>Format prefix: <span class="prefix-badge">1019</span></div>
+                  <div>Dimensions: 720&#215;480 px</div>
+                  <div>Encoding: UYVY 4:2:2</div>
+                  <div>File size: 675.0 KB</div>
+                  <div class="actions" style="display:flex;align-items:center;gap:4px;margin-top:6px">
+                    <button class="btn btn-primary btn-small" disabled>Save JPEG</button>
+                    <select class="fmt-select card-format-select" style="height:28px;font-size:0.75rem;padding:2px 4px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text)" disabled>
+                      <option value="image/jpeg">JPEG</option><option value="image/png">PNG</option><option value="image/bmp">BMP</option><option value="image/webp">WebP</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="file-card mockup-card">
+              <div class="meta"><span class="name">ycbcr420.ithmb</span><span class="size">506.3 KB</span></div>
+              <div class="status ok">Decoded &#8212; 720&#215;480</div>
+              <div class="preview">
+                <img src="sample-ycbcr420.png" alt="YCbCr 4:2:0 test image thumbnail">
+                <div class="info">
+                  <div>Format prefix: <span class="prefix-badge">1067</span></div>
+                  <div>Dimensions: 720&#215;480 px</div>
+                  <div>Encoding: YCbCr 4:2:0</div>
+                  <div>File size: 506.3 KB</div>
+                  <div class="actions" style="display:flex;align-items:center;gap:4px;margin-top:6px">
+                    <button class="btn btn-primary btn-small" disabled>Save JPEG</button>
+                    <select class="fmt-select card-format-select" style="height:28px;font-size:0.75rem;padding:2px 4px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text)" disabled>
+                      <option value="image/jpeg">JPEG</option><option value="image/png">PNG</option><option value="image/bmp">BMP</option><option value="image/webp">WebP</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="file-card mockup-card">
+              <div class="meta"><span class="name">rgb555.ithmb</span><span class="size">200.0 KB</span></div>
+              <div class="status ok">Decoded &#8212; 320&#215;320</div>
+              <div class="preview">
+                <img src="sample-rgb555.png" alt="RGB555 test image thumbnail">
+                <div class="info">
+                  <div>Format prefix: <span class="prefix-badge">3005</span></div>
+                  <div>Dimensions: 320&#215;320 px</div>
+                  <div>Encoding: RGB555</div>
+                  <div>File size: 200.0 KB</div>
+                  <div class="actions" style="display:flex;align-items:center;gap:4px;margin-top:6px">
+                    <button class="btn btn-primary btn-small" disabled>Save JPEG</button>
+                    <select class="fmt-select card-format-select" style="height:28px;font-size:0.75rem;padding:2px 4px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text)" disabled>
+                      <option value="image/jpeg">JPEG</option><option value="image/png">PNG</option><option value="image/bmp">BMP</option><option value="image/webp">WebP</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <ul>
           <li>
