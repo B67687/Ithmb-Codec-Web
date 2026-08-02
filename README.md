@@ -1,14 +1,16 @@
 <div align="center">
 
+<img src="docs/logo.svg" alt="ITHMB Codec Web" width="96" height="96">
+
 # ITHMB Codec Web
-
-Free, private, browser-based .ithmb file decoder.
-
-[**Try it live → ithmb-codec.dev**](https://ithmb-codec.dev/ithmb-decoder/)  |  [How to open .ithmb files (guide)](https://ithmb-codec.dev/guide/how-to-open-ithmb-files)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Built with WebAssembly](https://img.shields.io/badge/Built%20with-WebAssembly-654FF0?logo=webassembly&logoColor=white)](https://webassembly.org/)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/thumbnami)
+
+Free, private, browser-based .ithmb file decoder.
+
+[**Try it live → ithmb-codec.dev**](https://ithmb-codec.dev/ithmb-decoder/)  |  [How to open .ithmb files (guide)](https://ithmb-codec.dev/guide/how-to-open-ithmb-files)
 
 ![ITHMB Decoder screenshot](thumb-decoder-preview.png)
 

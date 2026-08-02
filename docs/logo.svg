@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- README hero logo: same square iT mark as favicon.svg, but with
+       transparent breathing room so it reads lighter at 96px, matching
+       the visual weight of the Rust codec repo's click-wheel icon. -->
+  <rect x="4" y="4" width="56" height="56" rx="10" fill="#007AFF"/>
+  <text x="32" y="41" text-anchor="middle" font-family="system-ui" font-weight="700" font-size="25" fill="#fff">iT</text>
+</svg>
