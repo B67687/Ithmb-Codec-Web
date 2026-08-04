@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.4.1 — 2026-08-04
+
+### Security
+- Block stored XSS in the telemetry dashboard: every record field HTML-escaped, CSP `default-src 'none'` + `frame-ancestors 'none'` + `nosniff`, non-hex header values rejected
+- Hardened the telemetry worker against abuse: race-free per-day record/rate caps (list-based counters — the old read-then-write counters were permanently bypassable under concurrency), per-IP counter keys hashed (raw IP no longer written to KV), bounded dashboard scan + full-file payloads moved to separate keys (renders never fetch multi-MB values), byte-accurate body cap + base64-validated full-file uploads, Bearer-only constant-time dashboard auth, `no-store` + `no-referrer` headers
+- Cap embedded-JPEG dimensions before decode (a 166-byte progressive JPEG declaring 65535×65535 triggered an ~8 GiB allocation and SIGABRT — CWE-400); browser wasm rebuilt with the fix
+- Client hardening: ZIP entry names sanitized + deduped, i18n interpolation params HTML-escaped
+
+### Fixed
+- Error cards no longer pushed into the shareable set (broke re-render after a language switch)
+- Share-box rollback re-queries live buttons — a mid-POST language switch no longer strands the UI at "Shared ✓"
+- View-toggle button label now follows the viewer state after a language switch
+
 ## 1.4.0 — 2026-08-04
 
 ### Added
