@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.4.2 — 2026-08-04
+
+### Added
+- Localized og:title / og:description (meta tags follow the active language)
+- `npm run ci` now gates on `lint:modules` + `lint:i18n` before the test run
+
+### Fixed
+- "Decoding…" placeholder now re-translates if you switch language mid-decode
+- Footer no longer flashes raw translation keys on pages where i18n loads late
+- Report modal backdrop listener bound once (was accumulating one per click)
+- Toast hide timer resets on each new toast (rapid messages no longer cut short)
+- Share POST timeout now scales with payload size (8s + 1s/MiB, capped 30s) — large full-file uploads over slow connections no longer always time out
+- Duplicate aria-labels and duplicate/dead lines removed
+
 ## 1.4.1 — 2026-08-04
 
 ### Security
