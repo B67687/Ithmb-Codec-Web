@@ -42,7 +42,6 @@ export function openViewer(index) {
   // The report form lives in the SHARED modal (fixed overlay, independent
   // of stage re-renders) — nothing to preserve here.
   stage.innerHTML = "";
-  stage.innerHTML = "";
   const stageContent = document.createElement("div");
   stageContent.className = "viewer-stage-content";
   if (srcCanvas) {

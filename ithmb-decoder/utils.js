@@ -4,13 +4,17 @@ export function formatSize(bytes) {
   return (bytes / 1048576).toFixed(1) + " MB";
 }
 
+// The toast hides after 3s; reset the timer on every new toast so a rapid
+// sequence doesn't cut the newest message short.
+let toastTimer = null;
 export function showToast(msg) {
   const t = document.getElementById("toast");
   t.setAttribute("role", "status");
   t.setAttribute("aria-live", "polite");
   t.textContent = msg;
   t.classList.add("show");
-  setTimeout(() => t.classList.remove("show"), 3000);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 3000);
 }
 
 export function escapeHtml(s) {

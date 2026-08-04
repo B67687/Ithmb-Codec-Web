@@ -17,7 +17,6 @@ export const S = {
   viewerIndex: -1,
   totalFiles: 0,
   downloadFormat: "image/jpeg",
-  downloadFormat: "image/jpeg",
   // Per-card format overrides: { cardId: "image/png", ... }
   cardFormats: {},
   lastTarget: null,

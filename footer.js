@@ -10,6 +10,10 @@
     return (typeof window.t === "function" && window.t) || ((k) => k);
   }
   function renderFooter() {
+    // Don't render until i18n is ready: showing the raw-key fallback would
+    // flash "footer.poweredBy" text. The setInterval below re-renders once
+    // window.t appears.
+    if (typeof window.t !== "function") return;
     // Use a FRESH t() each render — window.t may appear after this classic
     // script loads (module scripts are deferred), so never cache the fallback.
     const t = currentT();

@@ -47,9 +47,9 @@ export async function processFiles(files) {
     fileList.innerHTML = "";
     S.cardCount = 0;
     S.globalCardIdCounter = 0;
-S.totalFiles = 0;
+    S.totalFiles = 0;
     successfulDecodes.length = 0;
-    successfulDecodes.length = 0;
+    failedDecodes.length = 0;
     failedDecodes.length = 0;
     processedFileIds.clear();
     const filmstrip = document.getElementById("viewer-filmstrip");

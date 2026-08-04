@@ -139,6 +139,8 @@
   "footer.poweredBySuffix": "",
 "footer.buyCoffee": "Buy me a coffee",
   "home.description": "Free online ITHMB and IPM thumbnail decoder. Convert Apple iPod/iPhone .ithmb files to JPEG instantly in your browser. Private — files stay on your device unless you opt in to share.",
+  "home.ogTitle": "ITHMB Codec — free, private, browser-based .ithmb decoder",
+  "home.ogDescription": "Decode Apple Icons + Thumbnails binary format (.ithmb, .ipm) directly in your browser. Private by default, no automatic uploads.",
   "decoder.description": "Decode Apple iPod/iPhone .ithmb and .ipm thumbnail files directly in your browser. Free, private, open source. No uploads required.",
   "guide.description": "Free online tool to open and convert Apple iPod/iPhone .ithmb thumbnail files to JPEG. Private by default — nothing is uploaded unless you opt in to share.",
   "enterprise.description": "Enterprise licensing, custom integration, and dedicated support for the open-source ITHMB Codec Apple thumbnail decoder.",

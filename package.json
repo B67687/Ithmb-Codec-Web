@@ -14,7 +14,7 @@
     "test:upload": "playwright test tests/upload.spec.js",
     "test:quick": "playwright test tests/pages.spec.js tests/ithmb-decoder.spec.js tests/gallery.spec.js tests/upload.spec.js tests/quality.spec.js tests/a11y.spec.js tests/seo-metadata.spec.js --project=chromium",
     "test:full": "playwright test",
-    "ci": "playwright test",
+    "ci": "npm run lint:modules && npm run lint:i18n && playwright test",
     "lint:modules": "for f in ithmb-decoder/*.js; do npx --yes acorn --ecma2022 --module \"$f\" 2>/dev/null || { echo \"FAIL: $f\"; exit 1; }; done; echo \"All modules pass\"",
     "lint:i18n": "node scripts/check-i18n.mjs",
     "sync:i18n": "node scripts/sync-embedded.mjs"

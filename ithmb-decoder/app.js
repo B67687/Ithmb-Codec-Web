@@ -258,6 +258,12 @@ try {
 // Keeps i18n.js dependency-free — the event is the decoupling point.
 window.addEventListener("languagechange", () => {
   reRenderCards();
+  // In-progress cards (status still shows the loading spinner) are NOT in
+  // the completed lists reRenderCards rebuilds — re-translate their
+  // "Decoding…" placeholder so it follows the language mid-decode.
+  document.querySelectorAll(".file-card .status.loading").forEach((s) => {
+    s.innerHTML = '<span class="spinner"></span> ' + t("viewer.decoding");
+  });
   // viewToggleBtn intentionally has NO data-i18n: its label is viewer-state-
   // dependent (it names the view you'll switch TO — "Grid view" while the
   // viewer is open, "Gallery" while in grid mode), so a static data-i18n

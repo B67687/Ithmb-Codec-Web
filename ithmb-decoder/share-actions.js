@@ -166,6 +166,22 @@ const ISSUES = [
   ["byte_order", "share.issueByteOrder"],
   ["other", "share.issueOther"],
 ];
+// Close the shared report modal (idempotent).
+function closeReportModal() {
+  const overlay = document.getElementById("reportModal");
+  if (!overlay) return;
+  overlay.classList.remove("active");
+  overlay.setAttribute("aria-hidden", "true");
+}
+
+// Backdrop click closes the modal. Bound ONCE at module scope — the old
+// per-open addEventListener accumulated a listener on every report click.
+const reportModalOverlay = document.getElementById("reportModal");
+if (reportModalOverlay) {
+  reportModalOverlay.addEventListener("click", (e) => {
+    if (e.target === reportModalOverlay) closeReportModal();
+  });
+}
 
 // Open the shared report modal, populated for this card's file.
 function openReportModal(cardId, bytes, prefix, fileSize) {
@@ -235,15 +251,7 @@ function openReportModal(cardId, bytes, prefix, fileSize) {
   content.innerHTML = "";
   content.appendChild(form);
 
-  const close = () => {
-    overlay.classList.remove("active");
-    overlay.setAttribute("aria-hidden", "true");
-  };
-
-  // Backdrop click closes (click outside the dialog).
-  overlay.addEventListener("click", (e) => {
-    if (e.target === overlay) close();
-  });
+  const close = closeReportModal;
   cancelBtn.addEventListener("click", close);
   submitBtn.addEventListener("click", async () => {
     if (sharedSubmissionIds.has(fbKey)) return;

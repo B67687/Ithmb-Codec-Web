@@ -139,6 +139,8 @@
   "footer.poweredBySuffix": " 驱动",
   "footer.buyCoffee": "请我喝杯奶茶",
   "home.description": "免费在线 ITHMB / IPM 缩略图解码器。在浏览器中即时将 Apple iPod/iPhone 的 .ithmb 文件转换为 JPEG。保护隐私 — 除非你主动选择分享，文件始终留在你的设备上。",
+  "home.ogTitle": "ITHMB Codec — 免费、私密、浏览器端的 .ithmb 解码器",
+  "home.ogDescription": "在浏览器中直接解码 Apple 图标 + 缩略图二进制格式 (.ithmb, .ipm)。默认私密，不自动上传。",
   "decoder.description": "在浏览器中直接解码 Apple iPod/iPhone 的 .ithmb 和 .ipm 缩略图文件。免费、保护隐私、开源，无需上传。",
   "guide.description": "免费在线打开并转换 Apple iPod/iPhone 的 .ithmb 缩略图文件为 JPEG。默认保护隐私 — 除非你主动选择分享，否则不会上传任何内容。",
   "enterprise.description": "面向组织的企业授权、定制集成和专属支持 — 适用于开源的 ITHMB Codec Apple 缩略图解码器。",

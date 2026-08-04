@@ -167,6 +167,8 @@ const EMBEDDED_EN = {
   "footer.poweredBySuffix": "",
   "footer.buyCoffee": "Buy me a coffee",
   "home.description": "Free online ITHMB and IPM thumbnail decoder. Convert Apple iPod/iPhone .ithmb files to JPEG instantly in your browser. Private — files stay on your device unless you opt in to share.",
+  "home.ogTitle": "ITHMB Codec — free, private, browser-based .ithmb decoder",
+  "home.ogDescription": "Decode Apple Icons + Thumbnails binary format (.ithmb, .ipm) directly in your browser. Private by default, no automatic uploads.",
   "decoder.description": "Decode Apple iPod/iPhone .ithmb and .ipm thumbnail files directly in your browser. Free, private, open source. No uploads required.",
   "guide.description": "Free online tool to open and convert Apple iPod/iPhone .ithmb thumbnail files to JPEG. Private by default — nothing is uploaded unless you opt in to share.",
   "enterprise.description": "Enterprise licensing, custom integration, and dedicated support for the open-source ITHMB Codec Apple thumbnail decoder.",
@@ -288,11 +290,12 @@ async function preloadLocales() {
       // Keep embedded defaults for this lang; not fatal.
     }
   }
-  // Keep a fresh I18N.strings for the CURRENT language.
-  // Keep per-lang tables for instant future switches.
+  // Store the preloaded tables for instant future switches. Do NOT activate
+  // here: activation belongs to the setLang/loadLocale path, and a stale
+  // activation from preload could clobber fresher translations (e.g. if the
+  // current language's preload fetch failed while loadLocale succeeded).
   I18N._locales = loaded;
-  activateLanguage(Object.assign({}, EMBEDDED_EN, loaded[I18N.lang] || {}));
-  }
+}
 
 // Shared tail for every path that changes the active string table: swap in
 // the merged translations, mark loaded, re-apply to the DOM, and notify
