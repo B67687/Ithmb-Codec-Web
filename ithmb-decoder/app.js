@@ -11,6 +11,8 @@ import { processFiles } from "./ui.js";
 import { downloadAll } from "./download.js";
 import { formatLabels, showToast } from "./utils.js";
 import { setupHoldRepeat } from "./input.js";
+import { t } from "./i18n.js";
+import { reRenderCards } from "./card-success-ui.js";
 
 // DOM references
 const dropzone = document.getElementById("dropzone");
@@ -72,9 +74,7 @@ setupHoldRepeat("viewerArrowLeft", prevViewer);
 setupHoldRepeat("viewerArrowRight", nextViewer);
 
 document.getElementById("helpBtn").addEventListener("click", () => {
-  showToast(
-    "Shortcuts: ← → arrows navigate · Esc closes viewer · G toggles grid · Hold arrows for repeat",
-  );
+  showToast(t("app.shortcuts"));
 });
 document
   .getElementById("downloadAllBtn")
@@ -84,10 +84,10 @@ document.getElementById("viewToggleBtn").addEventListener("click", () => {
   const btn = document.getElementById("viewToggleBtn");
   if (container && container.style.display !== "none") {
     closeViewer();
-    if (btn) btn.textContent = "Gallery";
+    if (btn) btn.textContent = t("app.gallery");
   } else {
     openViewer(S.viewerIndex >= 0 ? S.viewerIndex : 0);
-    if (btn) btn.textContent = "Grid view";
+    if (btn) btn.textContent = t("app.gridView");
   }
 });
 
@@ -162,10 +162,10 @@ document.addEventListener("keydown", (e) => {
     const btn = document.getElementById("viewToggleBtn");
     if (container && container.style.display !== "none") {
       closeViewer();
-      if (btn) btn.textContent = "Gallery";
+      if (btn) btn.textContent = t("app.gallery");
     } else {
       openViewer(S.viewerIndex >= 0 ? S.viewerIndex : 0);
-      if (btn) btn.textContent = "Grid view";
+      if (btn) btn.textContent = t("app.gridView");
     }
   }
 });
@@ -242,11 +242,10 @@ document
     // stay independent (S.cardFormats).
     const btn = document.getElementById("downloadAllBtn");
     if (btn) {
-      btn.textContent = "Download All";
-      btn.title =
-        "Download decoded files as " +
-        (formatLabels[S.downloadFormat] || "JPEG") +
-        " ZIP archive";
+      btn.textContent = t("app.downloadAll");
+      btn.title = t("app.zipTitle", {
+        fmt: formatLabels[S.downloadFormat] || "JPEG",
+      });
     }
   });
 // Init
@@ -257,9 +256,26 @@ try {
     .querySelector(".container")
     .insertAdjacentHTML(
       "beforeend",
-      '<div style="text-align:center;padding:20px;color:#ff453a"><strong>Failed to load decoder.</strong> Make sure your browser supports WebAssembly.</div>',
+      '<div style="text-align:center;padding:20px;color:#ff453a"><strong>' +
+        t("app.loadFailedTitle") +
+        "</strong> " +
+        t("app.loadFailedMsg") +
+        "</div>",
     );
   // Also disable the dropzone so users know something is broken
   dropzone.style.pointerEvents = "none";
   dropzone.style.opacity = "0.5";
 }
+
+// Re-render result cards when the language changes (fired by i18n.js setLang).
+// Keeps i18n.js dependency-free — the event is the decoupling point.
+window.addEventListener("languagechange", () => {
+  reRenderCards();
+  // If the viewer is open, rebuild its stage + toolbar so the report link,
+  // share box, header, and download button re-translate immediately (not
+  // just on the next image navigation).
+  if (S.viewerIndex >= 0 && document.getElementById("viewer-container")?.style.display !== "none") {
+    openViewer(S.viewerIndex);
+    updateToolbar();
+  }
+});

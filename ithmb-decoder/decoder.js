@@ -4,6 +4,7 @@ import { updateToolbar } from "./viewer.js";
 import { decode_ithmb, peek_prefix } from "./ithmb_wasm.js";
 import { renderSuccessCard } from "./card-success-ui.js";
 import { renderFailureCard, renderErrorCard } from "./card-failure-ui.js";
+import { t } from "./i18n.js";
 
 const fileList = document.getElementById("file-list");
 
@@ -45,7 +46,7 @@ export async function decodeFile(file, cardId) {
     }
   } catch (err) {
     statusEl.className = "status err";
-    statusEl.textContent = "Error";
+    statusEl.textContent = t("card.error");
     previewEl.style.display = "block";
     previewEl.innerHTML = `<div class="err-msg">${escapeHtml(err.message || String(err))}</div>`;
     try {

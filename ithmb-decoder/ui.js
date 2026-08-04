@@ -7,6 +7,7 @@ import {
 import { bytesToHex, escapeHtml, formatSize, showToast } from "./utils.js";
 import { decodeFile } from "./decoder.js";
 import { openViewer, createFilmstripThumb, updateToolbar } from "./viewer.js";
+import { t } from "./i18n.js";
 
 const fileList = document.getElementById("file-list");
 
@@ -30,7 +31,7 @@ export function addFileCard(file) {
           <span class="name">${escapeHtml(file.name)}</span>
           <span class="size">${formatSize(file.size)}</span>
         </div>
-        <div class="status loading"><span class="spinner"></span> Decoding...</div>
+        <div class="status loading"><span class="spinner"></span> ${t("viewer.decoding")}</div>
         <div class="preview" style="display:none"></div>
       `;
   fileList.appendChild(card);
@@ -84,8 +85,8 @@ export async function processFiles(files) {
     );
   }).length;
   if (nonIthmb > 0)
-    showToast(nonIthmb + " file(s) skipped — only .ithmb and .ipm accepted");
-  if (tooLarge > 0) showToast(tooLarge + " file(s) skipped — max 8MB");
+    showToast(t("ui.skipped", { n: nonIthmb }));
+  if (tooLarge > 0) showToast(t("ui.tooLarge", { n: tooLarge }));
 
   S.totalFiles += valid.length;
   const cardCountBefore = [...fileList.querySelectorAll(".file-card")].length;

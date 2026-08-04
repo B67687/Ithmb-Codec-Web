@@ -1,6 +1,7 @@
 import { S, successfulDecodes, failedDecodes, KNOWN_PREFIXES } from "./state.js";
 import { escapeHtml } from "./utils.js";
 import { createShareBox, createReportLink } from "./share-actions.js";
+import { t } from "./i18n.js";
 
 const fileList = document.getElementById("file-list");
 
@@ -62,7 +63,7 @@ export function openViewer(index) {
     if (oldPlaceholder) oldPlaceholder.remove();
     const status = card.querySelector(".status");
     const statusText = status ? status.textContent : "";
-    if (statusText && !statusText.includes("Decoding...")) {
+    if (statusText && statusText !== t("viewer.decoding")) {
       // Failed — show placeholder. Embed the share box inside the same
       // visual card (when a failed-decode entry exists) so they read as
       // ONE integrated box rather than two stacked boxes. Error cards
@@ -71,7 +72,7 @@ export function openViewer(index) {
       placeholder.className = "viewer-placeholder";
       placeholder.innerHTML = `
         <div class="placeholder-icon">⚠</div>
-        <div class="placeholder-title">Decode Failed</div>
+        <div class="placeholder-title">${t("viewer.decodeFailed")}</div>
         <div class="placeholder-msg">${escapeHtml(statusText)}</div>
       `;
       if (failedEntry) {
@@ -86,10 +87,12 @@ export function openViewer(index) {
         );
       }
       stageContent.appendChild(placeholder);
-    } else if (!statusText || statusText.includes("Decoding...")) {
+    } else if (!statusText || statusText === t("viewer.decoding")) {
       // Still decoding — show spinner
       stageContent.innerHTML =
-        '<div class="viewer-placeholder"><div class="placeholder-spinner"></div><div class="placeholder-msg">Decoding...</div></div>';
+        '<div class="viewer-placeholder"><div class="placeholder-spinner"></div><div class="placeholder-msg">' +
+        t("viewer.decoding") +
+        "</div></div>";
     }
   }
   stage.appendChild(stageContent);
@@ -156,14 +159,11 @@ export function populateViewerHeader(card) {
 
   const info = card.querySelector(".preview .info");
   if (info) {
-    const divs = info.children;
-    const dimsText = divs[1]
-      ? divs[1].textContent.replace("Dimensions: ", "")
-      : "";
-    const encText = divs[2]
-      ? divs[2].textContent.replace("Encoding: ", "")
-      : "";
-    encEl.textContent = encText || "Unknown";
+    const dimsEl2 = info.querySelector('[data-info="dims"] .info-value');
+    const encEl2 = info.querySelector('[data-info="enc"] .info-value');
+    const dimsText = dimsEl2 ? dimsEl2.textContent : "";
+    const encText = encEl2 ? encEl2.textContent : "";
+    encEl.textContent = encText || t("viewer.unknown");
     if (sizeText && dimsText) {
       dimsEl.textContent = sizeText + " · " + dimsText;
     } else if (dimsText) {
@@ -172,11 +172,11 @@ export function populateViewerHeader(card) {
       dimsEl.textContent = sizeText || "";
     }
   } else {
-    encEl.textContent = "Unknown";
+    encEl.textContent = t("viewer.unknown");
     if (sizeText) {
-      dimsEl.textContent = sizeText + " · Unknown";
+      dimsEl.textContent = sizeText + " · " + t("viewer.unknown");
     } else {
-      dimsEl.textContent = "Unknown";
+      dimsEl.textContent = t("viewer.unknown");
     }
   }
 }
@@ -206,8 +206,8 @@ export function updateToolbar() {
   const dlBtn = document.getElementById("downloadAllBtn");
   if (successfulDecodes.length >= 2) {
     dlBtn.style.display = "";
-    dlBtn.textContent = "Download All";
-    dlBtn.title = "Download " + successfulDecodes.length + " files as a ZIP archive";
+    dlBtn.textContent = t("app.downloadAll");
+    dlBtn.title = t("viewer.zipTitle", { count: successfulDecodes.length });
   } else {
     dlBtn.style.display = "none";
   }

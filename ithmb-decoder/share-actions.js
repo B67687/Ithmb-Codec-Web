@@ -1,6 +1,7 @@
 import { sharedFileIds } from "./state.js";
 import { bytesToHex, bytesToBase64, showToast } from "./utils.js";
 import { submitTelemetry } from "./telemetry.js";
+import { t } from "./i18n.js";
 
 // Full-file shares are capped at the app's own decode limit (ui.js
 // MAX_FILE_SIZE: files > 8 MB are rejected before decoding, so any file you
@@ -8,7 +9,7 @@ import { submitTelemetry } from "./telemetry.js";
 // MAX_BODY_BYTES (13 MB) and FULL_FILE_B64_MAX (~10.7 MB base64).
 export const FULL_FILE_MAX_BYTES = 8 * 1024 * 1024;
 
-export const SHARED_TEXT = "Shared ✓";
+export const SHARED_TEXT = () => t("share.shared");
 
 // Build the failure share box ("Share 16 bytes" / "Share full file").
 // Used by the failure card AND the viewer stage so both surfaces share the
@@ -17,17 +18,17 @@ export const SHARED_TEXT = "Shared ✓";
 export function createShareBox({ cardId, bytes, prefix, isKnown, fileSize }) {
   const box = document.createElement("div");
   box.className = "share-box";
-  const heading = "Help improve the decoder";
+  const heading = t("share.helpImprove");
   const text = isKnown
-    ? "This format is known but the decoder couldn't process it. Sharing its first 16 bytes helps fix support."
-    : "This format isn't recognized yet. Sharing its first 16 bytes helps add support.";
+    ? t("share.knownText")
+    : t("share.unknownText");
   box.innerHTML = `
     <h4 class="share-heading">${heading}</h4>
     <p class="share-text">${text}</p>
     <div class="share-hexdump"><code>${bytesToHex(bytes.slice(0, 16))}</code></div>
     <div class="share-actions">
-      <button class="btn btn-small btn-outline" data-share="header">Share 16 bytes</button>
-      <button class="btn btn-small btn-outline" data-share="full">Share full file</button>
+      <button class="btn btn-small btn-outline" data-share="header">${t("share.share16")}</button>
+      <button class="btn btn-small btn-outline" data-share="full">${t("share.shareFull")}</button>
     </div>
   `;
 
@@ -42,11 +43,11 @@ export function createShareBox({ cardId, bytes, prefix, isKnown, fileSize }) {
   // Reflect a share already made from the other surface (card ↔ viewer).
   if (sharedFileIds.has(fullKey)) {
     headerBtn.disabled = true;
-    headerBtn.title = "Full file already shared — the 16 bytes are included";
-    fullBtn.textContent = SHARED_TEXT;
+    headerBtn.title = t("share.fullSharedTitle");
+    fullBtn.textContent = SHARED_TEXT();
     fullBtn.disabled = true;
   } else if (sharedFileIds.has(headerKey)) {
-    headerBtn.textContent = SHARED_TEXT;
+    headerBtn.textContent = SHARED_TEXT();
     headerBtn.disabled = true;
   }
 
@@ -68,15 +69,15 @@ export function createShareBox({ cardId, bytes, prefix, isKnown, fileSize }) {
     // make the click feel unresponsive.
     if (fullFile) {
       headerBtn.disabled = true;
-      headerBtn.title = "Full file already shared — the 16 bytes are included";
-      fullBtn.textContent = SHARED_TEXT;
+      headerBtn.title = t("share.fullSharedTitle");
+      fullBtn.textContent = SHARED_TEXT();
       fullBtn.disabled = true;
     } else {
-      headerBtn.textContent = SHARED_TEXT;
+      headerBtn.textContent = SHARED_TEXT();
       headerBtn.disabled = true;
     }
     showToast(
-      fullFile ? "Full file shared — thank you!" : "16 bytes shared — thank you!",
+      fullFile ? t("share.fullSharedToast") : t("share.headerSharedToast"),
     );
     submitTelemetry(data).then((ok) => {
       if (!ok) {
@@ -86,13 +87,13 @@ export function createShareBox({ cardId, bytes, prefix, isKnown, fileSize }) {
         if (fullFile) {
           headerBtn.disabled = false;
           headerBtn.title = "";
-          fullBtn.textContent = "Share full file";
+          fullBtn.textContent = t("share.shareFull");
           fullBtn.disabled = false;
         } else {
-          headerBtn.textContent = "Share 16 bytes";
+          headerBtn.textContent = t("share.share16");
           headerBtn.disabled = false;
         }
-        showToast("Share failed — the server rejected this file");
+        showToast(t("share.failedToast"));
       }
     });
   };
@@ -113,24 +114,24 @@ export function createReportLink({ cardId, bytes, prefix, fileSize }) {
   const link = document.createElement("a");
   link.href = "#";
   link.setAttribute("data-report", cardId);
-  link.textContent = "Image looks wrong? Share the first 16 bytes";
+  link.textContent = t("share.imageLooksWrong");
   wrap.appendChild(link);
 
   const fbKey = "fb-" + cardId;
 
   // Reflect a report already made from the other surface (card ↔ viewer).
   if (sharedFileIds.has(fbKey)) {
-    link.textContent = "Thanks — shared ✓";
+    link.textContent = t("share.thanksShared");
     link.style.pointerEvents = "none";
   }
 
   const ISSUES = [
-    ["color_space", "Color space"],
-    ["dimensions", "Dimensions"],
-    ["stride", "Stride / padding"],
-    ["offset", "Offset"],
-    ["byte_order", "Byte order"],
-    ["other", "Other"],
+    ["color_space", "share.issueColorSpace"],
+    ["dimensions", "share.issueDimensions"],
+    ["stride", "share.issueStride"],
+    ["offset", "share.issueOffset"],
+    ["byte_order", "share.issueByteOrder"],
+    ["other", "share.issueOther"],
   ];
 
   // The inline form (hidden until the link is clicked).
@@ -140,7 +141,8 @@ export function createReportLink({ cardId, bytes, prefix, fileSize }) {
   const grid = document.createElement("div");
   grid.className = "report-issues";
   const group = "report-issue-" + cardId;
-  for (const [value, label] of ISSUES) {
+  for (const [value, key] of ISSUES) {
+    const label = t(key);
     const labelEl = document.createElement("label");
     labelEl.className = "report-issue";
     const input = document.createElement("input");
@@ -155,17 +157,17 @@ export function createReportLink({ cardId, bytes, prefix, fileSize }) {
   detail.type = "text";
   detail.className = "report-detail";
   detail.maxLength = 200;
-  detail.placeholder = "What looks wrong? (optional)";
+  detail.placeholder = t("share.whatLooksWrong");
   const actions = document.createElement("div");
   actions.className = "report-form-actions";
   const submitBtn = document.createElement("button");
   submitBtn.type = "button";
   submitBtn.className = "btn btn-small btn-primary";
-  submitBtn.textContent = "Submit";
+  submitBtn.textContent = t("share.submit");
   const cancelBtn = document.createElement("button");
   cancelBtn.type = "button";
   cancelBtn.className = "btn btn-small btn-outline";
-  cancelBtn.textContent = "Cancel";
+  cancelBtn.textContent = t("share.cancel");
   actions.appendChild(submitBtn);
   actions.appendChild(cancelBtn);
   form.appendChild(grid);
@@ -185,7 +187,7 @@ export function createReportLink({ cardId, bytes, prefix, fileSize }) {
     if (sharedFileIds.has(fbKey)) return;
     const checked = grid.querySelector("input:checked");
     if (!checked) {
-      showToast("Please select what looks wrong");
+      showToast(t("share.selectIssue"));
       return;
     }
     const issueDetail = detail.value.trim();
@@ -195,9 +197,9 @@ export function createReportLink({ cardId, bytes, prefix, fileSize }) {
     // background. The worker round-trip (~600ms cold start) would otherwise
     // freeze the UI waiting for the response.
     form.hidden = true;
-    link.textContent = "Thanks — shared ✓";
+    link.textContent = t("share.thanksShared");
     link.style.pointerEvents = "none";
-    showToast("Report shared — thank you!");
+    showToast(t("share.reportSharedToast"));
     submitTelemetry({
       prefix,
       fileSize,
@@ -209,9 +211,9 @@ export function createReportLink({ cardId, bytes, prefix, fileSize }) {
       if (!ok) {
         // Server rejected — roll back so the user can retry, and tell the truth.
         sharedFileIds.delete(fbKey);
-        link.textContent = "Image looks wrong? Share the first 16 bytes";
+        link.textContent = t("share.imageLooksWrong");
         link.style.pointerEvents = "";
-        showToast("Share failed — the server rejected this file");
+        showToast(t("share.failedToast"));
       }
     });
   });

@@ -1,9 +1,10 @@
 import { S, successfulDecodes } from "./state.js";
 import { formatLabels, extMap, showToast } from "./utils.js";
+import { t } from "./i18n.js";
 
 export async function downloadAll() {
   if (typeof JSZip === "undefined") {
-    showToast("JSZip library not loaded. Please refresh and try again.");
+    showToast(t("download.jszipNotLoaded"));
     return;
   }
   const zip = new JSZip();

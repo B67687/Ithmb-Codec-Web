@@ -27,6 +27,8 @@
 # Allow directory contents
 !ithmb-decoder/
 !ithmb-decoder/*
+!ithmb-decoder/locales/
+!ithmb-decoder/locales/*
 !guide/
 !guide/*
 !enterprise/
@@ -39,6 +41,10 @@
 !workers/**
 !.github/
 !.github/**
+!scripts/
+!scripts/**
+!.husky/
+!.husky/*
 !.husky/
 !.husky/*
 

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ITHMB Decoder — free online converter</title>
+    <title data-i18n="decoder.title">ITHMB Decoder — free online converter</title>
     <meta
       http-equiv="Content-Security-Policy"
       content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://ithmb-telemetry.ithmb-codec.workers.dev"
@@ -36,6 +36,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    <script type="module" src="i18n.js"></script>
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -85,7 +86,7 @@
             d="M12 2a1 1 0 011 1v6.5l2.5-2.5a1 1 0 111.414 1.414L12 12.828 7.086 7.914A1 1 0 118.5 6.5L11 9V3a1 1 0 011-1zM3 12a1 1 0 011 1v5a2 2 0 002 2h12a2 2 0 002-2v-5a1 1 0 112 0v5a4 4 0 01-4 4H6a4 4 0 01-4-4v-5a1 1 0 011-1z"
           />
         </svg>
-        <p>Drop .ithmb or .ipm file anywhere</p>
+        <p data-i18n="decoder.dropAnywhere">Drop .ithmb or .ipm file anywhere</p>
       </div>
     </div>
 
@@ -93,16 +94,17 @@
       <header>
         <h1>ITHMB Decoder</h1>
         <p>
-          Free, private, browser-based <code>.ithmb</code> &amp;
-          <code>.ipm</code> file decoder —
-          <a href="https://github.com/B67687/Ithmb-Codec">open source</a>
+          <span data-i18n="decoder.subtitle1">Free, private, browser-based</span>
+          <code>.ithmb</code> &amp; <code>.ipm</code>
+          <span data-i18n="decoder.subtitle2"> file decoder —</span>
+          <a href="https://github.com/B67687/Ithmb-Codec" data-i18n="decoder.openSource">open source</a>
         </p>
       </header>
 
       <div id="dropzone">
         <div class="icon">&#x1F4C1;</div>
-        <div class="label">Drop .ithmb or .ipm files here</div>
-        <div class="hint">
+        <div class="label" data-i18n="decoder.dropzoneLabel">Drop .ithmb or .ipm files here</div>
+        <div class="hint" data-i18n="decoder.dropzoneHint">
           or click to browse — all processing happens in your browser
         </div>
       </div>
@@ -116,25 +118,21 @@
             class="btn btn-outline btn-small"
             id="helpBtn"
             title="Keyboard shortcuts"
+            data-i18n-title="decoder.keyboardShortcuts"
             style="display: none; margin-right: auto"
           >
             ?
           </button>
           <div style="display: flex; align-items: center; gap: 8px">
             <button
-
               class="btn btn-outline btn-small"
-
               id="viewToggleBtn"
-
               title="Toggle grid (Esc)"
-
+              data-i18n-title="decoder.toggleGrid"
               style="display: none"
-
+              data-i18n="app.gridView"
             >
-
               Grid view
-
             </button>
 
             <div class="viewer-nav" id="viewerNav" style="display: none">
@@ -146,6 +144,7 @@
                 id="prevBtn"
 
                 title="Previous (←)"
+                data-i18n-title="decoder.previous"
 
               >
 
@@ -180,6 +179,7 @@
                 id="nextBtn"
 
                 title="Next (→)"
+                data-i18n-title="decoder.next"
 
               >
 
@@ -193,6 +193,7 @@
             <button
               class="btn btn-primary btn-small"
               id="downloadAllBtn"
+              data-i18n="app.downloadAll"
               style="display: none"
             >
               Download All
@@ -232,6 +233,9 @@
             type="button"
             id="viewerArrowLeft"
             title="Previous (←)"
+            data-i18n-title="decoder.previous"
+            aria-label="Previous image"
+            data-i18n-aria-label="decoder.prevImage"
             aria-label="Previous image"
           >
             ◀
@@ -241,6 +245,9 @@
             type="button"
             id="viewerArrowRight"
             title="Next (→)"
+            data-i18n-title="decoder.next"
+            aria-label="Next image"
+            data-i18n-aria-label="decoder.nextImage"
             aria-label="Next image"
           >
             ▶
@@ -252,10 +259,10 @@
       <div id="file-list" class="file-list"></div>
 
       <div id="backToTop" style="display: none">
-        <a href="#" id="backToTopLink" title="Back to top">↑</a>
+        <a href="#" id="backToTopLink" title="Back to top" data-i18n-title="decoder.backToTop">↑</a>
       </div>
       <div id="backToPosition" style="display: none">
-        <a href="#" id="backToPositionLink" title="Back to last position">↓</a>
+        <a href="#" id="backToPositionLink" title="Back to last position" data-i18n-title="decoder.backToPosition">↓</a>
       </div>
 
       <script src="/footer.js?v=2"></script>
