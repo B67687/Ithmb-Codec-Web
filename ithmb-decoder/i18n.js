@@ -98,7 +98,7 @@ const EMBEDDED_EN = {
 
   // ── Decoder page (static text) ─────────────────────────────────────────
   "decoder.title": "ITHMB Decoder — free online converter",
-  "decoder.subtitle1": "Free, private, browser-based",
+  "decoder.subtitle1": "Free · Local · No tracking",
   "decoder.subtitle2": " file decoder —",
   "decoder.openSource": "open source",
   "decoder.dropAnywhere": "Drop .ithmb or .ipm file anywhere",
@@ -141,7 +141,7 @@ const EMBEDDED_EN = {
   // ── 404 page ───────────────────────────────────────────────────────────
   "notfound.title": "404 — Page Not Found | ITHMB Codec",
   "notfound.msg":
-    "Page not found. The file you're looking for doesn't exist or has moved.",
+    "This page flew away. The file you're looking for doesn't exist or has moved.",
   "notfound.back": "Back to Home",
 
   // ── Guide page ───────────────────────────────────────────────────────────
@@ -218,6 +218,7 @@ const EMBEDDED_EN = {
   "guide.mockup.size506": "File size: 506.3 KB",
   "guide.mockup.size200": "File size: 200.0 KB",
   "footer.poweredBy": "Powered by",
+  "footer.poweredBySuffix": "",
   "footer.buyCoffee": "Buy me a coffee",
 };
 

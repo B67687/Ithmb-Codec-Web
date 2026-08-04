@@ -23,6 +23,7 @@
       "</a>" +
       t("footer.poweredBy") +
       ' <a href="https://github.com/B67687/Ithmb-Codec">Ithmb-Codec</a>' +
+      t("footer.poweredBySuffix") +
       " \u00B7 " +
       '<a href="https://buymeacoffee.com/ThumbNami" target="_blank" rel="noopener">' +
       '<img src="/bmc-icon.svg" alt="" width="14" height="20" style="vertical-align:middle;display:inline-block">' +

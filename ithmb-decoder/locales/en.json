@@ -52,7 +52,7 @@
   "ui.skipped": "{n} file(s) skipped — only .ithmb and .ipm accepted",
   "ui.tooLarge": "{n} file(s) skipped — max 8MB",
   "decoder.title": "ITHMB Decoder — free online converter",
-  "decoder.subtitle1": "Free, private, browser-based",
+  "decoder.subtitle1": "Free · Local · No tracking",
   "decoder.subtitle2": " file decoder —",
   "decoder.openSource": "open source",
   "decoder.dropAnywhere": "Drop .ithmb or .ipm file anywhere",
@@ -66,7 +66,7 @@
   "decoder.nextImage": "Next image",
   "decoder.backToTop": "Back to top",
   "decoder.backToPosition": "Back to last position",
-  "home.subtitle": "Decode Apple thumbnail files (.ithmb, .ipm) — free, private, browser-based",
+  "home.subtitle": "Decode Apple thumbnail files (.ithmb, .ipm) — free · local · no tracking",
   "home.free": "Free",
   "home.popular": "Popular",
   "home.decoderCardTitle": "ITHMB Decoder",
@@ -83,7 +83,7 @@
   "enterprise.github": "GitHub",
   "enterprise.back": "← Back to ITHMB Codec",
   "notfound.title": "404 — Page Not Found | ITHMB Codec",
-  "notfound.msg": "Page not found. The file you're looking for doesn't exist or has moved.",
+  "notfound.msg": "This page flew away. The file you're looking for doesn't exist or has moved.",
   "notfound.back": "Back to Home",
   "guide.title": "How to Open ITHMB Files — Guide",
   "guide.subtitle": "Guides & documentation for the Apple thumbnail decoder",
@@ -107,7 +107,7 @@
   "guide.why.cta": "If you're looking to <strong>convert ithmb to jpg</strong> in bulk or just need to <strong>extract iPod photos</strong> from an old backup, this is the simplest tool for the job.",
   "guide.about.h2": "About the ITHMB Codec Project",
   "guide.about.p1": "Ithmb-Codec is an open-source reverse-engineering effort to document and decode Apple's proprietary thumbnail container formats. The project maintains the reference decoder library (written in Rust, compiled to WebAssembly), the browser-based decoder linked above, and format documentation for researchers and digital archivists.",
-  "guide.about.p2": "Bug reports and format samples are always welcome — open an issue on <a href=\"https://github.com/B67687/Ithmb-Codec\">GitHub</a> and we'll investigate. The project is open for everyone.",
+  "guide.about.p2": "Bug reports and format samples are always welcome — open an issue on <a href=\"https://github.com/B67687/Ithmb-Codec\">GitHub</a> and we'll investigate. If you find this useful, give us a ⭐ on GitHub.",
   "guide.faq.h2": "Frequently Asked Questions",
   "guide.faq.q1": "Can I convert multiple .ithmb files at once?",
   "guide.faq.a1": "Yes. Drag multiple files into the decoder and it processes them all. After decoding, click the download button to save every extracted image as a ZIP archive.",
@@ -136,5 +136,6 @@
   "guide.mockup.size506": "File size: 506.3 KB",
   "guide.mockup.size200": "File size: 200.0 KB",
   "footer.poweredBy": "Powered by",
-  "footer.buyCoffee": "Buy me a coffee"
+  "footer.poweredBySuffix": "",
+"footer.buyCoffee": "Buy me a coffee"
 }
