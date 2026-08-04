@@ -16,7 +16,7 @@ export function closeViewer() {
   if (viewerNav) viewerNav.style.display = "none";
 }
 
-export function openViewer(index) {
+export function openViewer(index, preserveForm = false) {
   const cards = fileList.querySelectorAll(".file-card");
   if (index < 0 || index >= cards.length) return;
   S.viewerIndex = index;
@@ -39,6 +39,11 @@ export function openViewer(index) {
   // Simple canvas rendering — no scroll container. Wrap content in a
   // column so the contextual share/report UI (when present) sits BELOW
   // the image instead of beside it.
+  // Only preserve an open report form across a LANGUAGE-switch rebuild
+  // (preserveForm=true). Navigation to another image closes it — a form
+  // belongs to the image it was opened on.
+  const stageWasOpen =
+    preserveForm && !stage.querySelector(".report-form")?.hidden;
   stage.innerHTML = "";
   const stageContent = document.createElement("div");
   stageContent.className = "viewer-stage-content";
@@ -67,9 +72,9 @@ export function openViewer(index) {
       // ONE integrated box rather than two stacked boxes. Error cards
       // (no failedEntry) show a bare placeholder with no share box.
       const placeholder = document.createElement("div");
-      placeholder.className = "viewer-placeholder";
+      placeholder.className = "viewer-placeholder failed";
       placeholder.innerHTML = `
-        <div class="placeholder-icon"><svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor" aria-hidden="true"><path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-7h-2v5h2V9z"/></svg></div>
+        <div class="placeholder-icon"><svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor" aria-hidden="true"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" fill-rule="evenodd"/></svg></div>
         <div class="placeholder-title">${t("viewer.decodeFailed")}</div>
         <div class="placeholder-msg">${escapeHtml(statusText)}</div>
       `;
@@ -103,14 +108,17 @@ export function openViewer(index) {
       (s) => s.cardId === viewerCardId,
     );
     if (successEntry) {
-      stageContent.appendChild(
-        createReportLink({
-          cardId: viewerCardId,
-          bytes: successEntry.bytes,
-          prefix: successEntry.prefix,
-          fileSize: successEntry.fileSize,
-        }),
-      );
+      const report = createReportLink({
+        cardId: viewerCardId,
+        bytes: successEntry.bytes,
+        prefix: successEntry.prefix,
+        fileSize: successEntry.fileSize,
+      });
+      if (stageWasOpen) {
+        const form = report.querySelector(".report-form");
+        if (form) form.hidden = false;
+      }
+      stageContent.appendChild(report);
     }
   }
 
@@ -280,7 +288,7 @@ export function addFilmstripThumb(cardId, canvas) {
     thumb.appendChild(thumbCanvas);
   } else {
     thumb.innerHTML =
-      '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;opacity:0.4"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-7h-2v5h2V9z"/></svg></div>';
+      '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;opacity:0.4"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" fill-rule="evenodd"/></svg></div>';
   }
 
   // Ensure active thumb highlight if this thumb matches current viewer card

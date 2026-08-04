@@ -109,6 +109,31 @@ if (!embMatch) {
 }
 console.log("[4] EMBEDDED_EN parity check complete");
 
+// ---- 5. data-i18n-content keys exist in both locales ----
+// Every meta[name=description] wired with data-i18n-content must resolve to
+// a real key in en.json AND zh.json (a missing key silently falls back to
+// the raw key in the content attribute — broken SEO copy).
+const HTML_DIRS = [ROOT, join(ROOT, "ithmb-decoder"), join(ROOT, "guide"), join(ROOT, "enterprise")];
+const htmlFiles = [];
+for (const d of HTML_DIRS) {
+  try {
+    for (const f of readdirSync(d)) if (f.endsWith(".html")) htmlFiles.push(join(d, f));
+  } catch (e) {
+    // dir may not exist; skip
+  }
+}
+for (const f of htmlFiles) {
+  const html = readFileSync(f, "utf8");
+  const re = /data-i18n-content="([^"]+)"/g;
+  let m;
+  while ((m = re.exec(html))) {
+    const key = m[1];
+    if (!(key in en)) fail(`data-i18n-content "${key}" in ${f} missing from en.json`);
+    if (!(key in zh)) fail(`data-i18n-content "${key}" in ${f} missing from zh.json`);
+  }
+}
+console.log("[5] data-i18n-content key check complete");
+
 if (failures) {
   console.error(`\n${failures} i18n integrity failure(s).`);
   process.exit(1);

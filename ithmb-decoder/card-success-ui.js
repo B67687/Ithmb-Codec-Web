@@ -106,12 +106,20 @@ export function renderCardInfo(cardId) {
   `;
 
   // Remove any previous info panel + report link, then re-append fresh.
+  // If the report form was OPEN, keep it open across the rebuild — a
+  // language switch must not close a form the user is filling out.
   const oldInfo = previewEl.querySelector(".info");
-  if (oldInfo) oldInfo.remove();
   const oldReport = previewEl.querySelector(".success-report");
+  const wasFormOpen = oldReport && !oldReport.querySelector(".report-form")?.hidden;
+  if (oldInfo) oldInfo.remove();
   if (oldReport) oldReport.remove();
   previewEl.appendChild(infoDiv);
-  infoDiv.appendChild(createReportLink({ cardId, bytes, prefix, fileSize }));
+  const report = createReportLink({ cardId, bytes, prefix, fileSize });
+  if (wasFormOpen) {
+    const form = report.querySelector(".report-form");
+    if (form) form.hidden = false;
+  }
+  infoDiv.appendChild(report);
 
   // Format selector (per-card override preserved via S.cardFormats[cardId]).
   const fmtSelect = infoDiv.querySelector(".fmt-select");

@@ -222,7 +222,7 @@ body.drag-active::after {
   color: var(--warn);
 }
 .file-card .status.err {
-  color: #ff453a;
+  color: var(--warn);
 }
 .file-card .status.loading {
   color: var(--accent);
@@ -374,12 +374,16 @@ body.drag-active::after {
 }
 
 .filmstrip-thumb.failed {
-  border: 1px solid var(--border);
+  border: 1px solid var(--warn);
   border-radius: 4px;
+  background: rgba(255, 159, 10, 0.08);
 }
 .filmstrip-thumb.failed.active {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--warn);
   outline-offset: 1px;
+}
+.filmstrip-thumb.failed svg {
+  color: var(--warn);
 }
 .filmstrip-thumb canvas {
   max-width: 100%;
@@ -437,21 +441,35 @@ body.drag-active::after {
 }
 
 .viewer-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 32px 24px;
-  color: var(--muted);
-  text-align: center;
-  width: min(440px, 92%);
-  height: auto;
-  min-height: 300px;
-  border: 1px dashed var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-  margin: 0 auto;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+gap: 8px;
+padding: 32px 24px;
+color: var(--muted);
+text-align: center;
+width: min(440px, 92%);
+height: auto;
+min-height: 300px;
+border: 1px dashed var(--border);
+border-radius: var(--radius);
+background: var(--surface);
+margin: 0 auto;
+}
+/* Decode-failed placeholder: same format as the file card's share box —
+   orange border on a light orange/cream background, normal dark text
+   (the orange is the background, NOT the text/icon color). */
+.viewer-placeholder.failed {
+  border: 1px solid var(--warn);
+  background: #fffbf0;
+  color: var(--text);
+}
+.viewer-placeholder.failed .placeholder-title {
+  color: var(--text);
+}
+.viewer-placeholder.failed .placeholder-icon {
+  color: var(--warn);
 }
 .viewer-placeholder .placeholder-icon {
   font-size: 2rem;

@@ -26,9 +26,7 @@ test.describe("WASM Decoder Page", () => {
     });
 
     test("has correct title", async ({ page }) => {
-      await expect(page).toHaveTitle(
-        "ITHMB Decoder — free online converter",
-      );
+      await expect(page).toHaveTitle("ITHMB Decoder | ITHMB Codec");
     });
 
     test("body background is --bg CSS variable", async ({ page }) => {

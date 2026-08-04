@@ -65,12 +65,12 @@ const EMBEDDED_EN = {
   "share.imageLooksWrong": "Image looks wrong? Share the first 16 bytes",
   "share.thanksShared": "Thanks — shared ✓",
   "share.shared": "Shared ✓",
-  "share.issueColorSpace": "Color space",
-  "share.issueDimensions": "Dimensions",
-  "share.issueStride": "Stride / padding",
-  "share.issueOffset": "Offset",
-  "share.issueByteOrder": "Byte order",
-  "share.issueOther": "Other",
+  "share.issueColorSpace": "Colors look wrong (too blue / red / green)",
+  "share.issueDimensions": "Stretched or wrong shape",
+  "share.issueStride": "Horizontal lines or bands",
+  "share.issueOffset": "Shifted / cut off at the edges",
+  "share.issueByteOrder": "Noisy / scrambled / pixelated",
+  "share.issueOther": "Something else",
   "share.whatLooksWrong": "What looks wrong? (optional)",
   "share.submit": "Submit",
   "share.cancel": "Cancel",
@@ -79,7 +79,7 @@ const EMBEDDED_EN = {
   "download.jszipNotLoaded": "JSZip library not loaded. Please refresh and try again.",
   "ui.skipped": "{n} file(s) skipped — only .ithmb and .ipm accepted",
   "ui.tooLarge": "{n} file(s) skipped — max 8MB",
-  "decoder.title": "ITHMB Decoder — free online converter",
+  "decoder.title": "ITHMB Decoder | ITHMB Codec",
   "decoder.subtitle1": "Free · Local · No tracking",
   "decoder.subtitle2": " file decoder —",
   "decoder.openSource": "open source",
@@ -105,15 +105,15 @@ const EMBEDDED_EN = {
   "home.enterprise": "Enterprise",
   "home.enterpriseCardTitle": "Enterprise Licensing",
   "home.enterpriseDesc": "Custom integration and licensing for organizations.",
-  "enterprise.title": "ITHMB Codec Enterprise — API, SLA & Bulk Conversion",
+  "enterprise.title": "Enterprise | ITHMB Codec",
   "enterprise.h1": "ITHMB Codec Enterprise",
   "enterprise.text1": "Enterprise licensing, custom integration, and dedicated support are under consideration. If your organization needs these, reach out via",
   "enterprise.github": "GitHub",
   "enterprise.back": "← Back to ITHMB Codec",
-  "notfound.title": "404 — Page Not Found | ITHMB Codec",
+  "notfound.title": "Page Not Found | ITHMB Codec",
   "notfound.msg": "This page flew away. The file you're looking for doesn't exist or has moved.",
   "notfound.back": "Back to Home",
-  "guide.title": "How to Open ITHMB Files — Guide",
+  "guide.title": "How to Open ITHMB Files | ITHMB Codec",
   "guide.subtitle": "Guides & documentation for the Apple thumbnail decoder",
   "guide.h1": "How to Open .ITHMB Files",
   "guide.lead": "ITHMB (short for iThumbnail — Apple's thumbnail image format) is a binary container format used by Apple's iOS and macOS to store thumbnail caches. You'll find these files scattered inside PhotoData folders on old iPods, iPhones, and Macs when recovering data, migrating devices, or digging through backups. They don't open with a regular image viewer. This guide shows you how to decode them.",
@@ -165,7 +165,12 @@ const EMBEDDED_EN = {
   "guide.mockup.size200": "File size: 200.0 KB",
   "footer.poweredBy": "Powered by",
   "footer.poweredBySuffix": "",
-  "footer.buyCoffee": "Buy me a coffee"
+  "footer.buyCoffee": "Buy me a coffee",
+  "home.description": "Free online ITHMB and IPM thumbnail decoder. Convert Apple iPod/iPhone .ithmb files to JPEG instantly in your browser. Private — files stay on your device unless you opt in to share.",
+  "decoder.description": "Decode Apple iPod/iPhone .ithmb and .ipm thumbnail files directly in your browser. Free, private, open source. No uploads required.",
+  "guide.description": "Free online tool to open and convert Apple iPod/iPhone .ithmb thumbnail files to JPEG. Private by default — nothing is uploaded unless you opt in to share.",
+  "enterprise.description": "Enterprise licensing, custom integration, and dedicated support for the open-source ITHMB Codec Apple thumbnail decoder.",
+  "notfound.description": "Page not found on ITHMB Codec — the Apple thumbnail decoder."
 };
 
 const SUPPORTED = { en: true, zh: true };
@@ -227,6 +232,9 @@ function applyToElement(el) {
   if (el.dataset.i18nAriaLabel !== undefined)
     el.setAttribute("aria-label", t(el.dataset.i18nAriaLabel));
   if (el.dataset.i18nTitle !== undefined) el.setAttribute("title", t(el.dataset.i18nTitle));
+  // meta[name=description] and similar content-attribute tags.
+  if (el.dataset.i18nContent !== undefined)
+    el.setAttribute("content", t(el.dataset.i18nContent));
 }
 
 // Highlight the active option in the nav EN/中 toggle.
@@ -245,7 +253,7 @@ function updateLangToggle() {
 function applyTranslations() {
   document.documentElement.lang = I18N.lang;
   const sel =
-    "[data-i18n], [data-i18n-html], [data-i18n-placeholder], [data-i18n-aria-label], [data-i18n-title]";
+    "[data-i18n], [data-i18n-html], [data-i18n-placeholder], [data-i18n-aria-label], [data-i18n-title], [data-i18n-content]";
   document.querySelectorAll(sel).forEach(applyToElement);
   updateLangToggle();
 }
@@ -292,20 +300,33 @@ window.dispatchEvent(new CustomEvent("languagechange"));
 export function setLang(lang) {
   if (!SUPPORTED[lang]) return;
   I18N.lang = lang;
+  // Only persist when the stored value actually changes. This is the ONLY
+  // place localStorage is written — the cross-tab sync path (storage event)
+  // never writes, so a write can never be triggered by a write (no loop).
   try {
-    localStorage.setItem(STORAGE_KEY, lang);
+    if (localStorage.getItem(STORAGE_KEY) !== lang) {
+      localStorage.setItem(STORAGE_KEY, lang);
+    }
   } catch (e) {
     // Ignore persistence failures.
   }
-  // Instant swap: use the preloaded per-lang table if available, else the
-  // embedded English defaults. No fetch in this path — that's the whole
-  // point of preloadLocales().
+  activateOrFetch(lang);
+}
+
+// Apply a language WITHOUT persisting. Used by the cross-tab storage sync:
+// another tab already wrote the value; we just mirror it. Never calls
+// setItem, so it cannot echo back and loop.
+function applySyncedLang(lang) {
+  if (!SUPPORTED[lang]) return;
+  I18N.lang = lang;
+  activateOrFetch(lang);
+}
+
+// Shared: swap in the language table (preloaded) or fetch it (fallback).
+function activateOrFetch(lang) {
   if (I18N._locales && I18N._locales[lang]) {
     activateLanguage(Object.assign({}, EMBEDDED_EN, I18N._locales[lang]));
   } else {
-    // Fallback: preload hadn't finished for this lang — fire the fetch
-    // (loadLocale will apply + notify when it lands), but show the embedded
-    // defaults immediately so the UI never freezes.
     loadLocale(lang);
     activateLanguage(Object.assign({}, EMBEDDED_EN));
   }
@@ -331,13 +352,27 @@ async function loadLocale(lang) {
 }
 
 // Initialise: detect language and apply. The detected language renders
-
-// Initialise: detect language and apply. The detected language renders
 // immediately from embedded defaults (synchronous, nothing flashes blank);
 // preloadLocales() then fetches every locale in the background so any later
 // setLang() is an instant in-memory swap with no fetch.
 setLang(detectLang());
 preloadLocales();
+
+// Cross-tab sync: when ANOTHER tab of this site changes the language, the
+// storage event fires here — switch this tab to match, so the whole site
+// (all open tabs) shows one language instantly, not just the tab you
+// clicked in. Debounced: rapid storage events (many tabs, or tabs loading
+// while another flips) collapse into one render instead of a seizure of
+// back-to-back re-renders.
+let storageTimer = null;
+window.addEventListener("storage", (e) => {
+  if (e.key !== STORAGE_KEY || !e.newValue || !SUPPORTED[e.newValue]) return;
+  clearTimeout(storageTimer);
+  storageTimer = setTimeout(() => {
+    if (I18N.lang !== e.newValue) applySyncedLang(e.newValue);
+  }, 30);
+});
+
 
 // Expose globals for classic scripts (nav.js, footer.js, etc.).
 window.I18N = I18N;
