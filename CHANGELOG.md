@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.4.0 — 2026-08-04
+
+### Added
+- Full i18n: Simplified Chinese + English across the decoder, home, guide, 404, and enterprise pages — EN/中 nav toggle, auto-detect (browser language / ?lang= / saved choice), instant in-memory language switch, and cross-tab sync (all open tabs follow the toggle)
+- Culture-fit localization: native Chinese dev-site voice (请我喝杯奶茶 sponsor, 由 Ithmb-Codec 驱动 footer, 免费 · 本地 · 无追踪 tagline, 页面飞走了 🕊️ 404, 给个 ⭐ star invite, 分享 not 共享) — five independent QA passes
+- Restored report/contribute modal: shared centered dialog (dimmed + blurred backdrop) with the decoded-image thumbnail, plain-language issue picker, and honest submit — from any card or the viewer stage
+- SEO: localized meta descriptions, hreflang en/zh alternates, Content-Security-Policy on the 404 page, SEO metadata regression suite
+- Brand-last page titles ("Page | ITHMB Codec")
+
+### Changed
+- Share/report UI is optimistic (instant feedback, background POST, honest rollback on failure)
+- Decode-failed styling standardized to orange across file cards, viewer placeholder, and filmstrip
+- Modal/buttons/radii unified to consistent tiers; removed dead code
+- 30-squashed-commit architecture cleanup: single mechanisms for toggle, swipe, viewer refresh, i18n activation; EMBEDDED_EN single-source with drift gate
+
+### Fixed
+- Share buttons lied when a request hung — added an 8s timeout so a failed send rolls back and toasts honestly
+- Language-switch "seizure" (rapid en↔zh flicker across tabs) — write-amplification loop fixed at the root
+- Report form closing on language switch; form now survives re-renders
+- Warning-triangle glyph rendering differently per language (now identical SVG)
+- Locale tables were never tracked in git (deployed site had no translations); footer suffix key leaking raw into EN
+
 ## 1.3.0 — 2026-08-02
 
 ### Added
