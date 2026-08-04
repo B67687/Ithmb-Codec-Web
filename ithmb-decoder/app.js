@@ -79,7 +79,9 @@ document.getElementById("helpBtn").addEventListener("click", () => {
 document
   .getElementById("downloadAllBtn")
   .addEventListener("click", downloadAll);
-document.getElementById("viewToggleBtn").addEventListener("click", () => {
+// Toggle the viewer between grid view and the single-image viewer.
+// Shared by the viewToggleBtn click AND the g/G keyboard shortcut.
+function toggleView() {
   const container = document.getElementById("viewer-container");
   const btn = document.getElementById("viewToggleBtn");
   if (container && container.style.display !== "none") {
@@ -89,21 +91,25 @@ document.getElementById("viewToggleBtn").addEventListener("click", () => {
     openViewer(S.viewerIndex >= 0 ? S.viewerIndex : 0);
     if (btn) btn.textContent = t("app.gridView");
   }
-});
+}
+document.getElementById("viewToggleBtn").addEventListener("click", toggleView);
 
 // Swipe navigation on mobile — works with the scroll container in viewer.js
 // Simple swipe navigation on mobile
 let touchStartX = 0;
 let touchStartY = 0;
+// Shared guard: only swipe when cards exist, the viewer is open, and the
+// touch began inside the viewer stage.
+function isViewerSwipeActive(e) {
+  if (document.querySelectorAll(".file-card").length === 0 || S.viewerIndex < 0)
+    return false;
+  if (!e.target.closest("#viewer-stage")) return false;
+  return true;
+}
 document.addEventListener(
   "touchstart",
   (e) => {
-    if (
-      document.querySelectorAll(".file-card").length === 0 ||
-      S.viewerIndex < 0
-    )
-      return;
-    if (!e.target.closest("#viewer-stage")) return;
+    if (!isViewerSwipeActive(e)) return;
     touchStartX = e.changedTouches[0].screenX;
     touchStartY = e.changedTouches[0].screenY;
   },
@@ -112,12 +118,7 @@ document.addEventListener(
 document.addEventListener(
   "touchmove",
   (e) => {
-    if (
-      document.querySelectorAll(".file-card").length === 0 ||
-      S.viewerIndex < 0
-    )
-      return;
-    if (!e.target.closest("#viewer-stage")) return;
+    if (!isViewerSwipeActive(e)) return;
     const deltaX = Math.abs(e.changedTouches[0].screenX - touchStartX);
     const deltaY = Math.abs(e.changedTouches[0].screenY - touchStartY);
     if (deltaX > deltaY && deltaX > 10) e.preventDefault();
@@ -127,12 +128,7 @@ document.addEventListener(
 document.addEventListener(
   "touchend",
   (e) => {
-    if (
-      document.querySelectorAll(".file-card").length === 0 ||
-      S.viewerIndex < 0
-    )
-      return;
-    if (!e.target.closest("#viewer-stage")) return;
+    if (!isViewerSwipeActive(e)) return;
     const deltaX = e.changedTouches[0].screenX - touchStartX;
     if (Math.abs(deltaX) > 50) {
       if (deltaX < 0) nextViewer();
@@ -146,7 +142,6 @@ document.addEventListener("keydown", (e) => {
   if (document.querySelectorAll(".file-card").length === 0 || S.viewerIndex < 0)
     return;
   const cards = document.querySelectorAll(".file-card");
-  if (cards.length === 0 || S.viewerIndex < 0) return;
   if (e.key === "ArrowRight" || e.key === "ArrowDown") {
     e.preventDefault();
     nextViewer();
@@ -158,15 +153,7 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") closeViewer();
   if (e.key === "g" || e.key === "G") {
     e.preventDefault();
-    const container = document.getElementById("viewer-container");
-    const btn = document.getElementById("viewToggleBtn");
-    if (container && container.style.display !== "none") {
-      closeViewer();
-      if (btn) btn.textContent = t("app.gallery");
-    } else {
-      openViewer(S.viewerIndex >= 0 ? S.viewerIndex : 0);
-      if (btn) btn.textContent = t("app.gridView");
-    }
+    toggleView();
   }
 });
 

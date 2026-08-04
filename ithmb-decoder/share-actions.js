@@ -1,4 +1,4 @@
-import { sharedFileIds } from "./state.js";
+import { sharedSubmissionIds } from "./state.js";
 import { bytesToHex, bytesToBase64, showToast } from "./utils.js";
 import { submitTelemetry } from "./telemetry.js";
 import { t } from "./i18n.js";
@@ -41,22 +41,22 @@ export function createShareBox({ cardId, bytes, prefix, isKnown, fileSize }) {
   const fullKey = setId + "-f";
 
   // Reflect a share already made from the other surface (card ↔ viewer).
-  if (sharedFileIds.has(fullKey)) {
+  if (sharedSubmissionIds.has(fullKey)) {
     headerBtn.disabled = true;
     headerBtn.title = t("share.fullSharedTitle");
     fullBtn.textContent = SHARED_TEXT();
     fullBtn.disabled = true;
-  } else if (sharedFileIds.has(headerKey)) {
+  } else if (sharedSubmissionIds.has(headerKey)) {
     headerBtn.textContent = SHARED_TEXT();
     headerBtn.disabled = true;
   }
 
   const share = async (fullFile) => {
     const key = fullFile ? fullKey : headerKey;
-    if (sharedFileIds.has(key)) return;
+    if (sharedSubmissionIds.has(key)) return;
     // Mark synchronously so a fast second click cannot double-submit
     // while the POST is in flight.
-    sharedFileIds.add(key);
+    sharedSubmissionIds.add(key);
     const data = {
       prefix,
       fileSize,
@@ -83,7 +83,7 @@ export function createShareBox({ cardId, bytes, prefix, isKnown, fileSize }) {
       if (!ok) {
         // Server rejected the share — roll back so the user can retry, and
         // tell the truth instead of pretending it worked.
-        sharedFileIds.delete(key);
+        sharedSubmissionIds.delete(key);
         if (fullFile) {
           headerBtn.disabled = false;
           headerBtn.title = "";
@@ -120,7 +120,7 @@ export function createReportLink({ cardId, bytes, prefix, fileSize }) {
   const fbKey = "fb-" + cardId;
 
   // Reflect a report already made from the other surface (card ↔ viewer).
-  if (sharedFileIds.has(fbKey)) {
+  if (sharedSubmissionIds.has(fbKey)) {
     link.textContent = t("share.thanksShared");
     link.style.pointerEvents = "none";
   }
@@ -177,14 +177,14 @@ export function createReportLink({ cardId, bytes, prefix, fileSize }) {
 
   link.addEventListener("click", (e) => {
     e.preventDefault();
-    if (sharedFileIds.has(fbKey)) return;
+    if (sharedSubmissionIds.has(fbKey)) return;
     form.hidden = false;
   });
   cancelBtn.addEventListener("click", () => {
     form.hidden = true;
   });
   submitBtn.addEventListener("click", async () => {
-    if (sharedFileIds.has(fbKey)) return;
+    if (sharedSubmissionIds.has(fbKey)) return;
     const checked = grid.querySelector("input:checked");
     if (!checked) {
       showToast(t("share.selectIssue"));
@@ -192,7 +192,7 @@ export function createReportLink({ cardId, bytes, prefix, fileSize }) {
     }
     const issueDetail = detail.value.trim();
     // Mark synchronously so a fast second submit cannot double-post.
-    sharedFileIds.add(fbKey);
+    sharedSubmissionIds.add(fbKey);
     // Optimistic update: show success immediately, fire the POST in the
     // background. The worker round-trip (~600ms cold start) would otherwise
     // freeze the UI waiting for the response.
@@ -210,7 +210,7 @@ export function createReportLink({ cardId, bytes, prefix, fileSize }) {
     }).then((ok) => {
       if (!ok) {
         // Server rejected — roll back so the user can retry, and tell the truth.
-        sharedFileIds.delete(fbKey);
+        sharedSubmissionIds.delete(fbKey);
         link.textContent = t("share.imageLooksWrong");
         link.style.pointerEvents = "";
         showToast(t("share.failedToast"));

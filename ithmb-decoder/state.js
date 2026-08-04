@@ -16,7 +16,7 @@ export const S = {
   globalCardIdCounter: 0,
   viewerIndex: -1,
   totalFiles: 0,
-  processedCount: 0,
+  downloadFormat: "image/jpeg",
   downloadFormat: "image/jpeg",
   // Per-card format overrides: { cardId: "image/png", ... }
   cardFormats: {},
@@ -24,6 +24,11 @@ export const S = {
 };
 
 // Mutable collections (kept as separate exports)
-export const sharedFileIds = new Set();
+// Mutable collections (kept as separate exports)
+// Dedup of files by content fingerprint (ui.js) — one key per unique file.
+export const processedFileIds = new Set();
+// Dedup of share/report submissions (share-actions.js) — one key per shared
+// file+action, so the same share can't be submitted twice.
+export const sharedSubmissionIds = new Set();
 export const successfulDecodes = [];
 export const failedDecodes = [];

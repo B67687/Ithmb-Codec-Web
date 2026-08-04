@@ -60,6 +60,5 @@ export async function decodeFile(file, cardId) {
     } catch (e) {}
     renderErrorCard(cardId, err.message || String(err));
   }
-  S.processedCount++;
   updateToolbar();
 }

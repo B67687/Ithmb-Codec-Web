@@ -3,36 +3,28 @@ export function setupHoldRepeat(elementId, action) {
   if (!el) return;
   let timer = null;
 
-  const fire = () => {
+  // Fire once immediately, then every 30ms while held (after a 400ms
+  // grace period). Shared by the mouse and touch paths — the only
+  // difference is which events cancel the repeat.
+  const startRepeat = (cancelEvents) => {
     action();
-  };
-
-  el.addEventListener("mousedown", () => {
-    fire();
     const timeout = setTimeout(() => {
-      timer = setInterval(fire, 30);
+      timer = setInterval(action, 30);
     }, 400);
     const cancel = () => {
       clearTimeout(timeout);
       clearInterval(timer);
       timer = null;
     };
-    el.addEventListener("mouseup", cancel, { once: true });
-    el.addEventListener("mouseleave", cancel, { once: true });
+    for (const ev of cancelEvents) el.addEventListener(ev, cancel, { once: true });
+  };
+
+  el.addEventListener("mousedown", () => {
+    startRepeat(["mouseup", "mouseleave"]);
   });
 
   el.addEventListener("touchstart", (e) => {
     e.preventDefault();
-    fire();
-    const timeout = setTimeout(() => {
-      timer = setInterval(fire, 30);
-    }, 400);
-    const cancel = () => {
-      clearTimeout(timeout);
-      clearInterval(timer);
-      timer = null;
-    };
-    el.addEventListener("touchend", cancel, { once: true });
-    el.addEventListener("touchcancel", cancel, { once: true });
+    startRepeat(["touchend", "touchcancel"]);
   });
 }

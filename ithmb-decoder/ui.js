@@ -1,6 +1,6 @@
 import {
   S,
-  sharedFileIds,
+  processedFileIds,
   successfulDecodes,
   failedDecodes,
 } from "./state.js";
@@ -47,11 +47,11 @@ export async function processFiles(files) {
     fileList.innerHTML = "";
     S.cardCount = 0;
     S.globalCardIdCounter = 0;
-    S.totalFiles = 0;
-    S.processedCount = 0;
+S.totalFiles = 0;
+    successfulDecodes.length = 0;
     successfulDecodes.length = 0;
     failedDecodes.length = 0;
-    sharedFileIds.clear();
+    processedFileIds.clear();
     const filmstrip = document.getElementById("viewer-filmstrip");
     if (filmstrip) filmstrip.innerHTML = "";
     const container = document.getElementById("viewer-container");
@@ -62,28 +62,26 @@ export async function processFiles(files) {
 
   // Dedup by content hash + filename (same name + same content = duplicate)
   const valid = [];
+  let nonIthmb = 0;
+  let tooLarge = 0;
   for (const f of files) {
     const n = f.name.toLowerCase();
-    if (!n.endsWith(".ithmb") && !n.endsWith(".ipm")) continue;
-    if (f.size > MAX_FILE_SIZE) continue;
+    const isIthmb = n.endsWith(".ithmb") || n.endsWith(".ipm");
+    if (!isIthmb) {
+      nonIthmb++;
+      continue;
+    }
+    if (f.size > MAX_FILE_SIZE) {
+      tooLarge++;
+      continue;
+    }
     const fingerprint = await fileFingerprint(f);
     const key = n + "::" + fingerprint;
-    if (sharedFileIds.has(key)) continue;
-    sharedFileIds.add(key);
+    if (processedFileIds.has(key)) continue;
+    processedFileIds.add(key);
     valid.push(f);
   }
 
-  // Count rejected
-  const nonIthmb = Array.from(files).filter((f) => {
-    const n = f.name.toLowerCase();
-    return !n.endsWith(".ithmb") && !n.endsWith(".ipm");
-  }).length;
-  const tooLarge = Array.from(files).filter((f) => {
-    const n = f.name.toLowerCase();
-    return (
-      (n.endsWith(".ithmb") || n.endsWith(".ipm")) && f.size > 8 * 1024 * 1024
-    );
-  }).length;
   if (nonIthmb > 0)
     showToast(t("ui.skipped", { n: nonIthmb }));
   if (tooLarge > 0) showToast(t("ui.tooLarge", { n: tooLarge }));

@@ -1,6 +1,6 @@
 import { S, successfulDecodes, failedDecodes, KNOWN_PREFIXES } from "./state.js";
 import { formatLabels, extMap, formatSize } from "./utils.js";
-import { addFilmstripThumb, populateViewerStageForCard } from "./viewer.js";
+import { addFilmstripThumb, refreshViewerIfCurrent } from "./viewer.js";
 import { get_encoding_name } from "./ithmb_wasm.js";
 import { createReportLink, createShareBox } from "./share-actions.js";
 import { t } from "./i18n.js";
@@ -61,9 +61,11 @@ height,
   const fileList = document.getElementById("file-list");
   if (fileList.classList.contains("viewer-mode")) {
     addFilmstripThumb(cardId, canvas);
-    const vCards = fileList.querySelectorAll(".file-card");
-    const vCard = vCards[S.viewerIndex];
-    if (vCard) populateViewerStageForCard(vCard);
+    // If the just-decoded card is the one being viewed, refresh the stage
+    // (canvas + report link + header) via the same path the failure cards
+    // use. One mechanism for "current card changed" — no separate
+    // surgical-update code path.
+    refreshViewerIfCurrent(cardId);
   }
 }
 

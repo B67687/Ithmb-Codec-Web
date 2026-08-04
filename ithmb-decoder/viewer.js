@@ -59,8 +59,6 @@ export function openViewer(index) {
   const failedEntry = failedDecodes.find((f) => f.cardId === viewerCardId);
 
   if (!srcCanvas) {
-    const oldPlaceholder = stage.querySelector(".viewer-placeholder");
-    if (oldPlaceholder) oldPlaceholder.remove();
     const status = card.querySelector(".status");
     const statusText = status ? status.textContent : "";
     if (statusText && statusText !== t("viewer.decoding")) {
@@ -304,43 +302,4 @@ export function refreshViewerIfCurrent(cardId) {
   }
 }
 
-export function populateViewerStageForCard(vCard) {
-  const srcCanvas = vCard.querySelector(".preview canvas");
-  if (!srcCanvas) return;
-  const stage = document.getElementById("viewer-stage");
-  if (
-    stage.children.length === 0 ||
-    stage.querySelector(".viewer-placeholder")
-  ) {
-    stage.innerHTML = "";
-    const stageContent = document.createElement("div");
-    stageContent.className = "viewer-stage-content";
-    const newCanvas = document.createElement("canvas");
-    newCanvas.width = srcCanvas.width;
-    newCanvas.height = srcCanvas.height;
-    newCanvas.style.width = srcCanvas.style.width;
-    newCanvas.style.height = srcCanvas.style.height;
-    const newCtx = newCanvas.getContext("2d");
-    newCtx.drawImage(srcCanvas, 0, 0);
-    stageContent.appendChild(newCanvas);
 
-    // Mirror the success-card report link in the viewer stage.
-    const viewerCardId = vCard.dataset.cardId;
-    const successEntry = successfulDecodes.find(
-      (s) => s.cardId === viewerCardId,
-    );
-    if (successEntry) {
-      stageContent.appendChild(
-        createReportLink({
-          cardId: viewerCardId,
-          bytes: successEntry.bytes,
-          prefix: successEntry.prefix,
-          fileSize: successEntry.fileSize,
-        }),
-      );
-    }
-
-    stage.appendChild(stageContent);
-    populateViewerHeader(vCard);
-  }
-}

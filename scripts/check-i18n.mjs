@@ -75,6 +75,40 @@ for (const f of jsFiles) {
 }
 console.log("[3] t() key reference scan complete");
 
+// ---- 4. EMBEDDED_EN parity with locales/en.json ----
+// i18n.js ships an embedded copy of the EN table so the first paint renders
+// synchronously before the locale fetch lands. It must NEVER drift from
+// locales/en.json (they drifted before — the culture pass updated en.json
+// but not EMBEDDED_EN, so the fallback showed stale copy). Same keys, same
+// values, or this gate fails.
+const i18nSrc = readFileSync(join(DECODER, "i18n.js"), "utf8");
+const embMatch = i18nSrc.match(/const EMBEDDED_EN = \{[\s\S]*?\n\};/);
+if (!embMatch) {
+  fail("could not locate EMBEDDED_EN block in i18n.js");
+} else {
+  let embedded;
+  try {
+    embedded = eval(
+      "(" + embMatch[0].replace(/^const EMBEDDED_EN = /, "").replace(/;$/, "") + ")",
+    );
+  } catch (e) {
+    fail("could not eval EMBEDDED_EN: " + e.message);
+  }
+  if (embedded) {
+    const embKeys = Object.keys(embedded);
+    const embOnly = embKeys.filter((k) => !(k in en));
+    const enOnly = Object.keys(en).filter((k) => !(k in embedded));
+    for (const k of embOnly) fail(`EMBEDDED_EN key "${k}" missing from en.json`);
+    for (const k of enOnly) fail(`en.json key "${k}" missing from EMBEDDED_EN`);
+    for (const k of embKeys) {
+      if (embedded[k] !== en[k]) {
+        fail(`EMBEDDED_EN value differs from en.json for "${k}" (fallback would show stale copy)`);
+      }
+    }
+  }
+}
+console.log("[4] EMBEDDED_EN parity check complete");
+
 if (failures) {
   console.error(`\n${failures} i18n integrity failure(s).`);
   process.exit(1);
