@@ -1,4 +1,4 @@
-import { sharedSubmissionIds } from "./state.js";
+import { sharedSubmissionIds, successfulDecodes } from "./state.js";
 import { bytesToHex, bytesToBase64, showToast } from "./utils.js";
 import { submitTelemetry } from "./telemetry.js";
 import { t } from "./i18n.js";
@@ -103,11 +103,11 @@ export function createShareBox({ cardId, bytes, prefix, isKnown, fileSize }) {
   return box;
 }
 
-// Build the success "Image looks wrong?" report link. Used by the success
-// card AND the viewer stage (same fb-<cardId> dedup key, honest feedback).
-// Clicking the link expands an inline MCQ form — a decoded-but-wrong file
-// has a VALID header, so the 16 bytes alone are useless; what the visitor
-// says is wrong (issue + optional detail) is the valuable part.
+// Build the success "Image looks wrong?" report link. Clicking it opens the
+// SHARED report modal (one container in the HTML, populated per-click) — the
+// original contribute-workflow UX: centered dialog over a dimmed + blurred
+// backdrop. The same link/entry is used by the success card AND the viewer
+// stage (same fb-<cardId> dedup key, honest feedback).
 export function createReportLink({ cardId, bytes, prefix, fileSize }) {
   const wrap = document.createElement("div");
   wrap.className = "success-report";
@@ -125,19 +125,51 @@ export function createReportLink({ cardId, bytes, prefix, fileSize }) {
     link.style.pointerEvents = "none";
   }
 
-  const ISSUES = [
-    ["color_space", "share.issueColorSpace"],
-    ["dimensions", "share.issueDimensions"],
-    ["stride", "share.issueStride"],
-    ["offset", "share.issueOffset"],
-    ["byte_order", "share.issueByteOrder"],
-    ["other", "share.issueOther"],
-  ];
+  link.addEventListener("click", (e) => {
+    e.preventDefault();
+    if (sharedSubmissionIds.has(fbKey)) return;
+    openReportModal(cardId, bytes, prefix, fileSize);
+  });
 
-  // The inline form (hidden until the link is clicked).
+  return wrap;
+}
+
+const ISSUES = [
+  ["color_space", "share.issueColorSpace"],
+  ["dimensions", "share.issueDimensions"],
+  ["stride", "share.issueStride"],
+  ["offset", "share.issueOffset"],
+  ["byte_order", "share.issueByteOrder"],
+  ["other", "share.issueOther"],
+];
+
+// Open the shared report modal, populated for this card's file.
+function openReportModal(cardId, bytes, prefix, fileSize) {
+  const overlay = document.getElementById("reportModal");
+  const content = document.getElementById("reportModalContent");
+  if (!overlay || !content) return;
+
+  const fbKey = "fb-" + cardId;
+
+  // Thumbnail of the decoded image at the top of the modal (like the
+  // original contribute modal) — the user sees WHAT looks wrong while
+  // picking an issue.
+  const thumb = document.createElement("img");
+  thumb.className = "report-thumb";
+  thumb.alt = "";
+  const entry = successfulDecodes.find((e) => e.cardId === cardId);
+  if (entry && entry.canvas) {
+    try {
+      thumb.src = entry.canvas.toDataURL("image/jpeg", 0.7);
+    } catch (e) {
+      thumb.style.display = "none";
+    }
+  } else {
+    thumb.style.display = "none";
+  }
+
   const form = document.createElement("div");
   form.className = "report-form";
-  form.hidden = true;
   const grid = document.createElement("div");
   grid.className = "report-issues";
   const group = "report-issue-" + cardId;
@@ -168,21 +200,27 @@ export function createReportLink({ cardId, bytes, prefix, fileSize }) {
   cancelBtn.type = "button";
   cancelBtn.className = "btn btn-small btn-outline";
   cancelBtn.textContent = t("share.cancel");
-  actions.appendChild(submitBtn);
+  // Right-aligned actions: Cancel on the left, Submit (primary) on the
+  // far right — the standard modal convention (Material/Windows).
   actions.appendChild(cancelBtn);
+  actions.appendChild(submitBtn);
+  form.appendChild(thumb);
   form.appendChild(grid);
   form.appendChild(detail);
   form.appendChild(actions);
-  wrap.appendChild(form);
+  content.innerHTML = "";
+  content.appendChild(form);
 
-  link.addEventListener("click", (e) => {
-    e.preventDefault();
-    if (sharedSubmissionIds.has(fbKey)) return;
-    form.hidden = false;
+  const close = () => {
+    overlay.classList.remove("active");
+    overlay.setAttribute("aria-hidden", "true");
+  };
+
+  // Backdrop click closes (click outside the dialog).
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) close();
   });
-  cancelBtn.addEventListener("click", () => {
-    form.hidden = true;
-  });
+  cancelBtn.addEventListener("click", close);
   submitBtn.addEventListener("click", async () => {
     if (sharedSubmissionIds.has(fbKey)) return;
     const checked = grid.querySelector("input:checked");
@@ -193,12 +231,15 @@ export function createReportLink({ cardId, bytes, prefix, fileSize }) {
     const issueDetail = detail.value.trim();
     // Mark synchronously so a fast second submit cannot double-post.
     sharedSubmissionIds.add(fbKey);
-    // Optimistic update: show success immediately, fire the POST in the
-    // background. The worker round-trip (~600ms cold start) would otherwise
-    // freeze the UI waiting for the response.
-    form.hidden = true;
-    link.textContent = t("share.thanksShared");
-    link.style.pointerEvents = "none";
+    // Optimistic update: close + show success immediately, fire the POST in
+    // the background.
+    close();
+    // Update BOTH surfaces' links (card + viewer stage share the dedup key).
+    const links = document.querySelectorAll(`[data-report="${cardId}"]`);
+    for (const l of links) {
+      l.textContent = t("share.thanksShared");
+      l.style.pointerEvents = "none";
+    }
     showToast(t("share.reportSharedToast"));
     submitTelemetry({
       prefix,
@@ -211,12 +252,16 @@ export function createReportLink({ cardId, bytes, prefix, fileSize }) {
       if (!ok) {
         // Server rejected — roll back so the user can retry, and tell the truth.
         sharedSubmissionIds.delete(fbKey);
-        link.textContent = t("share.imageLooksWrong");
-        link.style.pointerEvents = "";
+        const links2 = document.querySelectorAll(`[data-report="${cardId}"]`);
+        for (const l of links2) {
+          l.textContent = t("share.imageLooksWrong");
+          l.style.pointerEvents = "";
+        }
         showToast(t("share.failedToast"));
       }
     });
   });
 
-  return wrap;
+  overlay.classList.add("active");
+  overlay.setAttribute("aria-hidden", "false");
 }

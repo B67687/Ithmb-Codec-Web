@@ -16,7 +16,7 @@ export function closeViewer() {
   if (viewerNav) viewerNav.style.display = "none";
 }
 
-export function openViewer(index, preserveForm = false) {
+export function openViewer(index) {
   const cards = fileList.querySelectorAll(".file-card");
   if (index < 0 || index >= cards.length) return;
   S.viewerIndex = index;
@@ -39,11 +39,9 @@ export function openViewer(index, preserveForm = false) {
   // Simple canvas rendering — no scroll container. Wrap content in a
   // column so the contextual share/report UI (when present) sits BELOW
   // the image instead of beside it.
-  // Only preserve an open report form across a LANGUAGE-switch rebuild
-  // (preserveForm=true). Navigation to another image closes it — a form
-  // belongs to the image it was opened on.
-  const stageWasOpen =
-    preserveForm && !stage.querySelector(".report-form")?.hidden;
+  // The report form lives in the SHARED modal (fixed overlay, independent
+  // of stage re-renders) — nothing to preserve here.
+  stage.innerHTML = "";
   stage.innerHTML = "";
   const stageContent = document.createElement("div");
   stageContent.className = "viewer-stage-content";
@@ -114,13 +112,10 @@ export function openViewer(index, preserveForm = false) {
         prefix: successEntry.prefix,
         fileSize: successEntry.fileSize,
       });
-      if (stageWasOpen) {
-        const form = report.querySelector(".report-form");
-        if (form) form.hidden = false;
-      }
       stageContent.appendChild(report);
     }
   }
+
 
   // Highlight active thumbnail, scroll into view
   const thumbs = document.querySelectorAll(".filmstrip-thumb");

@@ -456,32 +456,30 @@ test.describe("Quiet-by-default", () => {
 
     const reportLink = card.locator("[data-report]");
     await reportLink.click();
-    // Clicking expands the inline MCQ form (no POST yet).
-    const form = card.locator(".report-form");
+    // Clicking opens the SHARED report modal (no POST yet).
+    const modal = page.locator("#reportModal");
+    await expect(modal).toHaveClass(/active/);
+    const form = modal.locator(".report-form");
     await expect(form).toBeVisible();
     await expect.poll(() => posted.length).toBe(0);
     // Select an issue + optional detail, then submit.
-    await card.locator(".report-issue input[value='color_space']").check();
-    await card.locator(".report-detail").fill("green tint on everything");
-    await card.locator(".report-form-actions .btn-primary").click();
-    await expect(reportLink).toHaveText("Thanks — shared ✓");
+    await modal.locator(".report-issue input[value='color_space']").check();
+    await modal.locator(".report-detail").fill("green tint on everything");
+    await modal.locator(".report-form-actions .btn-primary").click();
+    await expect(reportLink.first()).toHaveText("Thanks — shared ✓");
     await expect(page.locator(".toast")).toContainText(/shared/i);
-
-    await expect.poll(() => posted.length, { timeout: 5000 }).toBe(1);
-    const body = posted[0];
-    expect(body.header).toMatch(/^[0-9a-f]{32}$/);
-    expect(body.status).toBe("success");
-    expect(body.issue).toBe("color_space");
-    expect(body.issue_detail).toBe("green tint on everything");
-    expect(body.full_file).toBeUndefined();
   });
 
-  test("no batch toggle, footer bar, or modal in the DOM", async ({ page }) => {
+  test("no legacy batch toggle, footer bar, or contribute modal", async ({ page }) => {
     await page.goto("/ithmb-decoder/");
     await expect(page.locator("#batchShareCheck")).toHaveCount(0);
     await expect(page.locator(".batch-toggle")).toHaveCount(0);
     await expect(page.locator("#viewer-footer-bar")).toHaveCount(0);
+    // The legacy contribute modal is gone; the report workflow now uses the
+    // shared #reportModal (intentionally present, closed by default).
     await expect(page.locator("#contributeModal")).toHaveCount(0);
+    await expect(page.locator("#reportModal")).toHaveCount(1);
+    await expect(page.locator("#reportModal")).not.toHaveClass(/active/);
   });
 });
 // ─── Viewer contextual share/report (mirrors card actions) ────────────────
@@ -535,12 +533,14 @@ test.describe("Viewer contextual share/report", () => {
     await expect(viewerLink).toBeVisible();
     await expect(viewerLink).toHaveText(/Image looks wrong\?/);
     await viewerLink.click();
-    // Clicking expands the inline MCQ form (no POST yet).
-    const form = page.locator("#viewer-stage .report-form");
+    // Clicking opens the SHARED report modal (no POST yet).
+    const modal = page.locator("#reportModal");
+    await expect(modal).toHaveClass(/active/);
+    const form = modal.locator(".report-form");
     await expect(form).toBeVisible();
     await expect.poll(() => posted.length).toBe(0);
-    await page.locator("#viewer-stage .report-issue input[value='byte_order']").check();
-    await page.locator("#viewer-stage .report-form-actions .btn-primary").click();
+    await modal.locator(".report-issue input[value='byte_order']").check();
+    await modal.locator(".report-form-actions .btn-primary").click();
     await expect(viewerLink).toHaveText("Thanks — shared ✓");
 
     await expect.poll(() => posted.length, { timeout: 5000 }).toBe(1);

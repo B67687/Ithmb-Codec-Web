@@ -110,16 +110,12 @@ export function renderCardInfo(cardId) {
   // language switch must not close a form the user is filling out.
   const oldInfo = previewEl.querySelector(".info");
   const oldReport = previewEl.querySelector(".success-report");
-  const wasFormOpen = oldReport && !oldReport.querySelector(".report-form")?.hidden;
+  // The report form lives in the SHARED modal (fixed overlay, independent
+  // of card re-renders) — no open-state to preserve here.
   if (oldInfo) oldInfo.remove();
   if (oldReport) oldReport.remove();
   previewEl.appendChild(infoDiv);
-  const report = createReportLink({ cardId, bytes, prefix, fileSize });
-  if (wasFormOpen) {
-    const form = report.querySelector(".report-form");
-    if (form) form.hidden = false;
-  }
-  infoDiv.appendChild(report);
+  infoDiv.appendChild(createReportLink({ cardId, bytes, prefix, fileSize }));
 
   // Format selector (per-card override preserved via S.cardFormats[cardId]).
   const fmtSelect = infoDiv.querySelector(".fmt-select");

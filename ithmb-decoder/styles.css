@@ -188,11 +188,12 @@ body.drag-active::after {
   margin-top: 8px;
 }
 .file-card {
-  background: var(--surface);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 16px;
-  transition: opacity 0.3s;
+  position: relative;
+background: var(--surface);
+border-radius: var(--radius);
+box-shadow: var(--shadow);
+padding: 16px;
+transition: opacity 0.3s;
 }
 .file-card .meta {
   display: flex;
@@ -236,7 +237,7 @@ body.drag-active::after {
   flex-wrap: wrap;
 }
 .preview canvas {
-  border-radius: 8px;
+  border-radius: 6px;
   max-width: 100%;
   border: 1px solid var(--border);
 }
@@ -346,7 +347,7 @@ body.drag-active::after {
 }
 #viewer-filmstrip::-webkit-scrollbar-thumb {
   background: var(--border);
-  border-radius: 3px;
+  border-radius: 4px;
 }
 .filmstrip-thumb {
   flex: 0 0 auto;
@@ -370,7 +371,11 @@ body.drag-active::after {
 }
 .filmstrip-thumb.active {
   opacity: 1;
-  border-color: var(--accent);
+  /* Unified active treatment with .failed.active — an outer outline
+     (2px + 1px offset) instead of a border-color swap, so the selector
+     is the SAME size/position for decoded and failed thumbnails. */
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 .filmstrip-thumb.failed {
@@ -431,7 +436,7 @@ body.drag-active::after {
 }
 .viewer-nav button {
   font-size: 0.85rem;
-  padding: 4px 10px;
+  padding: 4px 8px;
 }
 #viewerNav .btn-small {
   font-size: 0.8rem;
@@ -516,8 +521,8 @@ width: 100%;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 6px 14px;
-  border-radius: 8px;
+  padding: 6px 16px;
+  border-radius: 6px;
   border: none;
   font-size: 0.85rem;
   font-weight: 500;
@@ -547,17 +552,10 @@ width: 100%;
   background: var(--bg);
 }
 .btn-small {
-  padding: 4px 10px;
+  padding: 4px 8px;
   font-size: 0.8rem;
 }
-.btn-success {
-  background: var(--success);
-  color: #fff;
-  border: 1px solid var(--success);
-}
-.btn-success:hover {
-  opacity: 0.9;
-}
+
 
 .prefix-badge {
   display: inline-block;
@@ -588,7 +586,7 @@ font-size: 0.8rem;
   padding: 12px;
   border: 1px solid var(--warn);
   background: #fffbf0;
-  border-radius: 8px;
+  border-radius: 6px;
 }
 .share-box h4 { font-size: 0.9rem; font-weight: 600; margin-bottom: 4px; }
 .share-box p { font-size: 0.85rem; color: var(--muted); margin-bottom: 8px; }
@@ -597,16 +595,58 @@ font-size: 0.8rem;
 .btn:disabled { opacity: 0.55; cursor: not-allowed; }
 
 .success-report { margin-top: 6px; font-size: 0.78rem; }
-.success-report a { color: var(--muted); text-decoration: underline; cursor: pointer; }
-.report-form { margin-top: 8px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); text-align: left; max-width: 360px; }
+.success-report a {
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+  /* Stay above the overlay form so clicking the link again (toggle
+     close) is always possible even while the form floats over the card. */
+  position: relative;
+  z-index: 40;
+}
+.report-form { margin-top: 8px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); text-align: left; max-width: 360px; }
+/* Decoded-image thumbnail at the top of the report modal. */
+.report-thumb {
+  display: block;
+  /* Just the picture: fixed WIDTH upscales small source canvases to a
+     readable preview, and height:auto keeps the image's own aspect ratio
+     so there is NO letterbox/background bars (no fixed height, no bg). */
+  width: 220px;
+  height: auto;
+  margin: 0 auto 12px;
+  border-radius: 8px;
+}
 .report-issues { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-bottom: 8px; }
 .report-issue { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text); cursor: pointer; padding: 4px 6px; border: 1px solid var(--border); border-radius: 6px; transition: background 0.15s, border-color 0.15s; }
 .report-issue:hover { background: var(--bg); }
 .report-issue input { accent-color: var(--accent); margin: 0; }
 .report-detail { width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 0.8rem; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); margin-bottom: 8px; }
 .report-detail:focus { outline: none; border-color: var(--accent); }
-.report-form-actions { display: flex; gap: 8px; }
+.report-form-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
 .viewer-stage-content .report-form { max-width: 100%; }
+
+/* The report form inside a FILE CARD overlays the card instead of
+   expanding it in-flow (which grew the file-list and caused scroll).
+   Applies in BOTH viewer mode and grid mode — the card report form is
+   the same element. Anchored to the card (position:relative), floating
+   over the preview, high z-index, solid background = popover. The
+   viewer-STAGE report form (below the stage image) stays in-flow.
+   max-height + overflow-y contain the form (taller than the card). */
+.file-card .report-form {
+  position: absolute;
+  top: 48px;
+  right: 16px;
+  left: 16px;
+  z-index: 30;
+  max-width: none;
+  box-shadow: var(--shadow);
+  max-height: calc(100% - 60px);
+  overflow-y: auto;
+}
 
 footer {
   margin-top: 24px;
@@ -636,7 +676,10 @@ footer > div {
 }
 
 .file-card .err-msg {
-  color: #ff453a;
+  color: var(--warn);
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
   font-size: 0.85rem;
   margin-top: 4px;
 }
@@ -658,8 +701,68 @@ footer > div {
   }
 }
 
-/* Thanks toast */
+/* Shared report/contribute modal — centered dialog over a dimmed +
+   blurred backdrop (restored from the original contribute workflow).
+   One container in the HTML; populated per-click from any card or the
+   viewer stage. */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000000;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease;
+}
+.modal-overlay.active {
+  visibility: visible;
+  opacity: 1;
+}
+.modal-dialog {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15);
+  padding: 24px;
+  max-width: 420px;
+  width: 90vw;
+  position: relative;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+.modal-dialog h3 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.modal-dialog .modal-body {
+  font-size: 0.9rem;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+/* Inside the modal, the report-form's own border/padding is redundant
+   (the .modal-dialog is already the bordered rounded card). */
+.modal-dialog .report-form {
+  border: none;
+  background: transparent;
+  padding: 0;
+  max-width: none;
+  margin: 0;
+}
 
+/* Thanks toast */
 /* GitHub corner — clean icon */
 .github-corner {
   display: inline-flex;
@@ -717,7 +820,7 @@ footer > div {
   background: var(--text);
   color: #fff;
   padding: 10px 20px;
-  border-radius: 8px;
+  border-radius: 6px;
   font-size: 0.85rem;
   opacity: 0;
   transition: opacity 0.3s;

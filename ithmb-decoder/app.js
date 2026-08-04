@@ -262,7 +262,7 @@ window.addEventListener("languagechange", () => {
   // share box, header, and download button re-translate immediately (not
   // just on the next image navigation).
   if (S.viewerIndex >= 0 && document.getElementById("viewer-container")?.style.display !== "none") {
-    openViewer(S.viewerIndex, true);
+    openViewer(S.viewerIndex);
     updateToolbar();
   }
 });
