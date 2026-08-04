@@ -18,6 +18,10 @@ export const SHARED_TEXT = () => t("share.shared");
 export function createShareBox({ cardId, bytes, prefix, isKnown, fileSize }) {
   const box = document.createElement("div");
   box.className = "share-box";
+  // Stable selector for re-finding the box after a re-render (the rollback
+  // path re-queries via [data-card] because the captured buttons can go
+  // stale when a language switch replaces the box mid-POST).
+  box.dataset.card = cardId;
   const heading = t("share.helpImprove");
   const text = isKnown
     ? t("share.knownText")
@@ -84,14 +88,34 @@ export function createShareBox({ cardId, bytes, prefix, isKnown, fileSize }) {
         // Server rejected the share — roll back so the user can retry, and
         // tell the truth instead of pretending it worked.
         sharedSubmissionIds.delete(key);
-        if (fullFile) {
-          headerBtn.disabled = false;
-          headerBtn.title = "";
-          fullBtn.textContent = t("share.shareFull");
-          fullBtn.disabled = false;
-        } else {
-          headerBtn.textContent = t("share.share16");
-          headerBtn.disabled = false;
+        // Re-query the buttons from the live DOM instead of mutating the
+        // captured nodes: a language-switch re-render may have replaced this
+        // share box while the POST was in flight, leaving the captured
+        // buttons detached (a rollback on stale refs would strand the UI at
+        // "Shared ✓" with no way to retry). Reset EVERY box carrying this
+        // card's data-card — the card and the viewer stage render one share
+        // box each for the same cardId (same pattern as the data-report
+        // rollback). If no box exists, just release the dedup key — the
+        // replacement box already reflects the unshared state.
+        const liveBoxes = document.querySelectorAll(
+          `.share-box[data-card="${cardId}"]`,
+        );
+        for (const liveBox of liveBoxes) {
+          const liveHeader = liveBox.querySelector('[data-share="header"]');
+          const liveFull = liveBox.querySelector('[data-share="full"]');
+          if (fullFile) {
+            if (liveHeader) {
+              liveHeader.disabled = false;
+              liveHeader.title = "";
+            }
+            if (liveFull) {
+              liveFull.textContent = t("share.shareFull");
+              liveFull.disabled = false;
+            }
+          } else if (liveHeader) {
+            liveHeader.textContent = t("share.share16");
+            liveHeader.disabled = false;
+          }
         }
         showToast(t("share.failedToast"));
       }

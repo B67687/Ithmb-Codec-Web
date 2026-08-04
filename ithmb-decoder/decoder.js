@@ -1,4 +1,4 @@
-import { S, KNOWN_PREFIXES, failedDecodes } from "./state.js";
+import { S, KNOWN_PREFIXES } from "./state.js";
 import { escapeHtml } from "./utils.js";
 import { updateToolbar } from "./viewer.js";
 import { decode_ithmb, peek_prefix } from "./ithmb_wasm.js";
@@ -49,15 +49,11 @@ export async function decodeFile(file, cardId) {
     statusEl.textContent = t("card.error");
     previewEl.style.display = "block";
     previewEl.innerHTML = `<div class="err-msg">${escapeHtml(err.message || String(err))}</div>`;
-    try {
-      failedDecodes.push({
-        cardId,
-        bytes,
-        prefix,
-        fileName: file.name,
-        fileSize: file.size,
-      });
-    } catch (e) {}
+    // Error cards are NOT pushed to failedDecodes: they carry no shareable
+    // bytes (the failure may have happened before bytes/prefix were set), so
+    // a failedDecodes entry would break reRenderCards (createShareBox throws
+    // on undefined bytes) and mislabel the card as an unknown format. The
+    // viewer already treats error cards as entries without a failed entry.
     renderErrorCard(cardId, err.message || String(err));
   }
   updateToolbar();

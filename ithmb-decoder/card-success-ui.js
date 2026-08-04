@@ -158,6 +158,10 @@ export function reRenderCards() {
     renderCardInfo(entry.cardId);
   }
   for (const entry of failedDecodes) {
+    // Error cards must never be in failedDecodes (they carry no shareable
+    // bytes) — skip defensively so a bytes-less entry can't crash the whole
+    // re-render via createShareBox's bytes.slice(0, 16).
+    if (!entry.bytes) continue;
     const card = document.getElementById(entry.cardId);
     if (!card) continue;
     const previewEl = card.querySelector(".preview");

@@ -203,6 +203,19 @@ function detectLang() {
  * t("card.save", { fmt: "JPEG" }). Falls back to embedded English, then the
  * key itself, so a missing translation never renders blank.
  */
+// Escape interpolated param values. Params can land in data-i18n-html
+// (innerHTML) sinks, so escaping them prevents a future caller from turning
+// a user-controlled param into markup (CWE-79). All current callers pass
+// numbers or fixed map values, so this is a no-op today.
+function escapeParam(s) {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export function t(key, params) {
   let str =
     (I18N.strings && I18N.strings[key] !== undefined ? I18N.strings[key] : undefined) ??
@@ -210,7 +223,7 @@ export function t(key, params) {
     key;
   if (params) {
     for (const k of Object.keys(params)) {
-      str = str.split("{" + k + "}").join(String(params[k]));
+      str = str.split("{" + k + "}").join(escapeParam(String(params[k])));
     }
   }
   return str;

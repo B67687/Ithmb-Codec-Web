@@ -258,6 +258,18 @@ try {
 // Keeps i18n.js dependency-free — the event is the decoupling point.
 window.addEventListener("languagechange", () => {
   reRenderCards();
+  // viewToggleBtn intentionally has NO data-i18n: its label is viewer-state-
+  // dependent (it names the view you'll switch TO — "Grid view" while the
+  // viewer is open, "Gallery" while in grid mode), so a static data-i18n
+  // would overwrite it with the wrong value. Re-derive it from state here.
+  const toggleBtn = document.getElementById("viewToggleBtn");
+  const toggleContainer = document.getElementById("viewer-container");
+  if (toggleBtn && toggleContainer) {
+    toggleBtn.textContent =
+      toggleContainer.style.display !== "none"
+        ? t("app.gridView")
+        : t("app.gallery");
+  }
   // If the viewer is open, rebuild its stage + toolbar so the report link,
   // share box, header, and download button re-translate immediately (not
   // just on the next image navigation).
