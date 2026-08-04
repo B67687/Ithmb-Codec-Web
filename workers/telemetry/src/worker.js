@@ -82,9 +82,18 @@ function buildDashboardHtml({
         status === "unknown" || status === "known-failed"
           ? ' class="warn-row"'
           : "";
+      const issueCell = r.issue
+        ? `<span class="badge badge-${r.issue}">${r.issue}</span>`
+        : "\u2014";
+      const issueDetailCell = r.issueDetail
+        ? r.issueDetail.length > 40
+          ? r.issueDetail.slice(0, 40) + "..."
+          : r.issueDetail
+        : "\u2014";
+      const extCell = r.extension ? r.extension : "\u2014";
       return `<tr${highlight}><td>${time}</td><td>${
         r.prefix ?? "\u2014"
-      }</td><td><span class="badge badge-${cls}">${status}</span></td><td>${dims}</td><td>${fileSize}</td><td>${header}</td><td>${fullFile}</td></tr>`;
+      }</td><td><span class="badge badge-${cls}">${status}</span></td><td>${dims}</td><td>${fileSize}</td><td>${header}</td><td>${fullFile}</td><td>${issueCell}</td><td>${issueDetailCell}</td><td>${extCell}</td></tr>`;
     })
     .join("");
 
@@ -131,7 +140,7 @@ tr.warn-row{background:#fffde7}
 </table>
 <h2>Recent Submissions (50)</h2>
 <table>
-<thead><tr><th>Time</th><th>Prefix</th><th>Status</th><th>Dimensions</th><th>File Size</th><th>Header</th><th>Full File</th></tr></thead>
+<thead><tr><th>Time</th><th>Prefix</th><th>Status</th><th>Dimensions</th><th>File Size</th><th>Header</th><th>Full File</th><th>Issue</th><th>Issue Detail</th><th>Ext</th></tr></thead>
 <tbody>${recentRows}</tbody>
 </table>
 </body>

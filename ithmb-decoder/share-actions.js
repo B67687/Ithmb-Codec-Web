@@ -63,29 +63,38 @@ export function createShareBox({ cardId, bytes, prefix, isKnown, fileSize }) {
       header: bytesToHex(bytes.slice(0, 16), ""),
     };
     if (fullFile) data.full_file = bytesToBase64(bytes);
-    const ok = await submitTelemetry(data);
-    if (!ok) {
-      // Server rejected the share (e.g. no valid ithmb header — prefix out
-      // of range). Roll back the guard so the user can retry, and tell the
-      // truth instead of pretending it worked.
-      sharedFileIds.delete(key);
-      showToast("Share failed — the server rejected this file");
-      return;
-    }
+    // Optimistic update: flip the buttons immediately, fire the POST in the
+    // background. The worker round-trip (~600ms cold start) would otherwise
+    // make the click feel unresponsive.
     if (fullFile) {
-      // Full file includes the header — header share becomes redundant.
       headerBtn.disabled = true;
       headerBtn.title = "Full file already shared — the 16 bytes are included";
       fullBtn.textContent = SHARED_TEXT;
       fullBtn.disabled = true;
     } else {
-      // Header only — the full file is still valuable, keep it available.
       headerBtn.textContent = SHARED_TEXT;
       headerBtn.disabled = true;
     }
     showToast(
       fullFile ? "Full file shared — thank you!" : "16 bytes shared — thank you!",
     );
+    submitTelemetry(data).then((ok) => {
+      if (!ok) {
+        // Server rejected the share — roll back so the user can retry, and
+        // tell the truth instead of pretending it worked.
+        sharedFileIds.delete(key);
+        if (fullFile) {
+          headerBtn.disabled = false;
+          headerBtn.title = "";
+          fullBtn.textContent = "Share full file";
+          fullBtn.disabled = false;
+        } else {
+          headerBtn.textContent = "Share 16 bytes";
+          headerBtn.disabled = false;
+        }
+        showToast("Share failed — the server rejected this file");
+      }
+    });
   };
   headerBtn.addEventListener("click", () => share(false));
   fullBtn.addEventListener("click", () => share(true));
@@ -180,27 +189,31 @@ export function createReportLink({ cardId, bytes, prefix, fileSize }) {
       return;
     }
     const issueDetail = detail.value.trim();
-    // Mark synchronously so a fast second submit cannot double-post
-    // while the POST is in flight.
+    // Mark synchronously so a fast second submit cannot double-post.
     sharedFileIds.add(fbKey);
-    const ok = await submitTelemetry({
+    // Optimistic update: show success immediately, fire the POST in the
+    // background. The worker round-trip (~600ms cold start) would otherwise
+    // freeze the UI waiting for the response.
+    form.hidden = true;
+    link.textContent = "Thanks — shared ✓";
+    link.style.pointerEvents = "none";
+    showToast("Report shared — thank you!");
+    submitTelemetry({
       prefix,
       fileSize,
       status: "success",
       header: bytesToHex(bytes.slice(0, 16), ""),
       issue: checked.value,
       issue_detail: issueDetail || null,
+    }).then((ok) => {
+      if (!ok) {
+        // Server rejected — roll back so the user can retry, and tell the truth.
+        sharedFileIds.delete(fbKey);
+        link.textContent = "Image looks wrong? Share the first 16 bytes";
+        link.style.pointerEvents = "";
+        showToast("Share failed — the server rejected this file");
+      }
     });
-    if (!ok) {
-      // Roll back the guard so the user can retry, and tell the truth.
-      sharedFileIds.delete(fbKey);
-      showToast("Share failed — the server rejected this file");
-      return;
-    }
-    form.hidden = true;
-    link.textContent = "Thanks — shared ✓";
-    link.style.pointerEvents = "none";
-    showToast("Report shared — thank you!");
   });
 
   return wrap;
