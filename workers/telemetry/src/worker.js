@@ -29,20 +29,92 @@ const KNOWN_ISSUES = new Set([
 ]);
 
 // Simple fingerprint from IP + User-Agent hash (no raw IP stored)
-async function fingerprint(request) {
-  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-  const ua = request.headers.get("User-Agent") || "";
-  const data = `${ip}:${ua}`;
+async function sha256Hex(data) {
   const buf = await crypto.subtle.digest(
     "SHA-256",
     new TextEncoder().encode(data),
   );
-  const hash = Array.from(new Uint8Array(buf))
+  return Array.from(new Uint8Array(buf))
     .slice(0, 8)
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
-  return hash;
 }
+
+async function fingerprint(request) {
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const ua = request.headers.get("User-Agent") || "";
+  return sha256Hex(`${ip}:${ua}`);
+}
+
+// Privacy (CWE-359): per-IP counter keys hash the IP alone (UA excluded so
+// the counter is stable per IP) — the raw IP is never written to KV key
+// names. The old `records-ip:<ip>:<date>` / `ratelimit-ip:<ip>:<date>` keys
+// stored every submitter's raw IP in operator-accessible KV for 48h.
+function ipFingerprint(ip) {
+  return sha256Hex(`ip:${ip}`);
+}
+
+// Race-free counter: count keys under a day-scoped prefix. KV has no atomic
+// increment, so read-then-write counters drift under concurrency — lost
+// updates made the old cap/rate counters permanently bypassable (CWE-362).
+// Counting actual per-request/per-record keys self-corrects: the count is
+// always derived from what is actually stored.
+async function countKeys(env, prefix, max) {
+  let count = 0;
+  let cursor;
+  do {
+    const res = await env.FORMAT_TELEMETRY.list({
+      prefix,
+      cursor,
+      limit: 1000,
+    });
+    count += res.keys.length;
+    if (count >= max) return count;
+    cursor = res.cursor;
+  } while (cursor);
+  return count;
+}
+
+// Validate a full_file base64 payload: correct alphabet, correct padding,
+// and a decoded size within the 8 MiB app limit. A length-only check let
+// arbitrary garbage be persisted (CWE-20) and fed storage-abuse.
+function validBase64Payload(s) {
+  if (s.length % 4 !== 0) return false;
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(s)) return false;
+  const pad = s.endsWith("==") ? 2 : s.endsWith("=") ? 1 : 0;
+  const decoded = (s.length / 4) * 3 - pad;
+  return decoded <= 8 * 1024 * 1024;
+}
+
+// Constant-time token comparison (CWE-208): hash both sides to a fixed 32
+// bytes first so an early length mismatch cannot leak via timing, then
+// XOR-compare every byte.
+async function tokensEqual(a, b) {
+  const [ha, hb] = await Promise.all([
+    crypto.subtle.digest("SHA-256", new TextEncoder().encode(a)),
+    crypto.subtle.digest("SHA-256", new TextEncoder().encode(b)),
+  ]);
+  const av = new Uint8Array(ha);
+  const bv = new Uint8Array(hb);
+  let diff = 0;
+  for (let i = 0; i < av.length; i++) diff |= av[i] ^ bv[i];
+  return diff === 0;
+}
+
+// Escape every value that will be interpolated into dashboard HTML. The
+// public POST endpoint accepts arbitrary header / issue_detail text, so any
+// unescaped record field is a stored-XSS primitive against the admin
+// dashboard (a crafted submission could read the ?token= URL). This is a
+// worker, not a browser — plain string replacement, no DOM.
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 
 function buildDashboardHtml({
   total,
@@ -52,10 +124,15 @@ function buildDashboardHtml({
   prefixEntries,
   recent50,
 }) {
+  // ALL interpolated record fields are attacker-controlled (public POST,
+  // only length/shape-checked). Escape every one — defense in depth even
+  // for fields that are validated on ingest (legacy records may predate it).
+  const esc = escapeHtml;
+
   const prefixRows = prefixEntries
     .map(
       ([prefix, count]) =>
-        `<tr><td>${prefix}</td><td>${count}</td></tr>`,
+        `<tr><td>${esc(prefix)}</td><td>${esc(count)}</td></tr>`
     )
     .join("");
 
@@ -65,35 +142,35 @@ function buildDashboardHtml({
       const cls = status;
       const dims =
         r.width && r.height
-          ? `${r.width} \u00d7 ${r.height}`
+          ? `${esc(r.width)} \u00d7 ${esc(r.height)}`
           : "\u2014";
       const fileSize =
-        r.fileSize != null ? `${r.fileSize}` : "\u2014";
+        r.fileSize != null ? `${esc(r.fileSize)}` : "\u2014";
       const header = r.header
         ? r.header.length > 32
-          ? r.header.slice(0, 32) + "..."
-          : r.header
+          ? esc(r.header.slice(0, 32)) + "..."
+          : esc(r.header)
         : "\u2014";
-      const fullFile = r.fullFile ? "Yes" : "No";
+      const fullFile = r.fullFile || r.hasFullFile ? "Yes" : "No";
       const time = r.timestamp
-        ? new Date(r.timestamp).toLocaleString()
+        ? esc(new Date(r.timestamp).toLocaleString())
         : "\u2014";
       const highlight =
         status === "unknown" || status === "known-failed"
           ? ' class="warn-row"'
           : "";
       const issueCell = r.issue
-        ? `<span class="badge badge-${r.issue}">${r.issue}</span>`
+        ? `<span class="badge badge-${esc(r.issue)}">${esc(r.issue)}</span>`
         : "\u2014";
       const issueDetailCell = r.issueDetail
         ? r.issueDetail.length > 40
-          ? r.issueDetail.slice(0, 40) + "..."
-          : r.issueDetail
+          ? esc(r.issueDetail.slice(0, 40)) + "..."
+          : esc(r.issueDetail)
         : "\u2014";
-      const extCell = r.extension ? r.extension : "\u2014";
+      const extCell = r.extension ? esc(r.extension) : "\u2014";
       return `<tr${highlight}><td>${time}</td><td>${
-        r.prefix ?? "\u2014"
-      }</td><td><span class="badge badge-${cls}">${status}</span></td><td>${dims}</td><td>${fileSize}</td><td>${header}</td><td>${fullFile}</td><td>${issueCell}</td><td>${issueDetailCell}</td><td>${extCell}</td></tr>`;
+        r.prefix != null ? esc(r.prefix) : "\u2014"
+      }</td><td><span class="badge badge-${esc(cls)}">${esc(status)}</span></td><td>${dims}</td><td>${fileSize}</td><td>${header}</td><td>${fullFile}</td><td>${issueCell}</td><td>${issueDetailCell}</td><td>${extCell}</td></tr>`;
     })
     .join("");
 
@@ -172,18 +249,22 @@ export default {
     }
     if (request.method === "GET") {
       const url = new URL(request.url);
-      // Dashboard auth: Authorization: Bearer <ADMIN_TOKEN> header OR
-      // ?token=<ADMIN_TOKEN> query param (both accepted; query makes it
-      // easy to open in a plain browser tab).
+      // Dashboard auth: Authorization: Bearer <ADMIN_TOKEN> ONLY. The legacy
+      // ?token=<ADMIN_TOKEN> query path is gone — a bearer credential must
+      // never ride in URLs (browser history, access logs, Referer) (CWE-200).
       const authHeader = request.headers.get("Authorization") || "";
-      const queryToken = url.searchParams.get("token");
       const token = authHeader.startsWith("Bearer ")
         ? authHeader.slice(7)
-        : queryToken;
-      if (token === env.ADMIN_TOKEN) {
+        : "";
+      if (token && (await tokensEqual(token, env.ADMIN_TOKEN))) {
         // ---- HTML dashboard ----
         const allRecords = [];
         let cursor;
+        let scanned = 0;
+        // Bounded scan: at most 5000 records. Records are slim (full-file
+        // payloads live under their own `fullfile_` key), so this is bounded
+        // memory/CPU work no matter how large the store grows (CWE-400).
+        const MAX_SCAN = 5000;
         do {
           const list = await env.FORMAT_TELEMETRY.list({
             prefix: "fmt_",
@@ -191,6 +272,7 @@ export default {
             limit: 1000,
           });
           for (const key of list.keys) {
+            if (scanned >= MAX_SCAN) break;
             const value = await env.FORMAT_TELEMETRY.get(key.name);
             if (value) {
               try {
@@ -198,9 +280,10 @@ export default {
                 allRecords.push(record);
               } catch (e) {}
             }
+            scanned++;
           }
           cursor = list.cursor;
-        } while (cursor);
+        } while (cursor && scanned < MAX_SCAN);
 
         // Compute stats
         const total = allRecords.length;
@@ -212,7 +295,7 @@ export default {
           prefixCounts[p] = (prefixCounts[p] || 0) + 1;
           const s = r.status || "unknown";
           statuses[s] = (statuses[s] || 0) + 1;
-          if (r.fullFile) fullFileCount++;
+          if (r.fullFile || r.hasFullFile) fullFileCount++;
         }
         const uniquePrefixes = Object.keys(prefixCounts).length;
         const unknownFailed =
@@ -241,6 +324,16 @@ export default {
         return new Response(html, {
           headers: {
             "Content-Type": "text/html; charset=utf-8",
+            // Defense-in-depth for the stored-XSS fix: even if an unescaped
+            // field ever slips through, no script can run and the admin
+            // page cannot be framed (token exfiltration / clickjacking).
+            "Content-Security-Policy":
+              "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'",
+            "X-Content-Type-Options": "nosniff",
+            // The token arrives via an Authorization header; these stop it
+            // leaking through the browser cache or a Referer (CWE-200).
+            "Cache-Control": "no-store",
+            "Referrer-Policy": "no-referrer",
             ...corsHeaders,
           },
         });
@@ -257,7 +350,12 @@ export default {
         );
       }
 
-      // CLI data dashboard — prefix counts
+      // CLI data dashboard — prefix counts derived from KEY NAMES ONLY (zero
+      // value fetches). The prefix is the leading number of `fmt_<prefix>_<id>`
+      // keys, so counting is metadata-only — the old code fetched and parsed
+      // every record value (incl. multi-MB full_file payloads) just to tally
+      // prefixes, making this unauthenticated endpoint a storage-egress/CPU
+      // amplifier for anyone (CWE-400).
       // Usage: curl https://ithmb-telemetry.ithmb-codec.workers.dev
       const prefixCounts = {};
       let cursor;
@@ -268,13 +366,10 @@ export default {
           limit: 1000,
         });
         for (const key of list.keys) {
-          const value = await env.FORMAT_TELEMETRY.get(key.name);
-          if (value) {
-            try {
-              const record = JSON.parse(value);
-              const p = record.prefix;
-              prefixCounts[p] = (prefixCounts[p] || 0) + 1;
-            } catch (e) {}
+          const m = /^fmt_(\d+)_/.exec(key.name);
+          if (m) {
+            const p = m[1];
+            prefixCounts[p] = (prefixCounts[p] || 0) + 1;
           }
         }
         cursor = list.cursor;
@@ -315,7 +410,10 @@ export default {
       }
 
       const bodyText = await request.text();
-      if (bodyText.length > MAX_BODY_BYTES) {
+      // Byte-accurate cap: bodyText.length counts UTF-16 units, so a
+      // multi-byte (e.g. CJK) body could slip ~3× the intended limit past
+      // JSON.parse (CWE-770). Measure true UTF-8 bytes instead.
+      if (new TextEncoder().encode(bodyText).byteLength > MAX_BODY_BYTES) {
         return new Response(JSON.stringify({ error: "body too large" }), {
           status: 413,
           headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -324,32 +422,22 @@ export default {
 
       const body = JSON.parse(bodyText);
       const fp = await fingerprint(request);
-      const today = new Date().toISOString().slice(0, 10);
-      const rateKey = `ratelimit:${fp}:${today}`;
-
-      // ---- Rate limit check ----
-      const count = parseInt(
-        (await env.FORMAT_TELEMETRY.get(rateKey)) || "0",
-        10,
-      );
-      if (count >= RATE_LIMIT_PER_DAY) {
-        return new Response(
-          JSON.stringify({ ok: false, error: "rate limited" }),
-          {
-            status: 429,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-          },
-        );
-      }
-
-      // ---- Per-IP rate limit (UA rotation can't bypass this) ----
       const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-      const ipRateKey = `ratelimit-ip:${ip}:${today}`;
-      const ipCount = parseInt(
-        (await env.FORMAT_TELEMETRY.get(ipRateKey)) || "0",
-        10,
-      );
-      if (ipCount >= RATE_LIMIT_PER_IP_PER_DAY) {
+      // Per-IP keys use a hash of the IP alone — the raw IP is never stored.
+      const ipHash = await ipFingerprint(ip);
+      const today = new Date().toISOString().slice(0, 10);
+      // Day-scoped marker prefixes, counted not incremented (race-free caps).
+      const ratePrefix = `rate:${fp}:${today}:`;
+      const ipRatePrefix = `rate-ip:${ipHash}:${today}:`;
+      const recordPrefix = `records:${fp}:${today}:`;
+      const ipRecordPrefix = `records-ip:${ipHash}:${today}:`;
+
+      // ---- Rate limit check (per fp + per IP) — race-free list counts ----
+      const [rateCount, ipRateCount] = await Promise.all([
+        countKeys(env, ratePrefix, RATE_LIMIT_PER_DAY),
+        countKeys(env, ipRatePrefix, RATE_LIMIT_PER_IP_PER_DAY),
+      ]);
+      if (rateCount >= RATE_LIMIT_PER_DAY) {
         return new Response(
           JSON.stringify({ ok: false, error: "rate limited" }),
           {
@@ -358,7 +446,15 @@ export default {
           },
         );
       }
-
+      if (ipRateCount >= RATE_LIMIT_PER_IP_PER_DAY) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "rate limited" }),
+          {
+            status: 429,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          },
+        );
+      }
       // ---- Batch submission (Send All) ----
       if (body.batch === true && Array.isArray(body.entries)) {
         if (body.entries.length > 500) {
@@ -367,18 +463,14 @@ export default {
             headers: { "Content-Type": "application/json", ...corsHeaders },
           });
         }
-        // Batch can store up to 500 records per POST — enforce the same
-        // per-fp/day record cap as the single path (full files ride along).
-        const batchRecordCountKey = `records:${fp}:${today}`;
-        let storedCount = parseInt(
-          (await env.FORMAT_TELEMETRY.get(batchRecordCountKey)) || "0",
-          10,
-        );
-        const ipRecordCountKey = `records-ip:${ip}:${today}`;
-        let ipStoredCount = parseInt(
-          (await env.FORMAT_TELEMETRY.get(ipRecordCountKey)) || "0",
-          10,
-        );
+        // Enforce the per-fp/day + per-ip/day record caps for the whole batch
+        // from list counts (race-free; KV has no atomic counters).
+        const [baseStored, baseIpStored] = await Promise.all([
+          countKeys(env, recordPrefix, MAX_RECORDS_PER_FP_PER_DAY),
+          countKeys(env, ipRecordPrefix, MAX_RECORDS_PER_IP_PER_DAY),
+        ]);
+        let storedCount = baseStored;
+        let ipStoredCount = baseIpStored;
         let stored = 0;
         for (const entry of body.entries) {
           const ePrefix = entry.prefix;
@@ -392,6 +484,14 @@ export default {
           if (eExisting) continue;
           if (storedCount >= MAX_RECORDS_PER_FP_PER_DAY) continue;
           if (ipStoredCount >= MAX_RECORDS_PER_IP_PER_DAY) continue;
+          const eFullFile =
+            typeof entry.full_file === "string" &&
+            eStatus !== "success" &&
+            entry.full_file.length <= FULL_FILE_B64_MAX &&
+            validBase64Payload(entry.full_file)
+              ? entry.full_file
+              : null;
+          const uuid = crypto.randomUUID();
           const eRecord = {
             prefix: ePrefix,
             width:
@@ -407,48 +507,48 @@ export default {
                 ? entry.fileSize
                 : null,
             header:
-              typeof entry.header === "string" && entry.header.length <= 200
+              typeof entry.header === "string" &&
+              entry.header.length <= 200 &&
+              /^[0-9a-fA-F]+$/.test(entry.header)
                 ? entry.header
                 : null,
-            fullFile:
-              typeof entry.full_file === "string" &&
-              eStatus !== "success" &&
-              entry.full_file.length <= FULL_FILE_B64_MAX
-                ? entry.full_file
-                : null,
+            hasFullFile: eFullFile !== null,
             fp,
             timestamp: new Date().toISOString(),
           };
           await env.FORMAT_TELEMETRY.put(
-            `fmt_${ePrefix}_${Date.now()}_${stored}`,
+            `fmt_${ePrefix}_${uuid}`,
             JSON.stringify(eRecord),
             { expirationTtl: 86400 * 365 },
           );
+          if (eFullFile !== null) {
+            await env.FORMAT_TELEMETRY.put(`fullfile_${uuid}`, eFullFile, {
+              expirationTtl: 86400 * 365,
+            });
+          }
           await env.FORMAT_TELEMETRY.put(eDedupKey, "1", {
             expirationTtl: 86400,
+          });
+          // Per-record cap markers (day-scoped, 2-day TTL).
+          await env.FORMAT_TELEMETRY.put(`${recordPrefix}${uuid}`, "1", {
+            expirationTtl: 86400 * 2,
+          });
+          await env.FORMAT_TELEMETRY.put(`${ipRecordPrefix}${uuid}`, "1", {
+            expirationTtl: 86400 * 2,
           });
           stored++;
           storedCount++;
           ipStoredCount++;
         }
         if (stored > 0) {
-          await env.FORMAT_TELEMETRY.put(
-            batchRecordCountKey,
-            String(storedCount),
-            { expirationTtl: 86400 * 2 },
-          );
+          const rateUuid = crypto.randomUUID();
+          await env.FORMAT_TELEMETRY.put(`${ratePrefix}${rateUuid}`, "1", {
+            expirationTtl: 86400 * 2,
+          });
+          await env.FORMAT_TELEMETRY.put(`${ipRatePrefix}${rateUuid}`, "1", {
+            expirationTtl: 86400 * 2,
+          });
         }
-          await env.FORMAT_TELEMETRY.put(
-            ipRecordCountKey,
-            String(ipStoredCount),
-            { expirationTtl: 86400 * 2 },
-          );
-        await env.FORMAT_TELEMETRY.put(rateKey, String(count + 1), {
-          expirationTtl: 86400 * 2,
-        });
-        await env.FORMAT_TELEMETRY.put(ipRateKey, String(ipCount + 1), {
-          expirationTtl: 86400 * 2,
-        });
         return new Response(JSON.stringify({ ok: true, stored }), {
           status: 200,
           headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -483,16 +583,22 @@ export default {
         typeof body.width === "number" && body.width > 0 ? body.width : null;
       const height =
         typeof body.height === "number" && body.height > 0 ? body.height : null;
+      // Header must be a hex signature (client sends bytesToHex(bytes, "")).
+      // Non-hex values are rejected (stored as null) so a "<script>" payload
+      // can never be persisted and later interpolated into the dashboard.
       const header =
-        typeof body.header === "string" && body.header.length <= 200
+        typeof body.header === "string" &&
+        body.header.length <= 200 &&
+        /^[0-9a-fA-F]+$/.test(body.header)
           ? body.header
           : null;
       const fullFile =
         typeof body.full_file === "string" &&
         body.full_file.length <= FULL_FILE_B64_MAX &&
-        status !== "success"
+        status !== "success" &&
         // non-success: known-failed (decoder bug) OR unknown (potential new
         // format) — the full file is where the research value is
+        validBase64Payload(body.full_file)
           ? body.full_file
           : null;
       const extension =
@@ -513,12 +619,14 @@ export default {
         });
       }
 
-      // ---- Record count cap (per fingerprint per day) ----
-      const recordCountKey = `records:${fp}:${today}`;
-      const storedCount = parseInt(
-        (await env.FORMAT_TELEMETRY.get(recordCountKey)) || "0",
-        10,
-      );
+      // ---- Record count cap (per fp + per IP per day) — list-based ----
+      // KV has no atomic counters; read-then-write counters drifted under
+      // concurrency (lost updates made the caps permanently bypassable).
+      // Counting actual per-record keys self-corrects (CWE-362).
+      const [storedCount, ipStoredCount] = await Promise.all([
+        countKeys(env, recordPrefix, MAX_RECORDS_PER_FP_PER_DAY),
+        countKeys(env, ipRecordPrefix, MAX_RECORDS_PER_IP_PER_DAY),
+      ]);
       if (storedCount >= MAX_RECORDS_PER_FP_PER_DAY) {
         return new Response(
           JSON.stringify({ ok: false, error: "too many records" }),
@@ -528,12 +636,6 @@ export default {
           },
         );
       }
-      // ---- Record count cap (per IP per day — UA rotation can't bypass) ----
-      const ipRecordCountKey = `records-ip:${ip}:${today}`;
-      const ipStoredCount = parseInt(
-        (await env.FORMAT_TELEMETRY.get(ipRecordCountKey)) || "0",
-        10,
-      );
       if (ipStoredCount >= MAX_RECORDS_PER_IP_PER_DAY) {
         return new Response(
           JSON.stringify({ ok: false, error: "too many records" }),
@@ -545,6 +647,10 @@ export default {
       }
 
       // ---- Store ----
+      // Records are slim: the full-file payload (up to ~11 MB base64) lives
+      // under its own `fullfile_<uuid>` key so dashboard/JSON renders never
+      // pull multi-MB values (CWE-400). hasFullFile tracks presence.
+      const uuid = crypto.randomUUID();
       const record = {
         prefix,
         width,
@@ -553,29 +659,33 @@ export default {
         issue,
         issueDetail,
         header,
-        fullFile,
+        hasFullFile: fullFile !== null,
         extension,
         fp,
         timestamp: new Date().toISOString(),
       };
-      const key = `fmt_${prefix}_${Date.now()}`;
+      const key = `fmt_${prefix}_${uuid}`;
       await env.FORMAT_TELEMETRY.put(key, JSON.stringify(record), {
         expirationTtl: 86400 * 365,
       });
-      await env.FORMAT_TELEMETRY.put(recordCountKey, String(storedCount + 1), {
+      if (fullFile !== null) {
+        await env.FORMAT_TELEMETRY.put(`fullfile_${uuid}`, fullFile, {
+          expirationTtl: 86400 * 365,
+        });
+      }
+      // Per-record cap markers (day-scoped, 2-day TTL).
+      await env.FORMAT_TELEMETRY.put(`${recordPrefix}${uuid}`, "1", {
         expirationTtl: 86400 * 2,
       });
-      await env.FORMAT_TELEMETRY.put(
-        ipRecordCountKey,
-        String(ipStoredCount + 1),
-        { expirationTtl: 86400 * 2 },
-      );
+      await env.FORMAT_TELEMETRY.put(`${ipRecordPrefix}${uuid}`, "1", {
+        expirationTtl: 86400 * 2,
+      });
 
-      // ---- Update rate limit counter ----
-      await env.FORMAT_TELEMETRY.put(rateKey, String(count + 1), {
+      // ---- Update rate limit markers (one per stored request) ----
+      await env.FORMAT_TELEMETRY.put(`${ratePrefix}${uuid}`, "1", {
         expirationTtl: 86400 * 2,
       });
-      await env.FORMAT_TELEMETRY.put(ipRateKey, String(ipCount + 1), {
+      await env.FORMAT_TELEMETRY.put(`${ipRatePrefix}${uuid}`, "1", {
         expirationTtl: 86400 * 2,
       });
 

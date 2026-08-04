@@ -46,19 +46,20 @@ Deploys a Cloudflare Worker that stores format metadata submissions from the WAS
 
 | field | Meaning | Cap |
 |-------|---------|-----|
-| `full_file` | Base64 of the complete file (checkbox "Upload full file") | 11,184,812 chars ≈ 8 MB raw |
+| `full_file` | Base64 of the complete file (checkbox "Upload full file"); must be valid base64 ≤ 8 MB decoded | 11,184,812 chars ≈ 8 MB raw |
 | `issue` | One of: `color_space`, `dimensions`, `stride`, `offset`, `byte_order`, `other` | ≤ 40 chars |
 | `issue_detail` | Free-text explanation | ≤ 200 chars |
 | `extension` | `ipm` or `ithmb` | — |
-
 ## Limits (anti-abuse)
 
-- **Request body:** ≤ 13 MB (`MAX_BODY_BYTES`); larger → `413 body too large`
-- **Rate limit:** 100 POSTs / day / fingerprint (IP + User-Agent hash)
-- **Records:** max 50 stored / day / fingerprint; dedup per `prefix+status` for 24 h
-- **Batch:** ≤ 500 entries per POST; client chunks sends to stay ≤ 12 MB body. Entries may carry `full_file` (same 11,184,812-char cap) — the batch record cap (50 / fp / day) applies to stored records
+- **Request body:** ≤ 13 MB **UTF-8 bytes** (`MAX_BODY_BYTES`; measured on the wire, not UTF-16 units); larger → `413 body too large`
+- **Rate limit:** 100 POSTs / day / fingerprint (IP + User-Agent hash) and 500 / day / IP — enforced by counting day-scoped per-request marker keys (race-free; KV has no atomic counters)
+- **Records:** max 50 stored / day / fingerprint and 250 / day / IP, enforced by counting per-record marker keys; dedup per `prefix+status` for 24 h
+- **Privacy:** the raw IP is **never stored** — per-IP keys use a truncated SHA-256 of the IP alone (same scheme as the record fingerprint)
+- **Records are slim:** `full_file` payloads are stored under a separate `fullfile_<uuid>` key so dashboard/JSON renders never fetch multi-MB values; `hasFullFile` tracks presence
+- **Batch:** ≤ 500 entries per POST; client chunks sends to stay ≤ 13 MB body. Entries may carry `full_file` (same cap) — the batch record caps apply to stored records
 - **Batch endpoint**: no longer used by the client — the single-record path (`POST /`) is the live one.
-- **Retention:** records expire after 365 days; rate/dedup counters after 1-2 days
+- **Retention:** records + full-file payloads expire after 365 days; rate/dedup/record markers after 1-2 days
 - **Keep `FULL_FILE_MAX_BYTES` in `ithmb-decoder/card-failure-ui.js` in sync**: the client disables full-file upload above 8 MB raw (the app's own decode limit), matching the worker's 11,184,812-char field cap
 ## Reading Data
 
@@ -82,6 +83,8 @@ curl -H "Authorization: Bearer $ADMIN_TOKEN" \
   https://ithmb-telemetry.ithmb-codec.workers.dev/dashboard
 ```
 
-- **Auth:** the `Authorization: Bearer <ADMIN_TOKEN>` header must match the worker's `ADMIN_TOKEN` env var; without it the request is rejected (401)
+- **Auth:** the `Authorization: Bearer <ADMIN_TOKEN>` header (constant-time compare) must match the worker's `ADMIN_TOKEN` env var; without it the request is rejected. The legacy `?token=` query path was removed — a bearer credential must never ride in URLs (browser history, access logs, Referer).
+- **Headers:** `Cache-Control: no-store` + `Referrer-Policy: no-referrer` (token leak prevention) + CSP + `nosniff`
+- **Scan is bounded** (5000 records) and reads slim records only — full-file payloads are never fetched during a render
 - Shows: total submissions, unique prefixes, unknown vs known-failed counts, full-file count, prefix distribution, recent 50 records
-- `GET /` (no token) is the public JSON endpoint used by the app's share buttons
+- `GET /` (no token) is the public JSON endpoint used by the app's share buttons — prefix counts are derived from KV key names (zero value fetches)
