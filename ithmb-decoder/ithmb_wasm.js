@@ -1,4 +1,3 @@
-/* @ts-self-types="./ithmb_wasm.d.ts" */
 
 // WASM init loader (cross-browser compatible streaming instantiation)
 // Re-exports all user-facing functions from the bindings module.

@@ -1,0 +1,58 @@
+# ci.yml — the web repo's only automated gate.
+# Runs on the PUBLIC repo (Ithmb-Codec-Web) where Actions minutes are free;
+# the private -Web-Dev repo's CI is blocked by the account's paid-minute
+# billing state, so public CI is the source of truth (same code, squash-pushed).
+name: ci
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+permissions: { contents: read }
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: lint:modules (acorn ES-module parse)
+        run: npm run lint:modules
+      - name: lint:i18n (key parity / embedded-en drift gate)
+        run: npm run lint:i18n
+      - name: wasm drift (committed wasm imports vs loader glue)
+        run: bash scripts/check-wasm-drift.sh
+
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright chromium
+        run: npx playwright install --with-deps chromium
+      - name: Playwright (chromium, local server)
+        env:
+          BASE_URL: "http://localhost:8899"
+        run: |
+          python3 -m http.server 8899 &
+          SERVER_PID=$!
+          trap "kill $SERVER_PID" EXIT
+          npx playwright test --project=chromium
+
+  secrets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - name: Gitleaks (secrets in history)
+        uses: gitleaks/gitleaks-action@dcedce43c6f43de0b836d1fe38946645c9c638dc # v2

@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.4.4 — 2026-08-04
+
+### Tooling
+- Added GitHub CI (`.github/workflows/ci.yml`): lint gates (acorn + i18n) + wasm drift check + Playwright chromium + gitleaks secrets scan — runs on the public repo where Actions minutes are free
+- Pre-commit hook now forces `BASE_URL` to a local server (it was silently testing the live production site) and runs the new wasm drift check
+- New `scripts/check-wasm-drift.sh`: fails if the committed wasm's imports drift from the hand-adapted loader glue (the wasm/loader breakage class)
+- `dependabot.yml` (npm + GitHub Actions)
+- New `AGENTS.md` onboarding guide: build/test/deploy, wasm regeneration pipeline, dev/public dual-repo workflow, security posture, release process
+- Removed the dangling `@ts-self-types` directive (the referenced `ithmb_wasm.d.ts` doesn't exist)
+
 ## 1.4.3 — 2026-08-04
 
 ### Fixed
