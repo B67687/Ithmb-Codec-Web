@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.3 — 2026-08-04
+
+### Fixed
+- Load-failed fallback now offers a **Retry** button (re-runs wasm init) — a transient fetch failure recovers in place instead of stranding the user on the error message
+
 ## 1.4.2 — 2026-08-04
 
 ### Added

@@ -40,6 +40,8 @@ const EMBEDDED_EN = {
   "app.zipTitle": "Download decoded files as {fmt} ZIP archive",
   "app.loadFailedTitle": "Failed to load decoder.",
   "app.loadFailedMsg": "Make sure your browser supports WebAssembly.",
+  "app.retry": "Retry",
+  "app.retrying": "Retrying…",
   "viewer.decodeFailed": "Decode Failed",
   "viewer.decoding": "Decoding...",
   "viewer.unknown": "Unknown",

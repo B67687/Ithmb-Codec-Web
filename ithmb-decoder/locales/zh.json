@@ -12,6 +12,8 @@
   "app.zipTitle": "将解码后的文件下载为 {fmt} ZIP 压缩包",
   "app.loadFailedTitle": "解码器加载失败。",
   "app.loadFailedMsg": "请确保你的浏览器支持 WebAssembly。",
+  "app.retry": "重试",
+  "app.retrying": "重试中…",
   "viewer.decodeFailed": "解码失败",
   "viewer.decoding": "解码中...",
   "viewer.unknown": "未知",

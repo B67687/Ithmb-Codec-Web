@@ -239,17 +239,39 @@ document
 try {
   await init();
 } catch (e) {
-  document
-    .querySelector(".container")
-    .insertAdjacentHTML(
-      "beforeend",
-      '<div style="text-align:center;padding:20px;color:#ff453a"><strong>' +
-        t("app.loadFailedTitle") +
-        "</strong> " +
-        t("app.loadFailedMsg") +
-        "</div>",
-    );
-  // Also disable the dropzone so users know something is broken
+  // Load failed (e.g. wasm fetch blipped, or the browser truly lacks
+  // WebAssembly). Show the message + a retry that re-runs init() — a
+  // transient failure (network blip) recovers; a permanent one re-enables
+  // the button so the user can try again.
+  const failDiv = document.createElement("div");
+  failDiv.id = "loadFailed";
+  failDiv.style.cssText = "text-align:center;padding:20px;color:#ff453a";
+  const strong = document.createElement("strong");
+  strong.textContent = t("app.loadFailedTitle");
+  failDiv.appendChild(strong);
+  failDiv.appendChild(document.createTextNode(" " + t("app.loadFailedMsg")));
+  failDiv.appendChild(document.createElement("br"));
+  const retryBtn = document.createElement("button");
+  retryBtn.type = "button";
+  retryBtn.className = "btn btn-small btn-primary";
+  retryBtn.style.marginTop = "12px";
+  retryBtn.textContent = t("app.retry");
+  retryBtn.addEventListener("click", async () => {
+    retryBtn.disabled = true;
+    retryBtn.textContent = t("app.retrying");
+    try {
+      await init();
+      failDiv.remove();
+      dropzone.style.pointerEvents = "";
+      dropzone.style.opacity = "";
+    } catch (e2) {
+      retryBtn.disabled = false;
+      retryBtn.textContent = t("app.retry");
+    }
+  });
+  failDiv.appendChild(retryBtn);
+  document.querySelector(".container").appendChild(failDiv);
+  // Also disable the dropzone so users know something is broken.
   dropzone.style.pointerEvents = "none";
   dropzone.style.opacity = "0.5";
 }
