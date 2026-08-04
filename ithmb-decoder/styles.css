@@ -546,8 +546,23 @@ width: 100%;
   background: #f0f0f0;
   border-radius: 6px;
   padding: 2px 8px;
-  font-family: "SF Mono", "Fira Code", monospace;
-  font-size: 0.8rem;
+font-family: "SF Mono", "Fira Code", monospace;
+font-size: 0.8rem;
+}
+
+/* Pin symbol glyphs to a single font so they render IDENTICALLY in every
+   language. Without this, ⚠ ✓ × · ← → etc. inherit the locale font stack
+   (Latin vs CJK) and the browser picks a DIFFERENT glyph per language —
+   the warning triangle visibly changes shape between EN and ZH. */
+.prefix-badge,
+.share-hexdump,
+.fmt-select,
+.info-value,
+.placeholder-icon,
+.placeholder-msg,
+.viewer-stage-content {
+  font-family: "SF Mono", "Fira Code", "DejaVu Sans", "Apple Symbols",
+    -apple-system, BlinkMacSystemFont, "Segoe UI Symbol", sans-serif;
 }
 /* Failure-card share box */
 .share-box {

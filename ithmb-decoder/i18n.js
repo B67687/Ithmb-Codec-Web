@@ -254,8 +254,8 @@ function detectLang() {
  */
 export function t(key, params) {
   let str =
-    (I18N.strings && I18N.strings[key]) ||
-    EMBEDDED_EN[key] ||
+    (I18N.strings && I18N.strings[key] !== undefined ? I18N.strings[key] : undefined) ??
+    (EMBEDDED_EN[key] !== undefined ? EMBEDDED_EN[key] : undefined) ??
     key;
   if (params) {
     for (const k of Object.keys(params)) {
@@ -305,10 +305,36 @@ function applyTranslations() {
 }
 
 /**
- * Switch the active language. Persists to localStorage and re-applies all
- * data-i18n text immediately (embedded defaults), then refreshes from the
- * locale JSON in the background.
+ * Preload every supported locale into I18N.strings at init, so a later
+ * setLang() is a pure in-memory swap with NO fetch in the critical path.
+ * The locales are tiny (~5KB each); this makes the first language switch
+ * instant instead of: render English -> fetch JSON -> re-render.
  */
+async function preloadLocales() {
+  const base = new URL(".", import.meta.url).href;
+  const loaded = {};
+  for (const lang of Object.keys(SUPPORTED)) {
+    try {
+      const resp = await fetch(base + "locales/" + lang + ".json", { cache: "no-cache" });
+      if (resp.ok) loaded[lang] = await resp.json();
+    } catch (e) {
+      // Keep embedded defaults for this lang; not fatal.
+    }
+  }
+  // Keep a fresh I18N.strings for the CURRENT language.
+  I18N.strings = Object.assign({}, EMBEDDED_EN, loaded[I18N.lang] || {});
+  I18N.loaded = true;
+  // Keep per-lang tables for instant future switches.
+  I18N._locales = loaded;
+  applyTranslations();
+  window.dispatchEvent(new CustomEvent("languagechange"));
+}
+
+/**
+* Switch the active language. Persists to localStorage and re-applies all
+* data-i18n text immediately (embedded defaults), then refreshes from the
+* locale JSON in the background.
+*/
 export function setLang(lang) {
   if (!SUPPORTED[lang]) return;
   I18N.lang = lang;
@@ -317,8 +343,18 @@ export function setLang(lang) {
   } catch (e) {
     // Ignore persistence failures.
   }
+  // Instant swap: use the preloaded per-lang table if available, else the
+  // embedded English defaults. No fetch in this path — that's the whole
+  // point of preloadLocales().
+  if (I18N._locales && I18N._locales[lang]) {
+    I18N.strings = Object.assign({}, EMBEDDED_EN, I18N._locales[lang]);
+    I18N.loaded = true;
+  } else {
+    // Fallback: preload hadn't finished for this lang — fire the fetch
+    // (loadLocale will apply + notify when it lands).
+    loadLocale(lang);
+  }
   applyTranslations();
-  loadLocale(lang);
   // Notify subscribers (e.g. app.js re-renders result cards) that the
   // language changed. i18n.js must stay dependency-free — no imports of
   // UI modules — so this event is the decoupling point.
@@ -347,9 +383,12 @@ async function loadLocale(lang) {
   }
 }
 
-// Initialise: detect language and apply (English embedded defaults are
-// available synchronously, so nothing flashes blank while locales load).
+// Initialise: detect language and apply. The detected language renders
+// immediately from embedded defaults (synchronous, nothing flashes blank);
+// preloadLocales() then fetches every locale in the background so any later
+// setLang() is an instant in-memory swap with no fetch.
 setLang(detectLang());
+preloadLocales();
 
 // Expose globals for classic scripts (nav.js, footer.js, etc.).
 window.I18N = I18N;

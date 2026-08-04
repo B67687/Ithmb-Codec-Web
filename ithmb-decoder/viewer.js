@@ -71,7 +71,7 @@ export function openViewer(index) {
       const placeholder = document.createElement("div");
       placeholder.className = "viewer-placeholder";
       placeholder.innerHTML = `
-        <div class="placeholder-icon">⚠</div>
+        <div class="placeholder-icon"><svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor" aria-hidden="true"><path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-7h-2v5h2V9z"/></svg></div>
         <div class="placeholder-title">${t("viewer.decodeFailed")}</div>
         <div class="placeholder-msg">${escapeHtml(statusText)}</div>
       `;
@@ -282,7 +282,7 @@ export function addFilmstripThumb(cardId, canvas) {
     thumb.appendChild(thumbCanvas);
   } else {
     thumb.innerHTML =
-      '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.2rem;opacity:0.4">⚠</div>';
+      '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;opacity:0.4"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-7h-2v5h2V9z"/></svg></div>';
   }
 
   // Ensure active thumb highlight if this thumb matches current viewer card
