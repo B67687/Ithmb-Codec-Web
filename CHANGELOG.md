@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.7 — 2026-08-05
+
+### Fixed
+- View-toggle button label now renders in the default language on first load (was stuck on the static English text when Chinese was the browser default). Root cause was an i18n initialization race: `languagechange` fires from i18n.js's module top-level before app.js registers its listener. The label is now derived from viewer state inside `updateToolbar()`, which runs on every state change — one mechanism instead of an event that can't cover the module-load race.
+
 ## 1.4.6 — 2026-08-05
 
 ### Tooling

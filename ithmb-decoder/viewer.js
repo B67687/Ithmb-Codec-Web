@@ -200,8 +200,19 @@ export function updateToolbar() {
   const toolbar = document.getElementById("toolbar");
   if (S.totalFiles > 0) toolbar.classList.add("visible");
   const toggleBtn = document.getElementById("viewToggleBtn");
+  const viewerContainer = document.getElementById("viewer-container");
   if (toggleBtn && S.totalFiles > 0) {
     toggleBtn.style.display = "";
+    // The toggle label names the view you'll switch TO and is viewer-state-
+    // dependent (deliberately NO data-i18n). Derive it HERE from state so it
+    // is correct on initial render in any language: updateToolbar runs on
+    // every state change, whereas the languagechange event cannot cover the
+    // module-load race (i18n.js activates before app.js registers its
+    // listener), which left the static English text in non-English defaults.
+    toggleBtn.textContent =
+      viewerContainer && viewerContainer.style.display !== "none"
+        ? t("app.gridView")
+        : t("app.gallery");
   }
   const dlBtn = document.getElementById("downloadAllBtn");
   if (successfulDecodes.length >= 2) {
