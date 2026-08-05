@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.5 — 2026-08-05
+
+### Fixed
+- Guide-page tests now target the canonical `.html` URL (`/guide/how-to-open-ithmb-files.html`) — the extensionless path only resolved on Python 3.14+, breaking the new CI on stock runners
+
 ## 1.4.4 — 2026-08-04
 
 ### Tooling

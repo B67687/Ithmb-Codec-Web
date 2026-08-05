@@ -34,7 +34,7 @@ test.describe("Mobile responsive", () => {
 
   test("guide page layout at 375px", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.goto("/guide/how-to-open-ithmb-files");
+    await page.goto("/guide/how-to-open-ithmb-files.html");
     const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
     expect(bodyWidth).toBeLessThanOrEqual(380);
   });

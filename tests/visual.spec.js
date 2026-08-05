@@ -33,7 +33,7 @@ test.describe("Visual Regression — Pages", () => {
   });
 
   test("guide page — full page", async ({ page }) => {
-    await page.goto("/guide/how-to-open-ithmb-files", {
+    await page.goto("/guide/how-to-open-ithmb-files.html", {
       waitUntil: "networkidle",
     });
     await expect(page).toHaveScreenshot({
@@ -72,7 +72,7 @@ test.describe("Visual Regression — Nav bar", () => {
   });
 
   test("nav — guide (active: Guide)", async ({ page }) => {
-    await page.goto("/guide/how-to-open-ithmb-files", {
+    await page.goto("/guide/how-to-open-ithmb-files.html", {
       waitUntil: "networkidle",
     });
     const nav = page.locator("nav");

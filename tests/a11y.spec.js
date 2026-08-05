@@ -6,7 +6,7 @@ test.describe("Accessibility", () => {
   const pages = [
     { name: "Home", url: "/" },
     { name: "Decoder", url: "/ithmb-decoder/" },
-    { name: "Guide", url: "/guide/how-to-open-ithmb-files" },
+    { name: "Guide", url: "/guide/how-to-open-ithmb-files.html" },
     { name: "Enterprise", url: "/enterprise/" },
     { name: "404", url: "/nonexistent" },
   ];

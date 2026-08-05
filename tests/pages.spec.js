@@ -32,14 +32,14 @@ test.describe("Enterprise page", () => {
 
 test.describe("Guide page", () => {
   test("loads with correct title", async ({ page }) => {
-    await page.goto("/guide/how-to-open-ithmb-files", {
+    await page.goto("/guide/how-to-open-ithmb-files.html", {
       waitUntil: "networkidle",
     });
     await expect(page).toHaveTitle(/How to Open/);
   });
 
   test("has FAQ heading", async ({ page }) => {
-    await page.goto("/guide/how-to-open-ithmb-files", {
+    await page.goto("/guide/how-to-open-ithmb-files.html", {
       waitUntil: "networkidle",
     });
     await expect(
