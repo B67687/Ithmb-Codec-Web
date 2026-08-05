@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.4.11 — 2026-08-05
+
+### Fixed
+- Enterprise is now reachable from a low-key **footer link** (kept out of the topbar, which stays Home | Decoder | Guide — the site's identity is a free/private tool, and the enterprise page is an under-construction commercial side-door; buyers find it via the home card or footer).
+
+# Changelog
+
 ## 1.4.10 — 2026-08-05
 
 ### Tests
