@@ -49,9 +49,9 @@ export async function decodeFile(file, cardId) {
     statusEl.textContent = t("card.error");
     previewEl.style.display = "block";
     previewEl.innerHTML = `<div class="err-msg">${escapeHtml(err.message || String(err))}</div>`;
-    // Error cards are NOT pushed to failedDecodes: they carry no shareable
+    // Error cards are NOT stored in the cards lists: they carry no shareable
     // bytes (the failure may have happened before bytes/prefix were set), so
-    // a failedDecodes entry would break reRenderCards (createShareBox throws
+    // a failed entry would break reRenderCards (createShareBox throws
     // on undefined bytes) and mislabel the card as an unknown format. The
     // viewer already treats error cards as entries without a failed entry.
     renderErrorCard(cardId, err.message || String(err));

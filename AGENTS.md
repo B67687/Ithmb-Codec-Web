@@ -14,6 +14,7 @@ Ithmb-Codec-Web/
 │   ├── app.js               # Init, keyboard, dropzone wiring, languagechange handler
 │   ├── ui.js                # File cards, processFiles (batch/dedup), filmstrip
 │   ├── decoder.js           # decodeFile: wasm call, success/failure dispatch
+│   ├── cards.js             # Single owner of decode-result lists (add/query/reset)
 │   ├── card-success-ui.js   # Success card render + reRenderCards (language switch)
 │   ├── card-failure-ui.js   # Failed/unknown card render
 │   ├── share-actions.js     # Share box + shared report modal (backdrop bound once)
@@ -21,7 +22,7 @@ Ithmb-Codec-Web/
 │   ├── viewer.js            # Fullscreen viewer, stage, toolbar, download
 │   ├── download.js          # Download All ZIP (entry-name sanitized + deduped)
 │   ├── i18n.js              # en/zh tables, EMBEDDED_EN fallback, setLang/applyTranslations
-│   ├── state.js             # S singleton + shared arrays (successfulDecodes, failedDecodes)
+│   ├── state.js             # S singleton + dedup Sets (decode lists live in cards.js)
 │   ├── utils.js             # formatSize, showToast, escapeHtml, bytesToHex/Base64
 │   ├── index.html           # Decoder page markup (viewToggleBtn has NO data-i18n — state-derived)
 │   ├── locales/{en,zh}.json # Translation tables (flat keys)

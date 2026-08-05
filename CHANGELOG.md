@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.9 — 2026-08-05
+
+### Architecture
+- Decode-result lists (`successfulDecodes`/`failedDecodes`) are now owned by a single `cards.js` module (addSuccess/addFailure/resetCards + read-only query accessors) instead of plain exported arrays every module mutated — closes the "shared mutable arrays" seam documented in FEATURES.md §12. `resetCards()` replaces the duplicated length-reset in the first-batch path.
+
 ## 1.4.8 — 2026-08-05
 
 ### Docs

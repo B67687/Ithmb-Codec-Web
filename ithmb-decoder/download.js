@@ -1,4 +1,5 @@
-import { S, successfulDecodes } from "./state.js";
+import { S } from "./state.js";
+import { successCards } from "./cards.js";
 import { formatLabels, extMap, showToast } from "./utils.js";
 import { t } from "./i18n.js";
 
@@ -8,7 +9,7 @@ export async function downloadAll() {
     return;
   }
   const zip = new JSZip();
-  for (const { canvas, fileName } of successfulDecodes) {
+  for (const { canvas, fileName } of successCards()) {
     const ext = extMap[S.downloadFormat] || ".jpg";
     const blob = await new Promise((resolve) =>
       canvas.toBlob(resolve, S.downloadFormat, 0.92),

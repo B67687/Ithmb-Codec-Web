@@ -1,4 +1,5 @@
-import { S, successfulDecodes, failedDecodes, KNOWN_PREFIXES } from "./state.js";
+import { S, KNOWN_PREFIXES } from "./state.js";
+import { findSuccess, findFailure, successCount } from "./cards.js";
 import { escapeHtml } from "./utils.js";
 import { createShareBox, createReportLink } from "./share-actions.js";
 import { t } from "./i18n.js";
@@ -58,7 +59,7 @@ export function openViewer(index) {
   // placeholder can embed the share box (one integrated card) and the
   // success path can attach the report link below the image.
   const viewerCardId = card.dataset.cardId;
-  const failedEntry = failedDecodes.find((f) => f.cardId === viewerCardId);
+  const failedEntry = findFailure(viewerCardId);
 
   if (!srcCanvas) {
     const status = card.querySelector(".status");
@@ -101,9 +102,7 @@ export function openViewer(index) {
   // (identical dedup key + honest feedback via share-actions). Failed cards
   // already got their share box embedded inside the placeholder above.
   if (!failedEntry) {
-    const successEntry = successfulDecodes.find(
-      (s) => s.cardId === viewerCardId,
-    );
+    const successEntry = findSuccess(viewerCardId);
     if (successEntry) {
       const report = createReportLink({
         cardId: viewerCardId,
@@ -215,10 +214,10 @@ export function updateToolbar() {
         : t("app.gallery");
   }
   const dlBtn = document.getElementById("downloadAllBtn");
-  if (successfulDecodes.length >= 2) {
+  if (successCount() >= 2) {
     dlBtn.style.display = "";
     dlBtn.textContent = t("app.downloadAll");
-    dlBtn.title = t("viewer.zipTitle", { count: successfulDecodes.length });
+    dlBtn.title = t("viewer.zipTitle", { count: successCount() });
   } else {
     dlBtn.style.display = "none";
   }

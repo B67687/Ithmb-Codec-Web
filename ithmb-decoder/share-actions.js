@@ -1,4 +1,5 @@
-import { sharedSubmissionIds, successfulDecodes } from "./state.js";
+import { sharedSubmissionIds } from "./state.js";
+import { findSuccess } from "./cards.js";
 import { bytesToHex, bytesToBase64, showToast } from "./utils.js";
 import { submitTelemetry } from "./telemetry.js";
 import { t } from "./i18n.js";
@@ -197,7 +198,7 @@ function openReportModal(cardId, bytes, prefix, fileSize) {
   const thumb = document.createElement("img");
   thumb.className = "report-thumb";
   thumb.alt = "";
-  const entry = successfulDecodes.find((e) => e.cardId === cardId);
+  const entry = findSuccess(cardId);
   if (entry && entry.canvas) {
     try {
       thumb.src = entry.canvas.toDataURL("image/jpeg", 0.7);

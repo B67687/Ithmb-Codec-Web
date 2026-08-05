@@ -1,4 +1,5 @@
-import { S, successfulDecodes, failedDecodes, KNOWN_PREFIXES } from "./state.js";
+import { S, KNOWN_PREFIXES } from "./state.js";
+import { addSuccess, findSuccess, successCards, failedCards } from "./cards.js";
 import { formatLabels, extMap, formatSize } from "./utils.js";
 import { addFilmstripThumb, refreshViewerIfCurrent } from "./viewer.js";
 import { get_encoding_name } from "./ithmb_wasm.js";
@@ -44,7 +45,7 @@ export function renderSuccessCard(
   previewEl.appendChild(canvas);
 
   // Track successful decode (before info panel so renderCardInfo finds it).
-successfulDecodes.push({
+addSuccess({
 cardId,
 canvas,
 fileName: file.name,
@@ -70,12 +71,12 @@ height,
 }
 
 // Idempotent info-panel builder. Reads the card's entry from
-// successfulDecodes and rebuilds ONLY the info panel (translated text,
+// the success-cards list (cards.js) and rebuilds ONLY the info panel (translated text,
 // format selector, save button, report link) — replacing, never appending.
 // Safe to call again on language switch; the side effects (push, filmstrip)
 // live in renderSuccessCard and do NOT re-run.
 export function renderCardInfo(cardId) {
-  const entry = successfulDecodes.find((e) => e.cardId === cardId);
+  const entry = findSuccess(cardId);
   if (!entry) return;
   const { width, height, canvas, bytes, prefix, fileSize } = entry;
   const card = document.getElementById(cardId);
@@ -154,11 +155,11 @@ export function renderCardInfo(cardId) {
 // failure cards rebuild their share box; error cards have no persisted state
 // and are left as-is (their message is not translatable).
 export function reRenderCards() {
-  for (const entry of successfulDecodes) {
+  for (const entry of successCards()) {
     renderCardInfo(entry.cardId);
   }
-  for (const entry of failedDecodes) {
-    // Error cards must never be in failedDecodes (they carry no shareable
+  for (const entry of failedCards()) {
+    // Error cards must never be in the cards lists (they carry no shareable
     // bytes) — skip defensively so a bytes-less entry can't crash the whole
     // re-render via createShareBox's bytes.slice(0, 16).
     if (!entry.bytes) continue;

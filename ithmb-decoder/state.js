@@ -29,5 +29,3 @@ export const processedFileIds = new Set();
 // Dedup of share/report submissions (share-actions.js) — one key per shared
 // file+action, so the same share can't be submitted twice.
 export const sharedSubmissionIds = new Set();
-export const successfulDecodes = [];
-export const failedDecodes = [];

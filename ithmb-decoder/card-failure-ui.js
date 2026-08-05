@@ -1,4 +1,4 @@
-import { failedDecodes } from "./state.js";
+import { addFailure } from "./cards.js";
 import { escapeHtml } from "./utils.js";
 import { addFilmstripThumb, refreshViewerIfCurrent } from "./viewer.js";
 import { createShareBox } from "./share-actions.js";
@@ -30,7 +30,7 @@ export function renderFailureCard(cardId, file, bytes, prefix, mode) {
     }),
   );
 
-  failedDecodes.push({
+  addFailure({
     cardId,
     bytes,
     prefix,

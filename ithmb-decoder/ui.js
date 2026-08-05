@@ -1,9 +1,8 @@
 import {
   S,
   processedFileIds,
-  successfulDecodes,
-  failedDecodes,
 } from "./state.js";
+import { resetCards } from "./cards.js";
 import { bytesToHex, escapeHtml, formatSize, showToast } from "./utils.js";
 import { decodeFile } from "./decoder.js";
 import { openViewer, createFilmstripThumb, updateToolbar } from "./viewer.js";
@@ -48,8 +47,8 @@ export async function processFiles(files) {
     S.cardCount = 0;
     S.globalCardIdCounter = 0;
     S.totalFiles = 0;
-    successfulDecodes.length = 0;
-    failedDecodes.length = 0;
+    resetCards();
+
     processedFileIds.clear();
     const filmstrip = document.getElementById("viewer-filmstrip");
     if (filmstrip) filmstrip.innerHTML = "";

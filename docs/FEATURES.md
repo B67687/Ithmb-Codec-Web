@@ -51,7 +51,7 @@ ithmb-codec-web/
 │   ├── i18n.js                        # en/zh tables, EMBEDDED_EN fallback, setLang, languagechange event
 │   ├── share-actions.js               # Share box + SHARED report modal (#reportModal, backdrop bound once)
 │   ├── card-success-ui.js             # Success card: info panel + report link (no share box)
-│   ├── card-failure-ui.js             # Failure/unknown card: share box + report link
+│   ├── cards.js                        # SINGLE OWNER of decode-result lists (addSuccess/addFailure/reset/query)
 │   ├── locales/{en,zh}.json           # Translation tables (flat keys; sync-embedded.mjs regenerates EMBEDDED_EN)
 │   ├── ithmb_wasm.js                  # HAND-ADAPTED loader (streaming instantiation) — do NOT replace
 │   ├── ithmb_wasm_bg.js               # GENERATED wasm-bindgen glue (reformatted) — pairs with the loader
@@ -187,9 +187,11 @@ Title "ITHMB Decoder | ITHMB Codec", canonical, JSZip 3.10.1 (cdnjs, with SRI), 
 
 **Mutable state object `S`:** `cardCount`, `globalCardIdCounter`, `viewerIndex`, `totalFiles`, `processedCount`, `downloadFormat`, `cardFormats`, `lastTarget`.
 
-**Module-level arrays/collections (mutated directly by consumer modules):**
-- `successfulDecodes` — `{cardId, canvas, fileName, bytes, prefix, fileSize, width, height}[]`
-- `failedDecodes` — `{cardId, bytes, prefix, fileName, fileSize}[]` — **error cards are never pushed** (no shareable bytes)
+**Decode-result lists — owned by `cards.js` (single owner; writes via addSuccess/addFailure/resetCards, reads via successCards()/failedCards()/findSuccess()/findFailure()/successCount() — read accessors return copies so callers can't mutate):**
+- success list — `{cardId, canvas, fileName, bytes, prefix, fileSize, width, height}[]` (entries always carry `bytes`)
+- failure list — `{cardId, bytes, prefix, fileName, fileSize}[]` — **error cards are never stored** (no shareable bytes)
+
+**Other module-level collections (still in state.js):**
 - `processedFileIds` — Set, re-upload dedup (content hash + filename)
 - `sharedSubmissionIds` — Set, share/report dedup across re-renders (survives language-switch card rebuilds)
 
