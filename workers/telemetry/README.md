@@ -2,6 +2,15 @@
 
 Deploys a Cloudflare Worker that stores format metadata submissions from the WASM decoder into KV. No public exposure. No email required.
 
+## Tests
+
+Committed integration test (miniflare/workerd, in-memory KV, no external processes):
+
+```bash
+node workers/telemetry/test-worker.mjs   # or: npm run test:worker
+```
+
+Covers: valid + garbage-base64 POSTs, Bearer-only auth (`?token=` dead), no raw IP in KV keys, `fullfile_` payload separation, uuid record keys.
 ## Deployment
 
 1. Install [Node.js](https://nodejs.org/) (if not already)

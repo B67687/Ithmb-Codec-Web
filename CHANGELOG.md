@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.10 — 2026-08-05
+
+### Tests
+- Telemetry worker now has a **committed integration test** (`workers/telemetry/test-worker.mjs`, `npm run test:worker`): runs the worker inside miniflare/workerd with in-memory KV — 10 checks covering valid/garbage-base64 POSTs, Bearer-only auth, no raw IP in KV keys, `fullfile_` payload separation, uuid record keys, key-name-derived public JSON. Replaces the flaky bash smoke script (SQLite WAL checkpoint races).
+
+### Dependencies
+- Added `miniflare` as a devDependency (test-only; runtime remains zero-dep).
+
 ## 1.4.9 — 2026-08-05
 
 ### Architecture

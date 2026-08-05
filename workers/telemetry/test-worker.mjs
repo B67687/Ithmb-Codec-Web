@@ -1,0 +1,88 @@
+// test-worker.mjs — committed integration test for the telemetry worker.
+//
+// Runs the worker inside miniflare (workerd) with IN-MEMORY KV: no external
+// processes, no persist files, no flaky WAL timing — the same engine CI and
+// production use. Covers the hardened behaviors (security audit C1–C6):
+//   - POST accepts a valid record (hex header)
+//   - garbage base64 full_file is rejected (stored with hasFullFile:false)
+//   - a valid full_file payload lands under a separate `fullfile_` key
+//   - `?token=` no longer authenticates; Bearer does
+//   - no raw IP appears in KV key names (per-IP keys are hashed)
+//   - public JSON derives prefix counts from key names (zero value fetches)
+//
+// Run: npm run test:worker   (from the repo root)
+import { Miniflare } from "miniflare";
+import { fileURLToPath } from "node:url";
+
+const WORKER_SRC = fileURLToPath(new URL("./src/worker.js", import.meta.url));
+
+const mf = new Miniflare({
+  modules: true,
+  scriptPath: WORKER_SRC,
+  kvNamespaces: ["FORMAT_TELEMETRY"],
+  bindings: { ADMIN_TOKEN: "smoke-test-token-0001" },
+});
+
+let pass = 0;
+let fail = 0;
+const check = (name, ok, detail = "") => {
+  console.log(`${ok ? "PASS" : "FAIL"}: ${name}${detail ? " — " + detail : ""}`);
+  ok ? pass++ : fail++;
+};
+
+const post = (body) =>
+  mf.dispatchFetch("http://localhost/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "CF-Connecting-IP": "203.0.113.99",
+    },
+    body: JSON.stringify(body),
+  });
+
+// 1. Valid record with hex header
+let r = await post({
+  prefix: 1009,
+  status: "unknown",
+  header: "4d4d0042000000000000000000000000",
+  fileSize: 1234,
+});
+check("POST valid record", (await r.json()).ok === true);
+
+// 2. Garbage base64 full_file → record stored, payload rejected (hasFullFile:false)
+r = await post({ prefix: 1009, status: "looks-wrong", full_file: "!!!!!not-base64-at-all!!!!!####$$$$" });
+check("POST garbage base64 accepted as record", (await r.json()).ok === true);
+
+// 3. Valid 8 MiB full_file → stored (payload lands under a separate key)
+const b64 = Buffer.alloc(8 * 1024 * 1024, 0).toString("base64");
+r = await post({ prefix: 1009, status: "known-failed", full_file: b64 });
+check("POST valid full_file", (await r.json()).ok === true);
+
+// 4. Auth: ?token= must NOT authenticate (public JSON fallback); Bearer → dashboard
+r = await mf.dispatchFetch("http://localhost/?token=smoke-test-token-0001");
+const tokenBody = await r.text();
+check("?token= returns JSON (not dashboard)", tokenBody.trimStart().startsWith("{"));
+
+r = await mf.dispatchFetch("http://localhost/", {
+  headers: { Authorization: "Bearer smoke-test-token-0001" },
+});
+const dashBody = await r.text();
+check("Bearer returns dashboard HTML", /<html|<!doctype/i.test(dashBody));
+
+// 5. KV key hygiene via miniflare's in-memory KV (robust — no persist files)
+const ns = await mf.getKVNamespace("FORMAT_TELEMETRY");
+const keys = (await ns.list()).keys.map((k) => k.name).join("\n");
+check("no raw IP in KV keys", !keys.includes("203.0.113.99"));
+check("fullfile_ payload key separated", /^fullfile_/m.test(keys));
+check("uuid record keys (no Date.now)", /^fmt_1009_[0-9a-f-]{36}$/m.test(keys));
+
+// 6. Public JSON derives prefix counts from key names (zero value fetches)
+r = await mf.dispatchFetch("http://localhost/");
+const j = await r.json();
+check("public JSON prefix count == 3", j.prefixCounts?.["1009"] === 3, JSON.stringify(j.prefixCounts));
+
+// 7. Dashboard tracks the full-file record (separation)
+check("dashboard Full File Uploads == 1", /Full File Uploads<\/h3><div class="value">1<\/div>/.test(dashBody));
+
+console.log(`\n=== worker test: ${pass} passed, ${fail} failed ===`);
+process.exit(fail ? 1 : 0);
