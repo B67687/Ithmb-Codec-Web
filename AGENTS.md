@@ -30,7 +30,7 @@ Ithmb-Codec-Web/
 │   ├── ithmb_wasm_bg.js     # GENERATED wasm-bindgen glue (reformatted) — pairs with the loader
 │   └── ithmb_wasm_bg.wasm   # GENERATED decoder binary — copied from Ithmb-Codec
 ├── workers/telemetry/       # Cloudflare Worker (see its README for deploy)
-│   ├── src/worker.js        # POST /api/share + batch, JSON /, HTML /dashboard (ADMIN_TOKEN)
+│   ├── src/worker.js        # POST / (single + batch), JSON /, HTML /dashboard (ADMIN_TOKEN)
 │   └── wrangler.toml        # KV binding; ADMIN_TOKEN is set in the CF dashboard, NEVER here
 ├── scripts/
 │   ├── check-i18n.mjs       # i18n integrity gate (key parity, raw literals, EMBEDDED_EN drift)
@@ -104,7 +104,7 @@ cp pkg/ithmb_wasm_bg.wasm ../../Ithmb-Codec-Web/ithmb-decoder/ithmb_wasm_bg.wasm
 ## Deploy
 
 - **Site (ithmb-codec.dev):** Cloudflare Pages, connected to the PUBLIC repo's `main` branch. Push to public → auto-deploy (~1-2 min). No workflow file involved.
-- **Telemetry worker:** `workers/telemetry/` — see `workers/telemetry/README.md` for `wrangler deploy`, secrets (`ADMIN_TOKEN` set in the CF dashboard, never committed), and the KV/rate-limit/record schema. Local testing: `wrangler dev` against `workers/telemetry/.wrangler/` miniflare state.
+- **Telemetry worker:** `workers/telemetry/` — see `workers/telemetry/README.md` for `wrangler deploy`, secrets (`ADMIN_TOKEN` set in the CF dashboard, never committed), and the KV/rate-limit/record schema. Local testing: `npm run test:worker` (miniflare integration test — in-memory KV, the canonical path); `wrangler dev` for manual probing.
 
 ## Security Posture
 

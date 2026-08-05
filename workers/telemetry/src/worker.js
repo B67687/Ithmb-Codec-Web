@@ -359,6 +359,11 @@ export default {
       // Usage: curl https://ithmb-telemetry.ithmb-codec.workers.dev
       const prefixCounts = {};
       let cursor;
+      let scanned = 0;
+      // Bounded scan, same as the dashboard: this unauthenticated endpoint
+      // must not paginate the whole namespace as the store grows (CWE-400).
+      // Counts reflect the first MAX_SCAN records.
+      const MAX_SCAN = 5000;
       do {
         const list = await env.FORMAT_TELEMETRY.list({
           prefix: "fmt_",
@@ -366,14 +371,16 @@ export default {
           limit: 1000,
         });
         for (const key of list.keys) {
+          if (scanned >= MAX_SCAN) break;
           const m = /^fmt_(\d+)_/.exec(key.name);
           if (m) {
             const p = m[1];
             prefixCounts[p] = (prefixCounts[p] || 0) + 1;
           }
+          scanned++;
         }
         cursor = list.cursor;
-      } while (cursor);
+      } while (cursor && scanned < MAX_SCAN);
       return new Response(
         JSON.stringify(
           {
@@ -455,6 +462,18 @@ export default {
           },
         );
       }
+      // Rate markers are written for EVERY request that passes the rate
+      // check — before dedup/validation early-returns — so an attacker can't
+      // replay dedup'd or invalid POSTs forever without consuming the
+      // 100/500-per-day budget (each such request still costs body read +
+      // KV list scans + fingerprint).
+      const rateUuid = crypto.randomUUID();
+      await env.FORMAT_TELEMETRY.put(`${ratePrefix}${rateUuid}`, "1", {
+        expirationTtl: 86400 * 2,
+      });
+      await env.FORMAT_TELEMETRY.put(`${ipRatePrefix}${rateUuid}`, "1", {
+        expirationTtl: 86400 * 2,
+      });
       // ---- Batch submission (Send All) ----
       if (body.batch === true && Array.isArray(body.entries)) {
         if (body.entries.length > 500) {
@@ -479,7 +498,7 @@ export default {
           const eStatus = VALID_STATUSES.has(entry.status)
             ? entry.status
             : "success";
-          const eDedupKey = `dedup:${fp}:${ePrefix}:${eStatus}`;
+          const eDedupKey = `dedup:${fp}:${ePrefix}:${eStatus}:${entry.full_file ? "f" : "h"}`;
           const eExisting = await env.FORMAT_TELEMETRY.get(eDedupKey);
           if (eExisting) continue;
           if (storedCount >= MAX_RECORDS_PER_FP_PER_DAY) continue;
@@ -539,15 +558,6 @@ export default {
           stored++;
           storedCount++;
           ipStoredCount++;
-        }
-        if (stored > 0) {
-          const rateUuid = crypto.randomUUID();
-          await env.FORMAT_TELEMETRY.put(`${ratePrefix}${rateUuid}`, "1", {
-            expirationTtl: 86400 * 2,
-          });
-          await env.FORMAT_TELEMETRY.put(`${ipRatePrefix}${rateUuid}`, "1", {
-            expirationTtl: 86400 * 2,
-          });
         }
         return new Response(JSON.stringify({ ok: true, stored }), {
           status: 200,
@@ -680,14 +690,11 @@ export default {
       await env.FORMAT_TELEMETRY.put(`${ipRecordPrefix}${uuid}`, "1", {
         expirationTtl: 86400 * 2,
       });
+      // (Rate markers are written for every accepted request at the top of
+      // the POST handler — before dedup/validation — so no path can replay
+      // without consuming the per-day budget.)
 
-      // ---- Update rate limit markers (one per stored request) ----
-      await env.FORMAT_TELEMETRY.put(`${ratePrefix}${uuid}`, "1", {
-        expirationTtl: 86400 * 2,
-      });
-      await env.FORMAT_TELEMETRY.put(`${ipRatePrefix}${uuid}`, "1", {
-        expirationTtl: 86400 * 2,
-      });
+      // ---- Set dedup marker (24h TTL) ----
 
       // ---- Set dedup marker (24h TTL) ----
       await env.FORMAT_TELEMETRY.put(dedupKey, "1", { expirationTtl: 86400 });

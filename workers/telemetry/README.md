@@ -47,9 +47,10 @@ Covers: valid + garbage-base64 POSTs, Bearer-only auth (`?token=` dead), no raw 
 
 | status | Meaning |
 |--------|---------|
-| `success` | File decoded successfully — prefix + dimensions sent |
+| `success` | File decoded successfully — client sends prefix + header (no dimensions) via the report modal |
 | `known-failed` | Known prefix but decode failed — 16-byte header sent |
 | `unknown` | Unknown prefix — 16-byte header sent |
+| `looks-good` / `looks-wrong` | Report-modal issue types from the success path |
 
 ### Optional fields
 
@@ -62,9 +63,9 @@ Covers: valid + garbage-base64 POSTs, Bearer-only auth (`?token=` dead), no raw 
 ## Limits (anti-abuse)
 
 - **Request body:** ≤ 13 MB **UTF-8 bytes** (`MAX_BODY_BYTES`; measured on the wire, not UTF-16 units); larger → `413 body too large`
-- **Rate limit:** 100 POSTs / day / fingerprint (IP + User-Agent hash) and 500 / day / IP — enforced by counting day-scoped per-request marker keys (race-free; KV has no atomic counters)
-- **Records:** max 50 stored / day / fingerprint and 250 / day / IP, enforced by counting per-record marker keys; dedup per `prefix+status` for 24 h
-- **Privacy:** the raw IP is **never stored** — per-IP keys use a truncated SHA-256 of the IP alone (same scheme as the record fingerprint)
+- **Rate limit:** 100 POSTs / day / fingerprint (IP + User-Agent hash) and 500 / day / IP — enforced by counting day-scoped per-request marker keys (self-correcting; a concurrent burst can overshoot by up to the in-flight concurrency — KV has no atomic counters)
+- **Records:** max 50 stored / day / fingerprint and 250 / day / IP, enforced by counting per-record marker keys; dedup per `prefix+status` + full-file flag (`:h`/`:f`) for 24 h
+- **Privacy:** the raw IP is **never stored in the clear** — per-IP keys use a truncated SHA-256 of the IP alone. Note: this is a pseudonym, not a secret — IPv4 is brute-forceable by anyone with KV read access (64-bit truncation)
 - **Records are slim:** `full_file` payloads are stored under a separate `fullfile_<uuid>` key so dashboard/JSON renders never fetch multi-MB values; `hasFullFile` tracks presence
 - **Batch:** ≤ 500 entries per POST; client chunks sends to stay ≤ 13 MB body. Entries may carry `full_file` (same cap) — the batch record caps apply to stored records
 - **Batch endpoint**: no longer used by the client — the single-record path (`POST /`) is the live one.

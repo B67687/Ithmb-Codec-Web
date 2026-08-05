@@ -1,6 +1,16 @@
 # Changelog
 
-## 1.4.12 — 2026-08-05
+## 1.4.13 — 2026-08-05
+
+### Security
+- **Rate markers now cover every accepted POST** (C2): the markers were written only on *stored* requests, so dedup'd/invalid resubmissions could replay forever without consuming the 100/500-per-day budget. Markers are written right after the rate check, before dedup/validation early-returns; the batch path's stored-only marker was removed; batch dedup keys now match the single path's `:h`/`:f` suffix (the divergent namespaces allowed duplicate storage).
+- **Public `GET /` scan bounded** (C3): the unauthenticated JSON endpoint paginated the entire `fmt_` namespace (only the dashboard had the 5000 cap) — now capped at 5000 like the dashboard.
+- **Privacy doc honesty** (C4): per-IP keys use a truncated SHA-256 — a pseudonym, not a secret; IPv4 is brute-forceable by a KV reader. Documented in the worker README.
+
+### Docs
+- Recency sweep (final security-research pass): worker README statuses/payload/dedup fixed; FEATURES.md §7.1 (processedCount removed, 14 modules) + self-correcting-cap wording; AGENTS.md devDeps + route + canonical test path; duplicate CHANGELOG H1 removed.
+- Worker test extended to 11 checks (C2 rate-marker regression: N POSTs → N markers).
+ — 2026-08-05
 
 ### Docs
 - Dev/public release workflow is now defined ONCE in the canonical `docs/standards/RELEASE_WORKFLOW.md` (Rust repo); AGENTS.md + FEATURES.md here link to it instead of carrying their own drifted copy.
@@ -10,7 +20,6 @@
 ### Fixed
 - Enterprise is now reachable from a low-key **footer link** (kept out of the topbar, which stays Home | Decoder | Guide — the site's identity is a free/private tool, and the enterprise page is an under-construction commercial side-door; buyers find it via the home card or footer).
 
-# Changelog
 
 ## 1.4.10 — 2026-08-05
 

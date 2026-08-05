@@ -76,7 +76,7 @@ ithmb-codec-web/
 | Page       | Route                            | Purpose        | Type                         | JS Required |
 | ---------- | -------------------------------- | -------------- | ---------------------------- | ----------- |
 | Home       | `/`                              | Landing page   | Static + CSS                 | nav.js, footer.js |
-| Decoder    | `/ithmb-decoder/`                | Core web app   | Full SPA (ES modules + WASM) | nav.js, footer.js, app.js (13 modules) |
+| Decoder    | `/ithmb-decoder/`                | Core web app   | Full SPA (ES modules + WASM) | nav.js, footer.js, app.js (14 modules) |
 | Guide      | `/guide/how-to-open-ithmb-files.html` | Documentation | Static + CSS                 | nav.js, footer.js |
 | Enterprise | `/enterprise/`                   | Marketing page | Static + CSS                 | nav.js, footer.js |
 
@@ -185,7 +185,7 @@ Title "ITHMB Decoder | ITHMB Codec", canonical, JSZip 3.10.1 (cdnjs, with SRI), 
 
 ### 7.1 State Management (`state.js`)
 
-**Mutable state object `S`:** `cardCount`, `globalCardIdCounter`, `viewerIndex`, `totalFiles`, `processedCount`, `downloadFormat`, `cardFormats`, `lastTarget`.
+**Mutable state object `S`:** `cardCount`, `globalCardIdCounter`, `viewerIndex`, `totalFiles`, `downloadFormat`, `cardFormats`, `lastTarget`.
 
 **Decode-result lists — owned by `cards.js` (single owner; writes via addSuccess/addFailure/resetCards, reads via successCards()/failedCards()/findSuccess()/findFailure()/successCount() — read accessors return copies so callers can't mutate):**
 - success list — `{cardId, canvas, fileName, bytes, prefix, fileSize, width, height}[]` (entries always carry `bytes`)
@@ -268,7 +268,7 @@ See `workers/telemetry/README.md` for the full reference. Summary of the CURRENT
 | Routes | `POST /` (single + `batch:true`), `GET /` public JSON (prefix counts from **key names only**, zero value fetches), `GET /dashboard` (Bearer auth, HTML, **bounded scan ≤ 5000 slim records**), `OPTIONS` CORS |
 | Records | Slim `fmt_<prefix>_<uuid>` (no full-file inline); payloads under separate `fullfile_<uuid>` keys; `hasFullFile` flag; 365d TTL |
 | Privacy | fingerprints SHA-256(IP:UA) truncated 8 bytes; **per-IP keys hash the IP alone — raw IP never stored** |
-| Rate/caps | **Race-free list-based counters** (day-scoped marker keys, `crypto.randomUUID()`): 100 POSTs/day/fp, 500/day/ip, 50 records/day/fp, 250/day/ip; dedup 24h |
+| Rate/caps | **Self-correcting list-based counters (a concurrent burst can overshoot by up to in-flight concurrency)** (day-scoped marker keys, `crypto.randomUUID()`): 100 POSTs/day/fp, 500/day/ip, 50 records/day/fp, 250/day/ip; dedup 24h |
 | Body/full_file | **Byte-accurate** body cap (13 MB UTF-8); full_file must be valid base64 ≤ 8 MB decoded (garbage rejected → null) |
 | Auth | **`Authorization: Bearer <ADMIN_TOKEN>` only, constant-time** (`?token=` removed); dashboard sends `Cache-Control: no-store` + `Referrer-Policy: no-referrer` + CSP `default-src 'none'` + nosniff |
 | Dashboard | Every field HTML-escaped (stored-XSS blocked); frame-ancestors 'none' |

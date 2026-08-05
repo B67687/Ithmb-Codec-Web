@@ -84,5 +84,15 @@ check("public JSON prefix count == 3", j.prefixCounts?.["1009"] === 3, JSON.stri
 // 7. Dashboard tracks the full-file record (separation)
 check("dashboard Full File Uploads == 1", /Full File Uploads<\/h3><div class="value">1<\/div>/.test(dashBody));
 
+
+// 8. Rate markers cover EVERY accepted request (C2 regression): dedup'd
+//    resubmissions must consume the per-day budget, not replay for free.
+for (let i = 0; i < 5; i++) {
+  r = await post({ prefix: 3004, status: "unknown", header: "4d4d0042000000000000000000000000" });
+  await r.json();
+}
+const rateKeys = (await ns.list({ prefix: "rate:" })).keys.length;
+check("rate markers per request (5 POSTs, 5 markers)", rateKeys >= 5, "markers=" + rateKeys);
+
 console.log(`\n=== worker test: ${pass} passed, ${fail} failed ===`);
 process.exit(fail ? 1 : 0);
