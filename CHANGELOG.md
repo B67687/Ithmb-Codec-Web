@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.8 — 2026-08-05
+
+### Docs
+- Rewrote `docs/FEATURES.md` — it had drifted far from the code (stale worker auth, missing report modal, outdated tests/CI/deploy sections, pre-1.4.7 i18n behavior). Now the canonical feature + architecture spec, including a "Known Seams" section documenting the fragile architecture points (i18n activation race, re-render vs in-flight ops, shared mutable arrays) so future problems are attributable.
+
+### Fixed
+- Removed a duplicate `failedDecodes.length = 0` dead line in the first-batch reset (a symptom of the shared-array seam).
+
 ## 1.4.7 — 2026-08-05
 
 ### Fixed

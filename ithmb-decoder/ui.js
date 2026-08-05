@@ -50,7 +50,6 @@ export async function processFiles(files) {
     S.totalFiles = 0;
     successfulDecodes.length = 0;
     failedDecodes.length = 0;
-    failedDecodes.length = 0;
     processedFileIds.clear();
     const filmstrip = document.getElementById("viewer-filmstrip");
     if (filmstrip) filmstrip.innerHTML = "";

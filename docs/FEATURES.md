@@ -1,7 +1,8 @@
-# ITHMB Codec Web — Feature Inventory
+# ITHMB Codec Web — Feature Inventory & Architecture
 
-> Updated: 2026-07-31 (quiet-by-default refactor, module split, worker fixes)
-> Purpose: Authoritative, current source of truth for features. Prevents regressions during refactoring.
+> Updated: 2026-08-05 (1.4.7: i18n derived-label unification, security audit C1–C9, CI, dev/public workflow)
+> Purpose: Authoritative, current source of truth for features + the architecture that serves them.
+> **Keep this file in sync with every behavior change.** A stale spec is how bugs look like features.
 
 ## Table of Contents
 
@@ -12,8 +13,11 @@
 5. [Guide Page](#5-guide-page)
 6. [Enterprise Page](#6-enterprise-page)
 7. [Internal JS Behaviors](#7-internal-js-behaviors)
-8. [CSS Design System](#8-css-design-system)
-9. [Deployment & Testing Infra](#9-deployment--testing-infra)
+8. [i18n Architecture](#8-i18n-architecture)
+9. [CSS Design System](#9-css-design-system)
+10. [Telemetry Worker](#10-telemetry-worker)
+11. [Testing, CI & Deployment](#11-testing-ci--deployment)
+12. [Meta-Architecture: Known Seams](#12-meta-architecture-known-seams)
 
 ---
 
@@ -25,532 +29,301 @@
 ithmb-codec-web/
 ├── index.html                         # Home page (entry)
 ├── nav.js                             # Shared navigation (IIFE, insertAdjacentHTML)
-├── footer.js                          # Shared footer (IIFE, insertAdjacentHTML)
-├── bmc-icon.svg                       # Buy Me a Coffee icon
-├── favicon.svg                        # Site favicon
-├── thumb-decoder-preview.png          # OG preview image
+├── footer.js                          # Shared footer (IIFE — renders ONLY after window.t exists, no raw-key flash)
+├── bmc-icon.svg / favicon.svg / thumb-decoder-preview.png
 ├── CNAME                              # Custom domain: ithmb-codec.dev
-├── package.json                       # Dev: @playwright/test, playwright, acorn, @axe-core/playwright
-├── playwright.config.js               # 3 projects (chromium, firefox, webkit), fullyParallel
+├── package.json                       # Zero runtime deps; dev: @playwright/test, playwright, acorn, @axe-core/playwright
+├── playwright.config.js               # 3 projects (chromium, firefox, webkit); baseURL = BASE_URL || live site
+├── AGENTS.md                          # Agent onboarding (build/test/deploy/wasm-regen/dev-public workflow)
 │
 ├── ithmb-decoder/                     # Core web app (decoder)
 │   ├── index.html                     # Decoder page (entry)
-│   ├── styles.css                     # Shared CSS (988 lines, all pages)
-│   ├── app.js                         # Main entry (ES module, top-level await)
-│   ├── decoder.js                     # WASM decode orchestration
-│   ├── viewer.js                      # Image viewer & toolbar
-│   ├── state.js                       # State management
-│   ├── ui.js                          # File card creation & processing
-│   ├── utils.js                       # Utility functions (bytesToHex, bytesToBase64, toast…)
-│   ├── input.js                       # Hold-to-repeat helper
-│   ├── telemetry.js                   # submitTelemetry (fire-and-forget POST)
-│   ├── download.js                    # Download All (JSZip)
-│   ├── card-success-ui.js             # Success card rendering + report link
-│   ├── card-failure-ui.js             # Failure card rendering + share buttons
-│   ├── ithmb_wasm.js                  # WASM loader (generated)
-│   ├── ithmb_wasm_bg.js              # WASM FFI bindings (generated)
-│   └── ithmb_wasm_bg.wasm            # Binary WASM module (181 KB)
+│   ├── styles.css                     # Shared CSS (all pages)
+│   ├── app.js                         # Main entry (ES module, top-level await, retry on wasm init failure)
+│   ├── decoder.js                     # decodeFile: wasm call → success/failure dispatch (error cards NOT persisted)
+│   ├── viewer.js                      # Viewer + toolbar (updateToolbar derives state-dependent labels)
+│   ├── state.js                       # S singleton + shared arrays
+│   ├── ui.js                          # processFiles, file cards, batch/dedup
+│   ├── utils.js                       # bytesToHex/Base64, formatSize, showToast (timer reset), escapeHtml
+│   ├── input.js                       # Hold-to-repeat (400ms grace → 30ms interval)
+│   ├── telemetry.js                   # submitTelemetry (payload-aware timeout: 8s + 1s/MiB, cap 30s)
+│   ├── download.js                    # Download All ZIP (entry names sanitized + deduped)
+│   ├── i18n.js                        # en/zh tables, EMBEDDED_EN fallback, setLang, languagechange event
+│   ├── share-actions.js               # Share box + SHARED report modal (#reportModal, backdrop bound once)
+│   ├── card-success-ui.js             # Success card: info panel + report link (no share box)
+│   ├── card-failure-ui.js             # Failure/unknown card: share box + report link
+│   ├── locales/{en,zh}.json           # Translation tables (flat keys; sync-embedded.mjs regenerates EMBEDDED_EN)
+│   ├── ithmb_wasm.js                  # HAND-ADAPTED loader (streaming instantiation) — do NOT replace
+│   ├── ithmb_wasm_bg.js               # GENERATED wasm-bindgen glue (reformatted) — pairs with the loader
+│   └── ithmb_wasm_bg.wasm             # GENERATED decoder binary (~194 KB) — copied from Ithmb-Codec
 │
-├── guide/
-│   └── how-to-open-ithmb-files.html   # Documentation page
-│
-├── enterprise/
-│   └── index.html                     # Enterprise marketing page
-│
-├── tests/
-│   ├── a11y.spec.js                   # axe-core accessibility scans
-│   ├── pages.spec.js                  # Smoke tests
-│   ├── ithmb-decoder.spec.js          # Structural/CSS regression
-│   ├── gallery.spec.js                # Viewer mode + regressions
-│   ├── stress.spec.js                 # Full user flow scenarios
-│   ├── upload.spec.js                 # Upload + decode correctness
-│   ├── quality.spec.js                # Share flow + quiet-by-default checks
-│   ├── visual.spec.js                 # Visual regression (snapshots)
-│   └── fixtures/                      # invalid.bin + test1-8.ithmb (real binary files)
-│
-└── workers/
-    └── telemetry/
-        ├── src/worker.js              # Cloudflare Worker (~493 lines)
-        ├── wrangler.toml              # KV binding, compat date 2026-07-13
-        └── README.md                  # Deployment docs + API reference
-
-.husky/pre-commit                      # Runs gallery.spec.js (120s timeout)
+├── guide/how-to-open-ithmb-files.html # Documentation page
+├── enterprise/index.html              # Enterprise marketing page
+├── workers/telemetry/                 # Cloudflare Worker (see its README for deploy)
+│   ├── src/worker.js                  # POST share/batch, JSON /, HTML /dashboard; hardening C2–C6
+│   └── wrangler.toml                  # KV binding; ADMIN_TOKEN is set in the CF dashboard, NEVER here
+├── scripts/
+│   ├── check-i18n.mjs                 # i18n integrity gate (key parity, raw literals, EMBEDDED_EN drift)
+│   ├── sync-embedded.mjs              # Regenerates EMBEDDED_EN in i18n.js from en.json
+│   ├── check-wasm-drift.sh            # Committed wasm imports must all be handled by the loader glue
+│   └── real-user-journey.js           # Manual smoke script
+├── tests/                             # Playwright specs (see §11)
+└── docs/FEATURES.md                   # THIS FILE
 ```
 
 ### Page Matrix
 
-| Page       | Route                            | Purpose        | Type                         | JS Required                                      |
-| ---------- | -------------------------------- | -------------- | ---------------------------- | ------------------------------------------------ |
-| Home       | `/`                              | Landing page   | Static + CSS                 | nav.js, footer.js                                |
-| Decoder    | `/ithmb-decoder/`                | Core web app   | Full SPA (ES modules + WASM) | nav.js, footer.js, app.js (12 modules), JSZip CDN |
-| Guide      | `/guide/how-to-open-ithmb-files` | Documentation  | Static + CSS                 | nav.js, footer.js                                |
-| Enterprise | `/enterprise/`                   | Marketing page | Static + CSS                 | nav.js, footer.js                                |
+| Page       | Route                            | Purpose        | Type                         | JS Required |
+| ---------- | -------------------------------- | -------------- | ---------------------------- | ----------- |
+| Home       | `/`                              | Landing page   | Static + CSS                 | nav.js, footer.js |
+| Decoder    | `/ithmb-decoder/`                | Core web app   | Full SPA (ES modules + WASM) | nav.js, footer.js, app.js (13 modules) |
+| Guide      | `/guide/how-to-open-ithmb-files.html` | Documentation | Static + CSS                 | nav.js, footer.js |
+| Enterprise | `/enterprise/`                   | Marketing page | Static + CSS                 | nav.js, footer.js |
 
-### Dependency Direction
+### Dependency Direction (module graph)
 
 ```
-app.js ──→ viewer.js ──→ state.js (TELEMETRY_URL)
+app.js ──→ viewer.js ──→ state.js
    │            │
    ├── ui.js ───┘
    └── decoder.js ←── state.js (S, arrays, Set)
          │
          └── utils.js (size, toast, hex, escape)
-card-failure-ui.js ──→ telemetry.js ──→ state.js (TELEMETRY_URL)
-card-success-ui.js ──→ telemetry.js
+share-actions.js ──→ telemetry.js ──→ state.js (TELEMETRY_URL)
+card-success-ui.js / card-failure-ui.js ──→ share-actions.js + telemetry.js
+i18n.js ──(languagechange event, no imports)──→ consumed by every module
 ```
+
+i18n.js is dependency-free: other modules import `{ t }` from it; re-renders are driven by the `languagechange` DOM event it dispatches.
 
 ---
 
 ## 2. Shared Components
 
-### 2.1 Navigation Bar (`nav.js` — 61 lines)
+### 2.1 Navigation Bar (`nav.js`)
 
-IIFE injected as first child of `<body>` via `insertAdjacentHTML`.
+IIFE injected as first child of `<body>` via `insertAdjacentHTML`. Fixed top nav (44px, backdrop blur), brand left, 4 links center (Home/Decoder/Guide/Enterprise), icons right (BMC + GitHub corner). Active link from `window.location.pathname`.
 
-**Structure:**
+### 2.2 Footer (`footer.js`)
 
-- Fixed top nav (44px, backdrop-filter blur), brand left, 4 links center (Home/Decoder/Guide/Enterprise), icons right (BMC corner → buymeacoffee.com/ThumbNami, GitHub corner → github.com/B67687/Ithmb-Codec).
-- **Active link detection** from `window.location.pathname`: contains `/ithmb-decoder/` → decoder, `/guide/` → guide, `/enterprise/` → enterprise, default → home.
-- Nav styling is inline (no CSS classes).
-
-### 2.2 Footer (`footer.js` — 19 lines)
-
-IIFE injected at the `<script src="/footer.js">` position via `insertAdjacentHTML`.
-
-**Structure:** GitHub icon + "Powered by Ithmb-Codec" (link to github.com/B67687/Ithmb-Codec) + Buy me a coffee (bmc-icon.svg).
-
-**Placement:** Inside `<div class="container">` on home/decoder/guide pages. Direct child of `<body>` on enterprise page.
+IIFE injected at the script position. GitHub icon + "Powered by Ithmb-Codec" + Buy me a coffee. **Renders only after `window.t` exists** — no raw-key flash on pages where i18n loads late (re-renders via interval once ready).
 
 ### 2.3 Static Assets
 
-| File                         | Used In                          |
-| ---------------------------- | -------------------------------- |
-| `/bmc-icon.svg`              | nav.js, footer.js                |
-| `/favicon.svg`               | All `<link rel="icon">`          |
-| `/thumb-decoder-preview.png` | All `og:image` meta tags         |
+`/bmc-icon.svg`, `/favicon.svg`, `/thumb-decoder-preview.png` (og:image).
 
 ---
 
 ## 3. Home Page
 
-**Route:** `/`
-**File:** `index.html` (333 lines)
+**Route:** `/` · **File:** `index.html`
 
-### 3.1 Meta
-
-| Property                    | Value                                                     |
-| --------------------------- | --------------------------------------------------------- |
-| `<title>`                   | ITHMB Codec — Decode Apple thumbnail files (.ithmb, .ipm) |
-| Canonical                   | https://ithmb-codec.dev/                                  |
-| OG image                    | thumb-decoder-preview.png                                 |
-| Favicon                     | `/favicon.svg`                                            |
-| Fonts                       | Inter 400/500/600/700 (Google Fonts)                      |
-| Stylesheet                  | `/ithmb-decoder/styles.css` + inline `<style>` block      |
-| Structured data             | FAQPage + WebApplication JSON-LD                          |
-
-### 3.2 Visual Components
-
-| Component        | Element                 | Notes                                                                  |
-| ---------------- | ----------------------- | ---------------------------------------------------------------------- |
-| Logo icon        | `.logo .logo-icon`      | 44×44px, accent bg, rounded, SVG grid pattern                          |
-| Logo text        | `.logo .logo-text`      | 2rem, 700 weight, tight letter-spacing ("ITHMB Codec")                 |
-| Subtitle         | `header .subtitle`      | 1.05rem, muted, 480px max-width                                        |
-| Card: Decoder    | `.card.card-decoder`    | Badges: "Free" (green), "Popular" (orange). Links to `/ithmb-decoder/` |
-| Card: Guide      | `.card.card-guide`      | Badge: "Guide" (blue). Links to `/guide/how-to-open-ithmb-files`       |
-| Card: Enterprise | `.card.card-enterprise` | Badge: "Enterprise" (purple). Links to `/enterprise/`                  |
-| Card hover       | `.card:hover`           | shadow + translateY(-2px), arrow slides right                          |
-
-### 3.3 Responsive Breakpoints
-
-- **768px:** Logo shrinks (1.6rem, 36px), card padding reduced
-- **480px:** Further shrink (1.35rem, 32px), card padding 16px
+- **Meta:** title "ITHMB Codec", canonical, OG image, favicon, Inter fonts, FAQPage + WebApplication JSON-LD. **og:title / og:description localized** via `data-i18n-content` (follow the active language).
+- **Visual:** logo, subtitle, three cards (Decoder/Guide/Enterprise) with hover states.
+- **Responsive:** 768px / 480px breakpoints.
 
 ---
 
 ## 4. Decoder Page
 
-**Route:** `/ithmb-decoder/`
-**File:** `ithmb-decoder/index.html` (253 lines)
+**Route:** `/ithmb-decoder/` · **File:** `ithmb-decoder/index.html`
 
 ### 4.1 Meta
 
-| Property                    | Value                                                                                |
-| --------------------------- | ------------------------------------------------------------------------------------ |
-| `<title>`                   | ITHMB Decoder — free .ithmb & .ipm file converter                                    |
-| Canonical                   | https://ithmb-codec.dev/ithmb-decoder/                                               |
-| External JS                 | JSZip 3.10.1 (CDN: cdnjs.cloudflare.com) for batch download                          |
-| Entry module                | `app.js` (ES module with top-level `await`)                                          |
+Title "ITHMB Decoder | ITHMB Codec", canonical, JSZip 3.10.1 (cdnjs, with SRI), entry `app.js` (ES module, top-level await).
 
 ### 4.2 Visual Components
 
-| Component              | ID/Class                                 | Status            | Key Behavior                                                                                    |
-| ---------------------- | ---------------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------- |
-| Full-page drop overlay | `#dropOverlay` `.drop-overlay`           | Hidden by default | Shown on dragenter, hidden on dragleave/drop                                                    |
-| Page header            | `<header>`                               | Always visible    | h1 "ITHMB Decoder" + subtitle                                                                   |
-| Dropzone               | `#dropzone`                              | Always visible    | Dashed blue border. Click → file picker. Drag-over adds `.drag-over` (blue bg).                 |
-| Toolbar                | `#toolbar` `.toolbar`                    | Hidden initially  | Shown when files loaded. Two rows.                                                              |
-| Help button            | `#helpBtn`                               | Hidden initially  | Circular "?" — shows keyboard shortcut toast on click.                                          |
-| Viewer nav             | `#viewerNav`                             | Hidden initially  | Prev (◀) + position ("3/8") + Next (▶). Hold-to-repeat (400ms delay, 30ms interval).            |
-| Grid toggle            | `#viewToggleBtn`                         | Hidden initially  | Toggles viewer/grid. Text flips between "Grid view" / "Gallery".                                |
-| Download All button    | `#downloadAllBtn`                        | Hidden initially  | Creates ZIP via JSZip. Shows format in label/title.                                              |
-| Format select          | `#downloadFormatSelect`                  | Hidden initially  | JPEG (default), PNG, BMP, WebP. **Global-only** — sets S.downloadFormat + ZIP label/title.       |
-| Viewer container       | `#viewer-container`                      | Hidden initially  | Bordered card, rounded, contains header + stage + filmstrip.                                    |
-| Viewer header          | `#viewer-header`                         | 3-column         | Encoding \| Filename \| Dimensions                                                              |
-| Viewer stage           | `#viewer-stage`                          | Centered canvas   | min-height 400px. Contains decoded canvas or placeholder.                                       |
-| Viewer arrows          | `#viewerArrowLeft` / `#viewerArrowRight` | Absolute          | Hold-to-repeat navigation. Hidden on mobile.                                                    |
-| Filmstrip              | `#viewer-filmstrip`                      | Horizontal scroll | 80×60 per thumb. Hover opacity 0.85. Active accent border. Click to navigate.                   |
-| File list              | `#file-list` `.file-list`                | Dynamic          | Grid mode (auto-fill) or viewer mode (flex column).                                             |
-| File card              | `.file-card`                             | Dynamic          | Meta (name + size) + status + preview + actions (save, format select; success) or share box (failure). |
-| Back-to-top            | `#backToTop`                             | Hidden by default | Fixed bottom-right. Scroll-aware show/hide. Saves scroll position.                              |
-| Back-to-position       | `#backToPosition`                        | Hidden by default | Appears after back-to-top click. Auto-hides after 8s or manual scroll.                          |
-| Toast                  | `#toast` `.toast`                        | Hidden by default | Fixed bottom-center. Dark bg, white text. Auto-disappears after 3s.                             |
+| Component | ID/Class | Status | Key Behavior |
+| --------- | -------- | ------ | ------------ |
+| Drop overlay | `#dropOverlay` | hidden | Shown on dragenter, hidden on dragleave/drop |
+| Dropzone | `#dropzone` | visible | Click → file picker; drag-over adds `.drag-over` |
+| Toolbar | `#toolbar` | hidden init | Shown when files loaded |
+| Help button | `#helpBtn` | hidden init | Keyboard-shortcut toast |
+| Viewer nav | `#viewerNav` | hidden init | Prev/Next + position ("3/8"); hold-to-repeat |
+| Grid toggle | `#viewToggleBtn` | hidden init | **Label derived from viewer state in `updateToolbar()`** (no data-i18n): "Grid view" (viewer open) / "Gallery" (grid). Correct on first render in any language. |
+| Download All | `#downloadAllBtn` | hidden init | JSZip ZIP; label/title show format |
+| Format select | `#downloadFormatSelect` | hidden init | **Global-only** (ZIP); per-card selects stay independent via `S.cardFormats` |
+| Viewer container | `#viewer-container` | hidden init | Bordered card: header + stage + filmstrip |
+| Viewer header | `#viewer-header` | 3-col | Encoding \| Filename \| Dimensions |
+| Viewer stage | `#viewer-stage` | centered | Canvas or placeholder (success/failed/decoding) |
+| Viewer arrows | `#viewerArrowLeft/Right` | absolute | Hold-to-repeat; hidden on mobile |
+| Filmstrip | `#viewer-filmstrip` | h-scroll | 80×60 thumbs, active accent, click to navigate |
+| File list | `#file-list` | dynamic | Grid (auto-fill) or viewer-mode (flex column) |
+| File card | `.file-card` | dynamic | Meta + status + preview + (success: info/save/report) or (failure: share box) |
+| Back-to-top / position | `#backToTop` / `#backToPosition` | hidden | Scroll-aware; save/restore position |
+| Toast | `#toast` | hidden | 3s auto-hide; **timer resets on each new toast** |
+| Report modal | `#reportModal` | hidden | **Shared modal** for "Image looks wrong?" — thumbnail + issue picker + submit/cancel; backdrop listener bound ONCE |
 
 ### 4.3 Decoder App States
 
-| State            | How It Looks                                                              | Trigger                                |
-| ---------------- | ------------------------------------------------------------------------- | -------------------------------------- |
-| Initial          | Header + dropzone only                                                    | Page load                              |
-| Processing files | Cards appear with loading spinner + "Decoding..." status                  | Files selected via click or drop       |
-| Decode success   | Canvas thumbnail + green "Decoded" status + Save button + format select   | WASM decode succeeds                   |
-| Decode failure   | Share box (hex dump + Share 16 bytes / Share full file)                   | Known format fails to decode           |
-| Decode unknown   | Share box with "Unknown format" note                                      | Unrecognized format prefix             |
-| Decode error     | Red "Error" status + error message                                        | Decode throws                          |
-| Viewer open      | Toolbar visible + viewer container with canvas + filmstrip + arrows       | Card click or programmatic openViewer  |
-| Grid mode        | Cards in 2D grid, viewer hidden                                           | Toggle button or G key                 |
-| Download all     | ZIP download triggered (JSZip)                                            | Download All button click              |
-
-### 4.4 Internal JS Modules
-
-See [§7 Internal JS Behaviors](#7-internal-js-behaviors) for complete module-level documentation.
+| State | How It Looks | Trigger |
+| ----- | ------------ | ------- |
+| Initial | Header + dropzone only | Page load |
+| Processing | Cards with spinner + "Decoding…" | Files selected |
+| Decode success | Canvas + green "Decoded" + Save + format select + **report link** (no share box) | WASM decode succeeds |
+| Decode failure | Share box (hex dump + Share 16 bytes / full file) | Known format fails |
+| Decode unknown | Share box with "Unknown format" note | Unrecognized prefix |
+| Decode error | Red "Error" + message | Decode throws (no share box, not persisted) |
+| Viewer open | Toolbar + viewer (canvas/filmstrip/arrows) | Card click / auto-open on first batch |
+| Grid mode | Cards in 2D grid, viewer hidden | Toggle or G key |
+| Load failed | Red message + **Retry button** (re-runs wasm init; recovers from transient fetch failures) | `init()` throws |
 
 ---
 
 ## 5. Guide Page
 
-**Route:** `/guide/how-to-open-ithmb-files`
-**File:** `guide/how-to-open-ithmb-files.html` (470 lines)
-
-### 5.1 Meta
-
-| Property                    | Value                                                                           |
-| --------------------------- | ------------------------------------------------------------------------------- |
-| `<title>`                   | How to Open .ITHMB Files — Free Online ITHMB Decoder                            |
-| Canonical                   | https://ithmb-codec.dev/guide/how-to-open-ithmb-files                           |
-| Stylesheet                  | `/ithmb-decoder/styles.css` + inline `<style>` block                            |
-| Structured data             | Article JSON-LD                                                                 |
-
-### 5.2 Content Sections
-
-| Section                                     | Notes                                                                     |
-| ------------------------------------------- | ------------------------------------------------------------------------- |
-| What Is an ITHMB File?                      | Apple thumbnail format, iPod/iPhone origin                                |
-| How to Use the Free Online Decoder          | 3 numbered steps: navigate, drop file, download                           |
-| Why Use This Decoder?                       | 5 bullets: Private, Fast, Free, Open Source, Batch                        |
-| About the ITHMB Codec Project               | Open source description with GitHub link                                  |
-| FAQ                                         | 4 items: batch conversion, privacy (no uploads), .ipm support, free usage |
-| Privacy bullet                              | "No data leaves your computer by default… zero automatic uploads"         |
-
-### 5.3 Responsive Breakpoints
-
-- **768px:** Logo shrink, article padding 32px
-- **480px:** Article padding 16px, further font reduction
-
----
+**Route:** `/guide/how-to-open-ithmb-files.html` · Static documentation (title, canonical, Article JSON-LD, sections: What Is / How to Use / Why Use / About / FAQ / privacy bullet). **Tests target the `.html` URL** (the extensionless path only resolves on Python 3.14+).
 
 ## 6. Enterprise Page
 
-**Route:** `/enterprise/`
-**File:** `enterprise/index.html` (98 lines)
-
-### 6.1 Meta
-
-| Property                    | Value                                                                             |
-| --------------------------- | --------------------------------------------------------------------------------- |
-| `<title>`                   | ITHMB Codec Enterprise — Licensing for Organizations                              |
-| Canonical                   | https://ithmb-codec.dev/enterprise/                                               |
-| Stylesheet                  | `/ithmb-decoder/styles.css` + inline `<style>` block                              |
-
-### 6.2 Architectural Note
-
-Enterprise has a **separate design system**: does NOT use CSS variables (hardcoded `#007aff`, `#1d1d1f`, `#6e6e73`, etc.), only borrows `.btn` classes from `styles.css`. Currently an "under consideration" construction page.
-
-### 6.3 Visual Components
-
-| Component            | Class                                | Notes                                                              |
-| -------------------- | ------------------------------------ | ------------------------------------------------------------------ |
-| Hero section         | `.hero`                              | Badge, h1 "ITHMB Codec Enterprise", subtitle, GitHub + Try Decoder links |
-| CTA buttons          | `.btn-group`                         | "See Pricing", "Compare Editions", "Try ITHMB Demo"                |
-| Differentiators grid | `.diff-grid` (6 `.diff-card`s)       | Privacy, Rust+WASM, Open Source, Priority Support, Custom Integration, Format Research |
-| Comparison table     | `.comparison-table`                  | Open Source / Enterprise $299/seat / Site License $999/org         |
-| Pricing cards        | `.pricing-grid` (2 `.pricing-card`s) | Enterprise ($299/seat) + Site License ($999/org, "Best Value")     |
-| Trust section        | `.trust-placeholder`                 | Placeholder content                                                |
-| FAQ                  | `.faq-list` (5 `.faq-item`s)         | 5 questions                                                        |
-
-### 6.4 Responsive
-
-- **480px:** Hero padding reduced, grids collapse to single column, github-corner + bmc-corner hidden
+**Route:** `/enterprise/` · Marketing page with its own design system (hardcoded colors, not CSS variables — an "under consideration" construction page). Hero, differentiators, comparison table, pricing, FAQ.
 
 ---
 
 ## 7. Internal JS Behaviors
 
-### 7.1 Module Inventory (current LOC)
+### 7.1 State Management (`state.js`)
 
-| Module           | File                             | Pattern   | LOC  | Dependencies                                                    |
-| ---------------- | -------------------------------- | --------- | ---- | --------------------------------------------------------------- |
-| nav.js           | `nav.js`                         | IIFE      | 61   | None                                                            |
-| footer.js        | `footer.js`                      | IIFE      | 19   | None                                                            |
-| state.js         | `ithmb-decoder/state.js`         | ES module | 29   | None                                                            |
-| utils.js         | `ithmb-decoder/utils.js`         | ES module | 48   | None                                                            |
-| input.js         | `ithmb-decoder/input.js`         | ES module | 38   | None                                                            |
-| telemetry.js     | `ithmb-decoder/telemetry.js`     | ES module | 11   | state.js (TELEMETRY_URL)                                        |
-| decoder.js       | `ithmb-decoder/decoder.js`       | ES module | 64   | state.js, utils.js, viewer.js, card-success-ui.js, card-failure-ui.js, ithmb_wasm.js |
-| viewer.js        | `ithmb-decoder/viewer.js`        | ES module | 270  | state.js, utils.js, card-success-ui.js, card-failure-ui.js       |
-| ui.js            | `ithmb-decoder/ui.js`            | ES module | 105  | state.js, utils.js, decoder.js, viewer.js                        |
-| download.js      | `ithmb-decoder/download.js`      | ES module | 28   | state.js, utils.js                                               |
-| card-success-ui.js | `ithmb-decoder/card-success-ui.js` | ES module | 133 | state.js, utils.js, telemetry.js                                 |
-| card-failure-ui.js | `ithmb-decoder/card-failure-ui.js` | ES module | 103 | state.js, utils.js, telemetry.js, viewer.js                      |
-| app.js           | `ithmb-decoder/app.js`           | ES module | 265  | All above + ithmb_wasm.js (init)                                 |
+**Mutable state object `S`:** `cardCount`, `globalCardIdCounter`, `viewerIndex`, `totalFiles`, `processedCount`, `downloadFormat`, `cardFormats`, `lastTarget`.
 
-### 7.2 State Management (`state.js`)
+**Module-level arrays/collections (mutated directly by consumer modules):**
+- `successfulDecodes` — `{cardId, canvas, fileName, bytes, prefix, fileSize, width, height}[]`
+- `failedDecodes` — `{cardId, bytes, prefix, fileName, fileSize}[]` — **error cards are never pushed** (no shareable bytes)
+- `processedFileIds` — Set, re-upload dedup (content hash + filename)
+- `sharedSubmissionIds` — Set, share/report dedup across re-renders (survives language-switch card rebuilds)
 
-**Mutable state object `S`:**
+**Constants:** `TELEMETRY_URL`, `KNOWN_PREFIXES`.
 
-| Field                 | Type    | Default      | Purpose                      |
-| --------------------- | ------- | ------------ | ---------------------------- |
-| `cardCount`           | number  | 0            | Number of file cards in UI   |
-| `globalCardIdCounter` | number  | 0            | Unique card ID generator     |
-| `viewerIndex`         | number  | -1           | Currently viewed image index |
-| `totalFiles`          | number  | 0            | Total files being processed  |
-| `processedCount`      | number  | 0            | Files decoded so far         |
-| `downloadFormat`      | string  | "image/jpeg" | Global download format (ZIP) |
-| `cardFormats`         | object  | {}           | Per-card format overrides    |
-| `lastTarget`          | Element | null         | Drag enter/leave tracking    |
+### 7.2 File Drop/Upload Flow
 
-**Global arrays (mutated directly by consumer modules):**
+1. Drop or click → `processFiles(files)`.
+2. First batch: full reset (`fileList`, counters, arrays, filmstrip, viewer closed).
+3. Filter: `.ithmb`/`.ipm` extension, ≤ 8 MB, content-hash dedup. Rejects → toast.
+4. Card per valid file → `decodeFile(file, cardId)` async.
+5. After each batch: `updateToolbar()` (also derives the toggle label).
 
-- `successfulDecodes` — `{canvas, fileName, bytes, prefix, fileSize}[]`
-- `failedDecodes` — `{bytes, prefix, fileName, fileSize}[]`
-- `sharedFileIds` — Set of deduped card IDs (re-upload dedup + failure-share dedup)
+### 7.3 Decode Pipeline (`decodeFile`)
 
-**Constants:**
+1. Read → Uint8Array → `peek_prefix(bytes)` → `decode_ithmb(bytes)`.
+2. Success → canvas (600×400 max) → success card (renderSuccessCard: info panel + report link; pushes successfulDecodes; filmstrip; refreshViewerIfCurrent).
+3. Failure (known/unknown) → failure card (share box + report link; pushes failedDecodes).
+4. **Error (throws)** → error card (message only) — **NOT pushed to failedDecodes** (would break re-render's share-box creation).
+5. `updateToolbar()`.
 
-- `TELEMETRY_URL` — `"https://ithmb-telemetry.ithmb-codec.workers.dev"`
-- `KNOWN_PREFIXES` — Set of recognized format prefix values (1005–3011)
+### 7.4 Viewer
 
-### 7.3 Key Behaviors
+- Open on card click / first-batch auto-open; cyclic prev/next; ← → arrows + G key + Escape; touch swipe > 50px; filmstrip click.
+- **Stage mirrors the card** via `refreshViewerIfCurrent` — success cards get a report link, failed cards get their share box inside the placeholder. One mechanism, no surgical duplicate paths.
+- Toolbar via `updateToolbar()` (called on open/close/process/languagechange).
 
-#### File Drop/Upload Flow
+### 7.5 Share / Report (quiet-by-default, opt-in only)
 
-1. User drops file(s) or clicks dropzone → native file picker
-2. `processFiles(files: File[])` called
-3. On first batch: full state reset (all arrays cleared, counters reset)
-4. Files filtered by: `.ithmb`/`.ipm` extension, ≤ 8MB, content-based dedup (SHA-256 of first 256 bytes)
-5. Rejected files (wrong type, too large) → toast notification
-6. Card created for each valid file → `addFileCard(file)` returns cardId
-7. `decodeFile(file, cardId)` called per file (async)
+- **Failure/unknown cards:** share box = hex dump (first 16 bytes) + "Share 16 bytes" + "Share full file" (hidden above 8 MB). Header share POSTs `{prefix, fileSize, status, header}` → "Shared ✓" + disabled (full-file button stays enabled for upgrade). Full-file POSTs + base64 → both disabled. Per-card dedup keys, `sharedSubmissionIds` dedup across re-renders. **Server rejection → honest failure toast + button rollback (re-queries live buttons — a mid-POST language switch can't strand the UI).**
+- **Success cards:** report link "Image looks wrong?" opens the **shared report modal** (`#reportModal`) — thumbnail, issue-type picker (6 types), free-text detail, submit/cancel. Submit POSTs with `issue`/`issue_detail`. Backdrop click closes (listener bound once). Cancel closes without sending.
+- **Nothing is ever sent automatically** — no batch mode, no background sends.
 
-#### Decode Pipeline (`decodeFile` — 64 lines)
+### 7.6 Download All
 
-1. Read file as ArrayBuffer → Uint8Array
-2. Call `peek_prefix(bytes)` → read 4-byte format prefix
-3. Call `decode_ithmb(bytes)` → returns `Uint8Array` (RGBA pixels) or undefined
-4. On success:
-   - Create `<canvas>`, draw image data (constrained 600×400 max)
-   - Render preview in card (card-success-ui.js)
-   - Add to `successfulDecodes[]`, create filmstrip thumbnail, wire Save + format select
-5. On failure:
-   - Show share box with hex dump + "Share 16 bytes" / "Share full file" buttons (card-failure-ui.js)
-   - Add to `failedDecodes[]`
-6. Increment `processedCount`, update toolbar
+JSZip from all successful canvases; JPEG 92% (default) / PNG / BMP / WebP; global format select affects only the ZIP (per-card `S.cardFormats` override); entry names sanitized (`[\\/]` → `_`, leading dots stripped) + deduped (no silent overwrite); filename `ithmb-pictures-converted-to-{format}.zip`.
 
-#### Viewer Navigation
+### 7.7 Toast
 
-- Open: `openViewer(index)` → clones canvas, highlights thumb, populates header
-- Prev/Next: `prevViewer()` / `nextViewer()` — wraps around (cyclic)
-- Keyboard: ← → ↑↓ arrows, Escape closes, G toggles grid
-- Touch swipe: horizontal swipe > 50px threshold triggers prev/next
+`showToast(msg)` — role=status, aria-live=polite, 3s hide **with timer reset** (rapid messages don't cut each other short).
 
-#### Failure Sharing (opt-in, failure-only)
+### 7.8 WASM Load-Failure Retry
 
-- Failed/unknown cards show a share box with a hex dump of the first 16 bytes and two buttons: **"Share 16 bytes"** (header) and **"Share full file"** (hidden above 8 MB).
-- Nothing is ever sent automatically — no batch mode, no background sends.
-- Header share: POSTs `{prefix, fileSize, status, header}` (32 hex chars), marks that button "Shared ✓", disables it; **full-file button stays enabled** (header can be upgraded).
-- Full-file share: POSTs `{...header payload, full_file: base64}` (full file ≤ 8 MB), marks "Shared ✓", disables both buttons, sets title "Full file already shared — the 16 bytes are included" on the header button.
-- Per-card dedup keys: `(fail-|unknown-)<cardId>-h` / `-f`. Toast on share; no modal, no countdown, no checkboxes.
-- Success cards: **no** contribution button — only a small report link "Image looks wrong? Share the first 16 bytes" (POSTs status `success`, dedup key `fb-<cardId>`, becomes "Thanks — shared ✓").
-
-#### Download All
-
-- Creates JSZip archive from all successful decode canvases
-- Format: JPEG 92% quality (default), PNG, BMP, or WebP
-- **Global format select only affects the ZIP** — per-card format selects stay independent (S.cardFormats overrides)
-- Downloads as: `ithmb-pictures-converted-to-{format}.zip`
-
-### 7.4 DOM Elements Registry
-
-```
-#dropzone, #dropOverlay, #file-list, #toolbar,
-#helpBtn, #viewerNav, #prevBtn, #nextBtn, #viewerPos, #viewToggleBtn,
-#downloadAllBtn, #downloadFormatSelect,
-#viewer-container, #viewer-header, #vhEnc, #vhFile, #vhDims,
-#viewer-main, #viewer-stage, #viewerArrowLeft, #viewerArrowRight,
-#viewer-filmstrip,
-#backToTop, #backToTopLink, #backToPosition, #backToPositionLink,
-#toast
-```
-
-### 7.5 Event Handlers (Summary)
-
-| Event           | Element(s)                              | Handler                                                |
-| --------------- | --------------------------------------- | ------------------------------------------------------ |
-| Click           | `#dropzone`                             | Open file picker                                       |
-| Drag events (5) | `document`                              | Show/hide overlay, handle drop                         |
-| Click           | `#file-list` (delegated)                | Open viewer on card click                              |
-| Click           | `#helpBtn`                              | Show keyboard shortcut toast                           |
-| Click           | `#prevBtn`, `#nextBtn`                  | Viewer navigation (hold-to-repeat)                     |
-| Click           | `#viewerArrowLeft`, `#viewerArrowRight` | Viewer navigation (hold-to-repeat)                     |
-| Click           | `#viewToggleBtn`                        | Toggle viewer/grid mode                                |
-| Click           | `#downloadAllBtn`                       | ZIP download all                                       |
-| Change          | `#downloadFormatSelect`                 | Update global format + ZIP label (per-card unaffected) |
-| Click           | `#backToTopLink`                        | Save position, scroll to top                           |
-| Click           | `#backToPositionLink`                   | Restore position                                       |
-| Keydown         | `document`                              | Arrows = navigate, Esc = close viewer, G = toggle grid |
-| Touch           | `document`                              | Swipe left/right navigation                            |
-| Scroll          | `document` (passive)                    | Show/hide back-to-top                                  |
-| Dragstart       | `document`                              | Prevent default (anti-accidental-drag)                 |
-| Click           | `[data-share]` buttons (failure cards)  | Share 16 bytes / full file to telemetry, then toast    |
-| Click           | `[data-report]` link (success cards)    | Share first 16 bytes (status: success), then mark sent |
+`init()` throws → red message + Retry button. Retry re-runs `init()`: transient failures recover in place, permanent failures re-enable the button. Dropzone disabled during failure state.
 
 ---
 
-## 8. CSS Design System
+## 8. i18n Architecture
 
-### 8.1 CSS Custom Properties (`:root`)
+**Two mechanisms, deliberately split:**
 
-| Variable         | Value                         | Role                         |
-| ---------------- | ----------------------------- | ---------------------------- |
-| `--bg`           | `#f5f5f7`                     | Page background (Apple gray) |
-| `--surface`      | `#fff`                        | Card/component surface       |
-| `--border`       | `#d2d2d7`                     | Default border               |
-| `--text`         | `#1d1d1f`                     | Primary text                 |
-| `--muted`        | `#86868b`                     | Secondary text               |
-| `--accent`       | `#007aff`                     | Primary accent (Apple blue)  |
-| `--accent-hover` | `#0066d6`                     | Accent hover                 |
-| `--success`      | `#30d158`                     | Success/OK                   |
-| `--warn`         | `#ff9f0a`                     | Warning                      |
-| `--radius`       | `12px`                        | Default border-radius        |
-| `--shadow`       | `0 2px 12px rgba(0,0,0,0.08)` | Default box-shadow           |
-| `--card-bg`      | `var(--surface)`              | Card surface alias           |
+1. **Declarative (`data-i18n` / `data-i18n-html` / `data-i18n-aria-label` / `data-i18n-content`)** — applied by `applyTranslations()` on every element at language activation. Used for static, state-independent text.
+2. **Derived (`t(key, params)` in JS)** — for text that depends on runtime state. **The rule: state-derived text must be re-derived at every state change, in the function that owns that state** (e.g. `updateToolbar()` derives the toggle label + Download All label). This is the unified pattern that fixed the toggle-in-Chinese-default bug — never patch derived text only on `languagechange`, because that event fires from i18n.js's module top-level **before** consumer modules have loaded their listeners.
 
-### 8.2 Component Class Catalog (from `styles.css`)
-
-| Category          | Selectors                                                                      | Key Properties                                                    |
-| ----------------- | ------------------------------------------------------------------------------ | ----------------------------------------------------------------- |
-| **Buttons**       | `.btn`, `.btn-primary`, `.btn-outline`, `.btn-small`, `.btn-success`           | 8px radius, 0.85rem, inline-flex, transition 0.15s                |
-| **Dropzone**      | `#dropzone`, `.drag-over`                                                      | Dashed accent border, surface bg, cursor pointer                  |
-| **File Cards**    | `.file-card`, `.file-card .meta`, `.file-list`, `.file-list:not(.viewer-mode)` | Surface bg, shadow, padding 16px. Grid layout in non-viewer mode. |
-| **Status**        | `.ok` (green), `.err` (red), `.unknown` (orange), `.loading` (blue)            | `.spinner` animation (14px, spin 0.6s)                            |
-| **Viewer**        | `#viewer-container`, `#viewer-main`, `#viewer-stage`, `.viewer-arrow`          | Min-height 400px, centered, canvas 70vh max                       |
-| **Filmstrip**     | `#viewer-filmstrip`, `.filmstrip-thumb`, `.filmstrip-thumb.active`             | Horizontal scroll, 80×60 thumbs, accent active border             |
-| **Toolbar**       | `.toolbar`, `.toolbar-row`                                                     | Flex column/row layout, responsive wrap                           |
-| **Toast**         | `.toast`, `.toast.show`                                                        | Fixed bottom-center, 0.3s opacity transition                      |
-| **Drop Overlay**  | `.drop-overlay`, `.drop-overlay.active`                                        | Fullscreen dark overlay, blur, 175ms transition                   |
-| **GitHub/BMC**    | `.github-corner`, `.bmc-corner`                                                | inline-flex, muted → accent on hover, line-height:0               |
-| **Back-to-Top**   | `#backToTop`, `#backToPosition`                                                | Fixed bottom-right, 44px circular buttons                         |
-| **Share box**     | `.share-box`, `.share-actions`, `.share-hexdump`                               | Warn-tinted failure-card box: heading, hex dump, two share buttons|
-| **Report link**   | `.success-report`                                                              | Muted underline link on success cards                             |
-| **Viewer Header** | `#viewer-header`, `.vh-enc`, `.vh-file`, `.vh-dims`                            | 3-column flex: encoding \| filename \| dimensions                 |
-| **Footer**        | `footer`, `footer a`, `footer > div`                                           | Bordered top, flex centered, muted 0.8rem                         |
-| **Accessibility** | `:focus-visible`, `button:focus-visible`, etc.                                 | 2px accent outline, 2px offset                                    |
-
-### 8.3 Animations
-
-| Keyframe                                    | Element                | Purpose                     |
-| ------------------------------------------- | ---------------------- | --------------------------- |
-| `@keyframes spin` (0.6s linear)             | `.spinner`             | File card loading indicator |
-| `@keyframes placeholder-spin` (0.8s linear) | `.placeholder-spinner` | Viewer placeholder loading  |
-
-### 8.4 Responsive Breakpoints
-
-**`@media (max-width: 768px)`:** Body padding reduced (68px 12px).
-
-**`@media (max-width: 480px)`:** Body padding 68px 8px, dropzone padding reduced, toolbar wraps, viewer stage min-height 300px + canvas 50vh, viewer arrows hidden, GitHub/BMC corners hidden, filmstrip thumbs 48×36, grid collapses to minmax(160px, 1fr), back-to-top shrinks.
-
-### 8.5 Page-Specific Styles
-
-| Page       | Inline styles       | Unique Classes                                                                                       |
-| ---------- | ------------------- | ---------------------------------------------------------------------------------------------------- |
-| Home       | ~250 lines          | `.logo`, `.logo-icon`, `.logo-text`, `.cards`, `.card`, `.card h2 .arrow`, `.about`                  |
-| Decoder    | None (pure styles.css) | N/A                                                                                                |
-| Guide      | ~270 lines          | `.article`, `.steps`, `.steps li::before`, `.lead`, `.faq-item`, `.faq-question`, `.faq-answer`      |
-| Enterprise | ~430 lines          | `.hero`, `.diff-grid`, `.diff-card`, `.comparison-table`, `.pricing-grid`, `.trust-placeholder`, `.faq-list` |
+- `t(key, params)` params are **HTML-escaped** (future-proofs `data-i18n-html`).
+- `EMBEDDED_EN` (in i18n.js) is **generated** from `locales/en.json` by `scripts/sync-embedded.mjs` — the offline fallback + EN baseline. `scripts/check-i18n.mjs` gates key parity / raw literals / drift (runs in pre-commit + CI).
+- Language detection: `?lang=` → localStorage(`ithmbLang`) → navigator → en.
+- Re-render on switch: `languagechange` → reRenderCards (success info panels + failure share boxes) + in-progress "Decoding…" placeholders + `updateToolbar()` + viewer-stage rebuild when open.
 
 ---
 
-## 9. Deployment & Testing Infra
+## 9. CSS Design System
 
-### 9.1 Playwright Test Suite
-
-**Config:** 3 projects (chromium, firefox, webkit), 30s timeout (10s expect), `fullyParallel`, baseURL = `BASE_URL` env || `https://ithmb-codec.dev`. **196 tests total**, green on chromium + firefox.
-
-| File                    | Focus                                                                                                                               |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `pages.spec.js`         | Smoke tests: landing, enterprise, guide page loads + critical elements                                                              |
-| `ithmb-decoder.spec.js` | Structural/CSS regression: page structure, GitHub/BMC corners, toolbar, footer, CSS variables, no batch toggle                      |
-| `gallery.spec.js`       | Viewer mode: filmstrip, arrow nav, keyboard, Escape; regression: pixel content; download format; mobile; G key                      |
-| `stress.spec.js`        | Full user flow scenarios: invalid file, single/multi file, filmstrip click, arrow key cyclic, grid toggle, Escape, dedup, back-to-top, G key |
-| `upload.spec.js`        | Decode correctness: 8 distinct files, batch append, duplicate filenames                                                             |
-| `quality.spec.js`       | Share flows (header/full/dedup/upgrade), report link, quiet-by-default checks, corrupt-file handling                                 |
-| `a11y.spec.js`          | axe-core accessibility scans (5 pages)                                                                                              |
-| `visual.spec.js`        | Visual regression with snapshots (pages, nav bar, footer)                                                                           |
-
-**Test fixtures:** `tests/fixtures/test{1-8}.ithmb` — real .ithmb binary files; `invalid.bin` (64B, non-ithmb).
-
-**Known:** no CI workflow runs Playwright. Pre-commit hook runs `gallery.spec.js` (120s timeout).
-
-### 9.2 Cloudflare Worker (Telemetry)
-
-| Aspect      | Detail                                                                                         |
-| ----------- | ---------------------------------------------------------------------------------------------- |
-| Route       | `POST /` submit record; `GET /dashboard` dashboard HTML (auth required); `GET /` public JSON; `OPTIONS /` CORS |
-| KV Binding  | `FORMAT_TELEMETRY`                                                                             |
-| Rate limit  | 100 requests/day per IP:UA fingerprint                                                         |
-| Dedup       | 24h TTL dedup markers keyed `dedup:{fp}:{prefix}:{status}:{h\|f}`                              |
-| Record cap  | 50 records/day per fingerprint                                                                 |
-| Body limit  | 13 MB (`MAX_BODY_BYTES`); full-file field capped `FULL_FILE_B64_MAX` = 11,184,812 chars (~8 MB raw) |
-| Retention   | 365 days (`fmt_{prefix}_{ts}` keys)                                                            |
-| CORS        | Echoes allowed origins (`https://ithmb-codec.dev`, `localhost`/`127.0.0.1` any port); others get production domain (blocked) |
-| Auth        | Dashboard: `Authorization: Bearer <ADMIN_TOKEN>` header **or** `?token=<ADMIN_TOKEN>` query param; `/dashboard` without valid token → 401 |
-| Deploy      | `npx wrangler deploy` (needs `CLOUDFLARE_API_TOKEN` or `wrangler login`)                        |
-| URL         | `https://ithmb-telemetry.ithmb-codec.workers.dev`                                               |
-
-**Valid status values:** `success`, `known-failed`, `unknown`, `looks-good`, `looks-wrong`
-**Valid issue types:** `color_space`, `dimensions`, `stride`, `offset`, `byte_order`, `other`
-
-**Privacy:** fingerprint = SHA-256 of IP+UA (first 8 bytes hex) — no raw IP stored. Nothing sent from the app unless the user clicks a Share button.
-
-### 9.3 WASM Integration
-
-| File                 | Role                                                              |
-| -------------------- | ----------------------------------------------------------------- |
-| `ithmb_wasm.js`      | Cross-browser streaming WASM instantiation, re-exports from bg.js |
-| `ithmb_wasm_bg.js`   | Low-level FFI bindings                                            |
-| `ithmb_wasm_bg.wasm` | Binary WASM module (from `crates/ithmb-wasm`)                     |
-
-**Exported functions:** `decode_ithmb(bytes)`, `peek_prefix(bytes)`, `get_encoding_name(prefix)`
-
-**No version metadata in WASM files** — built externally from the Ithmb-Codec repo.
-
-### 9.4 Git / CI
-
-| Aspect      | Detail                                                         |
-| ----------- | -------------------------------------------------------------- |
-| Branch      | `clean-push` (working branch)                                  |
-| CI          | None (removed as over-optimization for a solo project)         |
-| Pre-commit  | Runs `gallery.spec.js` (120s timeout)                          |
-| Deploy      | GitHub Pages via CNAME `ithmb-codec.dev`                       |
+CSS custom properties (`--bg #f5f5f7`, `--surface #fff`, `--border`, `--text`, `--muted`, `--accent #007AFF`, `--accent-hover`, `--success`, `--warn`, `--radius 12px`, `--shadow`, `--card-bg`). Component catalog: buttons (`.btn` family), dropzone, file cards, statuses (`.ok/.err/.unknown/.loading` + spinner), viewer, filmstrip, toolbar, toast, drop overlay, GitHub/BMC corners, back-to-top, share box, report link, viewer header, footer, `:focus-visible` outlines. Animations: `spin` (0.6s), `placeholder-spin` (0.8s). Breakpoints 768px / 480px. Home/Guide/Enterprise use inline page styles.
 
 ---
 
-_End of Feature Inventory_
+## 10. Telemetry Worker
+
+See `workers/telemetry/README.md` for the full reference. Summary of the CURRENT (hardened) design:
+
+| Aspect | Detail |
+| ------ | ------ |
+| Routes | `POST /` (single + `batch:true`), `GET /` public JSON (prefix counts from **key names only**, zero value fetches), `GET /dashboard` (Bearer auth, HTML, **bounded scan ≤ 5000 slim records**), `OPTIONS` CORS |
+| Records | Slim `fmt_<prefix>_<uuid>` (no full-file inline); payloads under separate `fullfile_<uuid>` keys; `hasFullFile` flag; 365d TTL |
+| Privacy | fingerprints SHA-256(IP:UA) truncated 8 bytes; **per-IP keys hash the IP alone — raw IP never stored** |
+| Rate/caps | **Race-free list-based counters** (day-scoped marker keys, `crypto.randomUUID()`): 100 POSTs/day/fp, 500/day/ip, 50 records/day/fp, 250/day/ip; dedup 24h |
+| Body/full_file | **Byte-accurate** body cap (13 MB UTF-8); full_file must be valid base64 ≤ 8 MB decoded (garbage rejected → null) |
+| Auth | **`Authorization: Bearer <ADMIN_TOKEN>` only, constant-time** (`?token=` removed); dashboard sends `Cache-Control: no-store` + `Referrer-Policy: no-referrer` + CSP `default-src 'none'` + nosniff |
+| Dashboard | Every field HTML-escaped (stored-XSS blocked); frame-ancestors 'none' |
+| Deploy | `wrangler deploy`; ADMIN_TOKEN via CF dashboard, never in the repo |
+
+Valid statuses: `success`, `known-failed`, `unknown`, `looks-good`, `looks-wrong`. Valid issues: `color_space`, `dimensions`, `stride`, `offset`, `byte_order`, `other`.
+
+---
+
+## 11. Testing, CI & Deployment
+
+### 11.1 Playwright Suite
+
+**Config:** 3 projects, baseURL = `BASE_URL` env **or** live site — **tests/hooks must always set `BASE_URL` to a local server** (never test production). `npm run test:quick` = 101 tests on chromium (pages, decoder, gallery, upload, quality, a11y, seo-metadata). `npm run test:full` = all projects — **webkit cannot run in this dev environment** (documented; chromium+firefox are the CI/local gate).
+
+| File | Focus |
+| ---- | ----- |
+| `pages.spec.js` | Landing/enterprise/guide loads + critical elements |
+| `ithmb-decoder.spec.js` | Structure/CSS: GitHub/BMC corners, toolbar, footer, CSS vars, no batch toggle |
+| `gallery.spec.js` | Viewer mode: filmstrip, arrow/keyboard nav, Escape, G key, pixel content, mobile, download format, dedup |
+| `stress.spec.js` | Full flows: invalid file, single/multi, filmstrip, cyclic arrows, grid toggle, dedup, back-to-top |
+| `upload.spec.js` | Decode correctness: 8 distinct files, batch append, duplicate filenames |
+| `quality.spec.js` | Share/report flows (header/full/dedup/upgrade/rollback), quiet-by-default, corrupt-file handling, viewer contextual share |
+| `a11y.spec.js` | axe-core scans (5 pages) |
+| `seo-metadata.spec.js` | Meta description (localized), hreflang, CSP meta on every page |
+| `visual.spec.js` | Visual snapshots (pages, nav, footer) |
+
+### 11.2 Gates
+
+- **Pre-commit** (`.husky/pre-commit`): i18n gate → wasm-drift check → 3 smoke specs against `BASE_URL=http://localhost:8899`. **Wire once per clone:** `git config core.hooksPath .husky`.
+- **`npm run ci`**: lint:modules (acorn) + lint:i18n + full Playwright.
+- **`npm run check:deps`**: npm audit (fails on vulns) + npm outdated (informational) — the local dependabot replacement.
+
+### 11.3 CI (`.github/workflows/ci.yml`)
+
+Runs on the **public repo** (free minutes; the private dev repo's Actions are billing-blocked). Jobs: lint (acorn + i18n + wasm-drift), test (chromium, `BASE_URL=http://localhost:8899`), secrets (gitleaks). SHA-pinned actions.
+
+### 11.4 Dev/Public Workflow & Deploy
+
+- `origin` = `Ithmb-Codec-Web-Dev` (private, editing repo) · `public` = `Ithmb-Codec-Web` (public, live site).
+- All work on dev `main` → squash thematically onto `squash-work` (tracks `public/main`) → verify trees identical → push `public squash-work:main`. **Public CI is the gate** (dev CI is billing-blocked).
+- **Deploy: Cloudflare Pages** connected to the public repo's `main` branch — auto-deploys on push (~1-2 min). Telemetry worker deploys via `wrangler` from `workers/telemetry/`.
+- **WASM regeneration** from `Ithmb-Codec/crates/ithmb-wasm` (wasm-pack) — copy ONLY `ithmb_wasm_bg.wasm`; the loader/glue are hand-adapted and must stay unchanged (`scripts/check-wasm-drift.sh` enforces import compatibility).
+
+---
+
+## 12. Meta-Architecture: Known Seams
+
+Honest assessment of where the architecture is fragile — every past bug traces to one of these:
+
+1. **i18n activation races consumer load** (fixed 1.4.7): i18n.js activates + dispatches at module top-level, before consumers' listeners exist. Mitigation: state-derived text re-derived at state changes (updateToolbar); never rely on the initial `languagechange` dispatch. **If a future element shows English on first load in a non-English default, this seam is why.**
+2. **Re-render vs in-flight operations**: language-switch card rebuilds race decode/share POSTs. Each instance (share rollback, mid-decode placeholder, error cards) was fixed individually. The rule: **always re-query the DOM by cardId; never mutate captured refs across an await**.
+3. **Shared mutable arrays** (`successfulDecodes`/`failedDecodes`) with multiple writers — no encapsulation or invariant enforcement. The duplicate `failedDecodes.length = 0` dead line (fixed 1.4.8) is the class of bug this permits.
+4. **Two i18n mechanisms** (declarative vs derived) — the split is intentional, but a new string must pick the right one; the derived side must follow the updateToolbar pattern.
+5. **`S.totalFiles` vs `S.cardCount`** — two counters for the card population; drift is possible (currently consistent).
+6. **WASM/loader contract** — the hand-adapted loader is the single most fragile integration point; `check-wasm-drift.sh` + AGENTS.md document it, but any wasm-bindgen upgrade needs a manual glue review.
+
+---
+
+_End of Feature Inventory — keep current._
