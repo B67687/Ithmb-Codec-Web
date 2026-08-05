@@ -1,6 +1,10 @@
 # Changelog
 
-## 1.4.14 — 2026-08-05
+## 1.4.15 — 2026-08-05
+
+### Tests
+- Updated the footer visual-regression baseline to include the Enterprise footer link (1.4.12's intentional footer change; the committed baseline predated it, which is why CI's test job was red).
+ — 2026-08-05
 
 ### Security (privacy)
 - **Per-IP pseudonyms are now HMAC-keyed (C4, real fix — not just documentation).** The plain SHA-256 truncation was trivially reversible for IPv4 (2^32 space), so anyone with KV read access could recover every submitter's raw IP — a broken privacy promise for a privacy-first product. Per-IP keys and the stored record fingerprint are now HMAC-SHA256 keyed with a server secret (`IP_HMAC_SECRET`, falling back to `ADMIN_TOKEN`; set in the CF dashboard), making them cryptographically irreversible without the secret; truncation extended 64→128 bits so cross-IP collisions are negligible. A KV dump/backup/leak now reveals nothing.
