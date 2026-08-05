@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.6 — 2026-08-05
+
+### Tooling
+- Dropped dependabot (its PRs would open directly on the public repo, bypassing the dev-first workflow) — dependency upgrades are now a local check: `npm run check:deps` (audit + outdated). Tree parity between dev and public is restored.
+
 ## 1.4.5 — 2026-08-05
 
 ### Fixed
