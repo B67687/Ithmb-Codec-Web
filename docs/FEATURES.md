@@ -308,6 +308,8 @@ Runs on the **public repo** (free minutes; the private dev repo's Actions are bi
 
 ### 11.4 Dev/Public Workflow & Deploy
 
+Canonical standard: `docs/standards/RELEASE_WORKFLOW.md` in the Rust repo. Summary:
+
 - `origin` = `Ithmb-Codec-Web-Dev` (private, editing repo) · `public` = `Ithmb-Codec-Web` (public, live site).
 - All work on dev `main` → squash thematically onto `squash-work` (tracks `public/main`) → verify trees identical → push `public squash-work:main`. **Public CI is the gate** (dev CI is billing-blocked).
 - **Deploy: Cloudflare Pages** connected to the public repo's `main` branch — auto-deploys on push (~1-2 min). Telemetry worker deploys via `wrangler` from `workers/telemetry/`.

@@ -74,6 +74,8 @@ git config core.hooksPath .husky
 
 ## Dev / Public Dual-Repo Workflow (CRITICAL)
 
+**Canonical standard: `docs/standards/RELEASE_WORKFLOW.md` in the Rust repo** (https://github.com/B67687/Ithmb-Codec/blob/main/docs/standards/RELEASE_WORKFLOW.md) — this section is a summary; the standard is the source of truth.
+
 There are TWO remotes and they are NOT interchangeable:
 
 ```

@@ -1,6 +1,11 @@
 # Changelog
 
-## 1.4.11 — 2026-08-05
+## 1.4.12 — 2026-08-05
+
+### Docs
+- Dev/public release workflow is now defined ONCE in the canonical `docs/standards/RELEASE_WORKFLOW.md` (Rust repo); AGENTS.md + FEATURES.md here link to it instead of carrying their own drifted copy.
+
+## 1.4.11 — 2026-08-05 — 2026-08-05
 
 ### Fixed
 - Enterprise is now reachable from a low-key **footer link** (kept out of the topbar, which stays Home | Decoder | Guide — the site's identity is a free/private tool, and the enterprise page is an under-construction commercial side-door; buyers find it via the home card or footer).
