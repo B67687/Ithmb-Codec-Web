@@ -28,30 +28,50 @@ const KNOWN_ISSUES = new Set([
   "other",
 ]);
 
-// Simple fingerprint from IP + User-Agent hash (no raw IP stored)
-async function sha256Hex(data) {
-  const buf = await crypto.subtle.digest(
-    "SHA-256",
+// Keyed pseudonym (HMAC-SHA256) for IP-derived identifiers. A plain SHA-256
+// truncation is NOT a privacy pseudonym for IPv4: 2^32 space is trivially
+// brute-forceable offline, so anyone with KV read access could recover every
+// submitter's raw IP from the per-IP key names (CWE-359). Keying the hash
+// with a server secret (IP_HMAC_SECRET, falling back to ADMIN_TOKEN) makes it
+// cryptographically irreversible without the secret — a KV dump/backup/leak
+// reveals nothing. 128-bit truncation also makes cross-IP collisions
+// negligible (the old 64-bit truncation had ~40% collision over the full
+// IPv4 space, contaminating rate-limit keys).
+async function keyedPseudonym(env, data) {
+  const secret = env.IP_HMAC_SECRET || env.ADMIN_TOKEN || "unset";
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sig = await crypto.subtle.sign(
+    "HMAC",
+    key,
     new TextEncoder().encode(data),
   );
-  return Array.from(new Uint8Array(buf))
-    .slice(0, 8)
+  return Array.from(new Uint8Array(sig))
+    .slice(0, 16)
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
 }
 
-async function fingerprint(request) {
+// Simple fingerprint from IP + User-Agent hash. Keyed (see keyedPseudonym):
+// the fingerprint in stored records must not be reversible to the raw IP.
+async function fingerprint(request, env) {
   const ip = request.headers.get("CF-Connecting-IP") || "unknown";
   const ua = request.headers.get("User-Agent") || "";
-  return sha256Hex(`${ip}:${ua}`);
+  return keyedPseudonym(env, `${ip}:${ua}`);
 }
 
-// Privacy (CWE-359): per-IP counter keys hash the IP alone (UA excluded so
-// the counter is stable per IP) — the raw IP is never written to KV key
-// names. The old `records-ip:<ip>:<date>` / `ratelimit-ip:<ip>:<date>` keys
-// stored every submitter's raw IP in operator-accessible KV for 48h.
-function ipFingerprint(ip) {
-  return sha256Hex(`ip:${ip}`);
+// Privacy (CWE-359): per-IP counter keys pseudonymize the IP alone (UA
+// excluded so the counter is stable per IP) — the raw IP is never written to
+// KV key names, and the keyed hash cannot be reversed offline. The old
+// `records-ip:<ip>:<date>` / `ratelimit-ip:<ip>:<date>` keys stored every
+// submitter's raw IP in operator-accessible KV for 48h.
+function ipFingerprint(env, ip) {
+  return keyedPseudonym(env, `ip:${ip}`);
 }
 
 // Race-free counter: count keys under a day-scoped prefix. KV has no atomic
@@ -428,10 +448,10 @@ export default {
       }
 
       const body = JSON.parse(bodyText);
-      const fp = await fingerprint(request);
+      const fp = await fingerprint(request, env);
       const ip = request.headers.get("CF-Connecting-IP") || "unknown";
       // Per-IP keys use a hash of the IP alone — the raw IP is never stored.
-      const ipHash = await ipFingerprint(ip);
+      const ipHash = await ipFingerprint(env, ip);
       const today = new Date().toISOString().slice(0, 10);
       // Day-scoped marker prefixes, counted not incremented (race-free caps).
       const ratePrefix = `rate:${fp}:${today}:`;

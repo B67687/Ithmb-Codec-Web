@@ -1,6 +1,10 @@
 # Changelog
 
-## 1.4.13 — 2026-08-05
+## 1.4.14 — 2026-08-05
+
+### Security (privacy)
+- **Per-IP pseudonyms are now HMAC-keyed (C4, real fix — not just documentation).** The plain SHA-256 truncation was trivially reversible for IPv4 (2^32 space), so anyone with KV read access could recover every submitter's raw IP — a broken privacy promise for a privacy-first product. Per-IP keys and the stored record fingerprint are now HMAC-SHA256 keyed with a server secret (`IP_HMAC_SECRET`, falling back to `ADMIN_TOKEN`; set in the CF dashboard), making them cryptographically irreversible without the secret; truncation extended 64→128 bits so cross-IP collisions are negligible. A KV dump/backup/leak now reveals nothing.
+ — 2026-08-05
 
 ### Security
 - **Rate markers now cover every accepted POST** (C2): the markers were written only on *stored* requests, so dedup'd/invalid resubmissions could replay forever without consuming the 100/500-per-day budget. Markers are written right after the rate check, before dedup/validation early-returns; the batch path's stored-only marker was removed; batch dedup keys now match the single path's `:h`/`:f` suffix (the divergent namespaces allowed duplicate storage).
