@@ -72,28 +72,27 @@ for (const [name, path] of PAGES) {
       expect(content.length).toBeGreaterThan(30);
     });
 
-test("description is localized (flips with language)", async ({ page }) => {
-await page.goto(path, { waitUntil: "domcontentloaded" });
-const en = await page.locator('meta[name="description"]').getAttribute("content");
-      // Force zh via localStorage + reload (avoids depending on toggle state).
-      // i18n.js is injected as a deferred module on some pages (nav.js), so
-      // wait for the CJK translation to actually land instead of reading too
-      // early (was flaky under parallel workers).
-await page.evaluate(() => localStorage.setItem("ithmbLang", "zh"));
-      await page.reload({ waitUntil: "domcontentloaded" });
-      await page.waitForFunction(() =>
-        /[\u4e00-\u9fff]/.test(
-          document.querySelector('meta[name="description"]')?.getAttribute("content") || "",
-        ),
-      );
-const zh = await page.locator('meta[name="description"]').getAttribute("content");
-await page.evaluate(() => localStorage.removeItem("ithmbLang"));
-expect(en).toBeTruthy();
-expect(zh).toBeTruthy();
-expect(en).not.toBe(zh);
-      // Chinese description should contain CJK characters
-      expect(/[\u4e00-\u9fff]/.test(zh)).toBe(true);
-    });
+test("EN description stays English despite a zh stored preference", async ({ page }) => {
+  await page.goto(path, { waitUntil: "domcontentloaded" });
+  const en = await page.locator('meta[name="description"]').getAttribute("content");
+  // Regression guard (Phase 3): the URL is the source of truth. A stale
+  // zh preference in localStorage must NOT flip the server-rendered
+  // English page — the switcher is a plain link between / and /zh/ pages,
+  // so client detection can never override the URL's language. This test
+  // would have caught the forcedLang() asymmetry that made EN pages
+  // default to Chinese for zh browsers.
+  await page.evaluate(() => localStorage.setItem("ithmbLang", "zh"));
+  await page.reload({ waitUntil: "domcontentloaded" });
+  // Wait until the i18n module has initialized and detected on load, so a
+  // detection bug that swaps the page after paint still gets caught.
+  await page.waitForFunction(() => window.I18N && window.I18N.lang === "en");
+  const after = await page.locator('meta[name="description"]').getAttribute("content");
+  await page.evaluate(() => localStorage.removeItem("ithmbLang"));
+  expect(en).toBeTruthy();
+  expect(after).toBe(en);
+  // English description must not contain CJK characters
+  expect(/[\u4e00-\u9fff]/.test(after)).toBe(false);
+});
   });
 }
 

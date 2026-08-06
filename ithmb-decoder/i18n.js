@@ -200,13 +200,16 @@ export const I18N = {
   loaded: false,
 };
 
-// The server-rendered language wins. Pages under /zh/ declare
-// <html lang="zh-CN">; their served HTML IS the canonical Chinese content,
-// so they must never be swapped away from zh by detection or cross-tab
-// sync (which could read a stale "en" preference from another tab).
+// The server-rendered language wins. Every page declares <html lang="en"> or
+// <html lang="zh-CN">; its served HTML IS the canonical content for that
+// language, so it must never be swapped by client detection (localStorage
+// or navigator.language) or cross-tab sync — the URL is the source of
+// truth, and the language switcher is a plain link between locales.
 function forcedLang() {
   const lang = (document.documentElement.getAttribute("lang") || "").toLowerCase();
-  return lang.indexOf("zh") === 0 ? "zh" : null;
+  if (lang.indexOf("zh") === 0) return "zh";
+  if (lang.indexOf("en") === 0) return "en";
+  return null;
 }
 
 function detectLang() {
