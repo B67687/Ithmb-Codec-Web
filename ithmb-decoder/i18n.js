@@ -3,8 +3,11 @@
  *
  * Languages: en (default) + zh (Simplified Chinese).
  *
- * Language detection order: ?lang= query param → localStorage("ithmbLang") →
- * navigator.language (starts with "zh") → "en".
+ * Language detection order: server-rendered language wins (pages in the
+ * /zh/ tree declare <html lang="zh-CN"> and are ALWAYS Chinese) →
+ * localStorage("ithmbLang") → navigator.language (starts with "zh") → "en".
+ * The old ?lang= query-param scheme was removed in Phase 3 — the /zh/
+ * pages are the canonical Chinese URLs now.
  *
  * Exports:
  *   t(key, params)          — lookup + {param} interpolation
@@ -197,10 +200,19 @@ export const I18N = {
   loaded: false,
 };
 
+// The server-rendered language wins. Pages under /zh/ declare
+// <html lang="zh-CN">; their served HTML IS the canonical Chinese content,
+// so they must never be swapped away from zh by detection or cross-tab
+// sync (which could read a stale "en" preference from another tab).
+function forcedLang() {
+  const lang = (document.documentElement.getAttribute("lang") || "").toLowerCase();
+  return lang.indexOf("zh") === 0 ? "zh" : null;
+}
+
 function detectLang() {
+  const forced = forcedLang();
+  if (forced) return forced;
   try {
-    const urlLang = new URLSearchParams(window.location.search).get("lang");
-    if (urlLang && SUPPORTED[urlLang]) return urlLang;
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved && SUPPORTED[saved]) return saved;
   } catch (e) {
@@ -394,6 +406,7 @@ preloadLocales();
 let storageTimer = null;
 window.addEventListener("storage", (e) => {
   if (e.key !== STORAGE_KEY || !e.newValue || !SUPPORTED[e.newValue]) return;
+  if (forcedLang()) return; // /zh/ pages never leave zh via cross-tab sync
   clearTimeout(storageTimer);
   storageTimer = setTimeout(() => {
     if (I18N.lang !== e.newValue) applySyncedLang(e.newValue);

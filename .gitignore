@@ -33,6 +33,9 @@
 !guide/*
 !enterprise/
 !enterprise/*
+!zh/
+!zh/*
+!zh/*/*
 !tests/
 !tests/**
 !docs/
