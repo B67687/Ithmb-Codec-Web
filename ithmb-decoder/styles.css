@@ -1167,3 +1167,32 @@ input:focus-visible {
     font-size: 1rem;
   }
 }
+
+/* ─── Decoder info section (SEO copy) ─────────────────────────────── */
+.decoder-info {
+  margin-top: 48px;
+  padding-top: 40px;
+  border-top: 1px solid var(--border);
+  text-align: left;
+}
+.decoder-info h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 28px 0 8px;
+}
+.decoder-info h2:first-child {
+  margin-top: 0;
+}
+.decoder-info p {
+  color: var(--muted);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+.decoder-info a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.decoder-info a:hover {
+  text-decoration: underline;
+}
