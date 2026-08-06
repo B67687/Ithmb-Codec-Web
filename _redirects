@@ -1,0 +1,19 @@
+# Cloudflare Pages URL canonicalization (301)
+# Collapse legacy *.html variants onto the canonical extensionless URLs so
+# old bookmarks/search results/caches land on the canonical form, and Google
+# never sees two URLs serving identical content. Both EN and zh trees get the
+# same treatment so the URL structure is unified across languages.
+#
+# The extensionless forms resolve natively on Cloudflare Pages (it serves
+# foo.html for /foo); these rules make the .html forms redirect to them.
+
+/guide/how-to-open-ithmb-files.html    /guide/how-to-open-ithmb-files    301
+/zh/guide/how-to-open-ithmb-files.html /zh/guide/how-to-open-ithmb-files 301
+
+/ithmb-decoder/index.html              /ithmb-decoder/                   301
+/enterprise/index.html                 /enterprise/                      301
+/zh/index.html                         /zh/                              301
+/zh/ithmb-decoder/index.html           /zh/ithmb-decoder/                301
+/zh/enterprise/index.html              /zh/enterprise/                   301
+
+/index.html                            /                                 301
