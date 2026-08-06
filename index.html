@@ -212,46 +212,6 @@
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "FAQPage",
-      "mainEntity": [
-        {
-          "@type": "Question",
-          "name": "What is an ITHMB file?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "ITHMB (short for iThumbnail) is Apple's thumbnail image format used in iPods and iPhones to cache cover art and photo thumbnails."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "How do I convert ITHMB to JPG?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Drag your .ithmb or .ipm file onto the decoder at ithmb-codec.dev. The tool processes everything in your browser using WebAssembly — no files are uploaded to any server. Click Save to download as JPEG."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Is the ITHMB decoder free?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Yes, completely free and open source under the MIT license. All decoding is done client-side in WebAssembly, so your files never leave your computer."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Can I decode multiple ITHMB files at once?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Yes. Drop multiple .ithmb or .ipm files at once. Each file appears in a gallery view. You can view decoded images, download them individually, or batch download all as a ZIP archive."
-          }
-        }
-      ]
-    }
-    </script>
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
       "@type": "WebApplication",
       "name": "ITHMB Codec",
       "url": "https://ithmb-codec.dev/",
@@ -281,6 +241,20 @@
           "name": "Home",
           "item": "https://ithmb-codec.dev/"
         }
+      ]
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "ITHMB Codec",
+      "url": "https://ithmb-codec.dev",
+      "logo": "https://ithmb-codec.dev/favicon.svg",
+      "sameAs": [
+        "https://github.com/B67687/Ithmb-Codec",
+        "https://github.com/B67687/Ithmb-Codec-Web",
+        "https://github.com/B67687/ImageGlass-Ithmb-Plugin"
       ]
     }
     </script>
