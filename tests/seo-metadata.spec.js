@@ -82,8 +82,7 @@ test.describe("language preference redirect", () => {
     await page.addInitScript(() => localStorage.setItem("ithmbLang", "zh"));
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => location.pathname === "/zh/");
-    const htmlLang = await page.locator("html").getAttribute("lang");
-    expect(htmlLang.toLowerCase().startsWith("zh")).toBe(true);
+    await expect(page.locator("html")).toHaveAttribute("lang", /^zh/i);
     const desc = await page.locator('meta[name="description"]').getAttribute("content");
     expect(/[\u4e00-\u9fff]/.test(desc)).toBe(true);
   });
@@ -92,16 +91,14 @@ test.describe("language preference redirect", () => {
     await page.addInitScript(() => localStorage.setItem("ithmbLang", "zh"));
     await page.goto("/guide/how-to-open-ithmb-files.html", { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => location.pathname === "/zh/guide/how-to-open-ithmb-files");
-    const htmlLang = await page.locator("html").getAttribute("lang");
-    expect(htmlLang.toLowerCase().startsWith("zh")).toBe(true);
+    await expect(page.locator("html")).toHaveAttribute("lang", /^zh/i);
   });
 
   test("stored en preference redirects a /zh/ page to its EN counterpart", async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem("ithmbLang", "en"));
     await page.goto("/zh/", { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => location.pathname === "/");
-    const htmlLang = await page.locator("html").getAttribute("lang");
-    expect(htmlLang.toLowerCase().startsWith("en")).toBe(true);
+    await expect(page.locator("html")).toHaveAttribute("lang", /^en/i);
     const desc = await page.locator('meta[name="description"]').getAttribute("content");
     expect(/[\u4e00-\u9fff]/.test(desc)).toBe(false);
   });
@@ -121,8 +118,7 @@ test.describe("language preference redirect", () => {
     const page = await context.newPage();
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => location.pathname === "/zh/");
-    const htmlLang = await page.locator("html").getAttribute("lang");
-    expect(htmlLang.toLowerCase().startsWith("zh")).toBe(true);
+    await expect(page.locator("html")).toHaveAttribute("lang", /^zh/i);
     await context.close();
   });
 
