@@ -1,6 +1,6 @@
 # ITHMB Codec Web — Feature Inventory & Architecture
 
-> Updated: 2026-08-05 (1.4.7: i18n derived-label unification, security audit C1–C9, CI, dev/public workflow)
+> Updated: 2026-08-06 (1.4.16: server-rendered /zh/ tree, language-preference redirect, plain-link switcher, cross-tab sync removed)
 > Purpose: Authoritative, current source of truth for features + the architecture that serves them.
 > **Keep this file in sync with every behavior change.** A stale spec is how bugs look like features.
 
@@ -30,6 +30,7 @@ ithmb-codec-web/
 ├── index.html                         # Home page (entry)
 ├── nav.js                             # Shared navigation (IIFE, insertAdjacentHTML)
 ├── footer.js                          # Shared footer (IIFE — renders ONLY after window.t exists, no raw-key flash)
+├── lang-redirect.js                   # Pre-paint locale redirect (stored pref / zh browser → /zh/ counterpart)
 ├── bmc-icon.svg / favicon.svg / thumb-decoder-preview.png
 ├── CNAME                              # Custom domain: ithmb-codec.dev
 ├── package.json                       # Zero runtime deps; dev: @playwright/test, playwright, acorn, @axe-core/playwright
@@ -75,10 +76,10 @@ ithmb-codec-web/
 
 | Page       | Route                            | Purpose        | Type                         | JS Required |
 | ---------- | -------------------------------- | -------------- | ---------------------------- | ----------- |
-| Home       | `/`                              | Landing page   | Static + CSS                 | nav.js, footer.js |
-| Decoder    | `/ithmb-decoder/`                | Core web app   | Full SPA (ES modules + WASM) | nav.js, footer.js, app.js (14 modules) |
-| Guide      | `/guide/how-to-open-ithmb-files.html` | Documentation | Static + CSS                 | nav.js, footer.js |
-| Enterprise | `/enterprise/`                   | Marketing page | Static + CSS                 | nav.js, footer.js |
+| Home       | `/`                              | Landing page   | Static + CSS                 | nav.js, footer.js, lang-redirect.js |
+| Decoder    | `/ithmb-decoder/`                | Core web app   | Full SPA (ES modules + WASM) | nav.js, footer.js, app.js (14 modules), lang-redirect.js |
+| Guide      | `/guide/how-to-open-ithmb-files.html` | Documentation | Static + CSS                 | nav.js, footer.js, lang-redirect.js |
+| Enterprise | `/enterprise/`                   | Marketing page | Static + CSS                 | nav.js, footer.js, lang-redirect.js |
 
 ### Dependency Direction (module graph)
 
@@ -102,7 +103,9 @@ i18n.js is dependency-free: other modules import `{ t }` from it; re-renders are
 
 ### 2.1 Navigation Bar (`nav.js`)
 
-IIFE injected as first child of `<body>` via `insertAdjacentHTML`. Fixed top nav (44px, backdrop blur), brand left, 4 links center (Home/Decoder/Guide/Enterprise), icons right (BMC + GitHub corner). Active link from `window.location.pathname`.
+IIFE injected as first child of `<body>` via `insertAdjacentHTML`. Fixed top nav (44px, backdrop blur), brand left, 3 links center (Home/Decoder/Guide; Enterprise lives in the footer), icons right (language switcher + BMC + GitHub corner). Active link from `window.location.pathname` (the `/zh/` prefix is stripped first so the same rules apply on Chinese pages).
+
+The language switcher (`#langToggle`) is a plain `<a>` link to the counterpart page in the other locale (EN ↔ /zh/ tree, server-rendered and indexable), not an in-page toggle. Its click handler writes the target language to `localStorage ithmbLang` before navigating; that click is the only writer of the language preference. On `/zh/` pages the nav labels and the switcher aria-label/title are emitted inline in Chinese (首页 / 解码器 / 指南 / 切换语言, matching zh.json's `nav.*` keys), because nav.js runs before i18n.js; the `data-i18n` attributes stay so i18n re-applies the authoritative text on activation.
 
 ### 2.2 Footer (`footer.js`)
 
@@ -248,14 +251,24 @@ JSZip from all successful canvases; JPEG 92% (default) / PNG / BMP / WebP; globa
 
 - `t(key, params)` params are **HTML-escaped** (future-proofs `data-i18n-html`).
 - `EMBEDDED_EN` (in i18n.js) is **generated** from `locales/en.json` by `scripts/sync-embedded.mjs` — the offline fallback + EN baseline. `scripts/check-i18n.mjs` gates key parity / raw literals / drift (runs in pre-commit + CI).
-- Language detection: `?lang=` → localStorage(`ithmbLang`) → navigator → en.
-- Re-render on switch: `languagechange` → reRenderCards (success info panels + failure share boxes) + in-progress "Decoding…" placeholders + `updateToolbar()` + viewer-stage rebuild when open.
+- **Language resolution:** the server-rendered `<html lang>` attribute is authoritative (`forcedLang()` in i18n.js): every page declares `lang="en"` or `lang="zh-CN"`, so the URL decides the page language and there is no `?lang=` scheme. The stored preference (`localStorage ithmbLang`) and `navigator.language` no longer swap text in place; they drive the pre-paint redirect below.
+- Re-render on languagechange (in-page `setLang()` / locale activation): `reRenderCards` (success info panels + failure share boxes) + in-progress "Decoding…" placeholders + `updateToolbar()` + viewer-stage rebuild when open. User-facing switching is now a full navigation between server-rendered pages (the switcher is a link), so this path fires on locale activation rather than on user clicks.
+
+### Language-Preference Redirect (`lang-redirect.js`)
+
+Synchronous classic script loaded in `<head>` of all 8 content pages (4 EN + 4 zh, not 404.html) after the CSP meta, so it runs before first paint. It reads `localStorage ithmbLang`; when the stored preference differs from the current page's language it `location.replace()`s to the counterpart URL in the preferred language. With no stored preference, a zh `navigator.language` (starts with "zh") on an EN page redirects to the `/zh/` counterpart, so zh users land on the Chinese site by default. A `/zh/` page is never redirected to English (no bounce loop); unmapped paths (e.g. `/404.html`) are untouched; targets are relative (no hardcoded domain), so it works on local dev servers too. `location.replace()` keeps the redirect out of history. Language "detection" is now a server-visible redirect between pre-rendered pages, not a client-side text swap.
+
+The preference is written in exactly one place: the language switcher's click handler in nav.js, before it navigates to the counterpart page. i18n.js's `setLang()` can also persist, but that path is only reachable on a page without a declared `<html lang>`, which no shipped page has.
+
+### No-Flash Init on Forced-Language Pages
+
+When `forcedLang()` is set (always, on shipped pages), i18n.js init sets `I18N.lang` to the forced language WITHOUT applying `EMBEDDED_EN` over the server-rendered text, then fetches the locale JSON and activates the merged table when it lands. The served HTML is already in the correct language, so a refreshed `/zh/` page never flashes English while the fetch is in flight. Only when no `<html lang>` is declared does init fall back to `detectLang()` (localStorage → navigator → en) rendered from embedded defaults. EN pages are unchanged: their server HTML is English, matching the embedded baseline.
 
 ---
 
 ## 9. CSS Design System
 
-CSS custom properties (`--bg #f5f5f7`, `--surface #fff`, `--border`, `--text`, `--muted`, `--accent #007AFF`, `--accent-hover`, `--success`, `--warn`, `--radius 12px`, `--shadow`, `--card-bg`). Component catalog: buttons (`.btn` family), dropzone, file cards, statuses (`.ok/.err/.unknown/.loading` + spinner), viewer, filmstrip, toolbar, toast, drop overlay, GitHub/BMC corners, back-to-top, share box, report link, viewer header, footer, `:focus-visible` outlines. Animations: `spin` (0.6s), `placeholder-spin` (0.8s). Breakpoints 768px / 480px. Home/Guide/Enterprise use inline page styles.
+CSS custom properties (`--bg #f5f5f7`, `--surface #fff`, `--border`, `--text`, `--muted`, `--accent #007AFF`, `--accent-hover`, `--success`, `--warn`, `--radius 12px`, `--shadow`, `--card-bg`). Component catalog: buttons (`.btn` family), dropzone, file cards, statuses (`.ok/.err/.unknown/.loading` + spinner), viewer, filmstrip, toolbar, toast, drop overlay, GitHub/BMC corners, back-to-top, share box, report link, viewer header, footer, `:focus-visible` outlines. Animations: `spin` (0.6s), `placeholder-spin` (0.8s). Breakpoints 768px / 480px. Home/Guide/Enterprise use inline page styles. **Dark mode is intentionally not supported** (light-first Apple design language; declined 2026-08-06 to avoid a second full design surface for a low-value QoL).
 
 ---
 
@@ -282,7 +295,7 @@ Valid statuses: `success`, `known-failed`, `unknown`, `looks-good`, `looks-wrong
 
 ### 11.1 Playwright Suite
 
-**Config:** 3 projects, baseURL = `BASE_URL` env **or** live site — **tests/hooks must always set `BASE_URL` to a local server** (never test production). `npm run test:quick` = 101 tests on chromium (pages, decoder, gallery, upload, quality, a11y, seo-metadata). `npm run test:full` = all projects — **webkit cannot run in this dev environment** (documented; chromium+firefox are the CI/local gate).
+**Config:** 3 projects, baseURL = `BASE_URL` env **or** live site — **tests/hooks must always set `BASE_URL` to a local server** (never test production). `npm run test:quick` = 106 tests on chromium (pages, decoder, gallery, upload, quality, a11y, seo-metadata). `npm run test:full` = all projects — **webkit cannot run in this dev environment** (documented; chromium+firefox are the CI/local gate).
 
 | File | Focus |
 | ---- | ----- |
@@ -293,7 +306,7 @@ Valid statuses: `success`, `known-failed`, `unknown`, `looks-good`, `looks-wrong
 | `upload.spec.js` | Decode correctness: 8 distinct files, batch append, duplicate filenames |
 | `quality.spec.js` | Share/report flows (header/full/dedup/upgrade/rollback), quiet-by-default, corrupt-file handling, viewer contextual share |
 | `a11y.spec.js` | axe-core scans (5 pages) |
-| `seo-metadata.spec.js` | Meta description (localized), hreflang, CSP meta on every page |
+| `seo-metadata.spec.js` | Meta description (localized), language-preference redirect (7 tests), hreflang/canonical, CSP meta on every page |
 | `visual.spec.js` | Visual snapshots (pages, nav, footer) |
 
 ### 11.2 Gates

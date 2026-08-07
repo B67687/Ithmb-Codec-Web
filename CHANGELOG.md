@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.4.16 — 2026-08-06
+
+### Added
+- **Language-preference redirect** (`lang-redirect.js`): a synchronous classic script loaded in `<head>` of all 8 content pages before first paint. Reads `localStorage ithmbLang` and redirects to the counterpart page in the stored language; with no stored preference, zh `navigator.language` browsers land on `/zh/` by default. `/zh/` pages never bounce back to English; unmapped paths like `/404.html` are untouched; relative targets work on local dev servers.
+- **Server-rendered `/zh/` page tree** (canonical Chinese URLs): `/zh/`, `/zh/ithmb-decoder/`, `/zh/guide/how-to-open-ithmb-files`, `/zh/enterprise/` are now statically rendered Chinese HTML, replacing the old `?lang=` client-side swap scheme. Nav links, hreflang alternates, and sitemap entries all point at the real `/zh/` URLs.
+- zh URLs added to `sitemap.xml`.
+
+### Changed
+- **Language switcher is now a plain navigation link** between EN and `/zh/` counterparts (no more in-page text swap); its click handler writes the target language to `localStorage ithmbLang` before navigating, the only writer of the preference.
+- **Server-rendered `<html lang>` is authoritative** (EN and zh): i18n init adopts the forced language without applying embedded English over the served HTML, then activates real translations when the locale fetch lands.
+- Legacy `.html` URLs canonicalized via `_redirects` (guide pages).
+
+### Removed
+- **Cross-tab language sync** (all open tabs following the toggle): the `storage` event listener and `applySyncedLang()` are gone. Dropped as a low-value QoL feature after the switcher became a plain link.
+
+### Fixed
+- **No English flash on refreshed `/zh/` pages**: the init path no longer applies `EMBEDDED_EN` over the already-Chinese server HTML while the zh.json fetch is in flight.
+- **Decoder hardened against photodb infinite loops / JPEG peak budget exhaustion** (core `1.9.5`, CWE-835/400): the regenerated `ithmb_wasm_bg.wasm` ships the infinite-loop guard and JPEG peak-memory budget fix from the 1.9.5 core release.
+
+### Tests
+- `seo-metadata.spec.js` gains a **"language preference redirect"** block (7 tests: stored zh/en preference redirects both ways, no-preference browser-language rules, never-bounce, unmapped paths); the old "EN description stays English despite a zh stored preference" test was replaced by redirect coverage. Suite is 106 tests on chromium.
+
 ## 1.4.15 — 2026-08-05
 
 ### Tests

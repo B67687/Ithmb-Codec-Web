@@ -55,7 +55,7 @@ bash scripts/check-wasm-drift.sh        # committed wasm vs loader glue (run aft
 python3 -m http.server 8899
 
 # Tests — ALWAYS point BASE_URL at the local server, never the live site
-BASE_URL=http://localhost:8899 npm run test:quick      # 101 tests, chromium, ~17s
+BASE_URL=http://localhost:8899 npm run test:quick      # 108 tests, chromium, ~17s
 BASE_URL=http://localhost:8899 npm run test:full       # all projects — NOTE: webkit is NOT
                                                        # installable in this env; chromium+firefox pass
 ```
