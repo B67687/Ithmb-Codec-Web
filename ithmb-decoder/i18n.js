@@ -24,9 +24,11 @@
  * Classic (non-module) scripts such as nav.js can use the globals
  * window.I18N / window.t / window.setLang.
  *
- * Locale JSON is fetched from ./locales/{lang}.json on load; if the fetch
- * fails (offline, restricted CSP, file:// …) the embedded English defaults
- * below keep the UI fully populated, so text never flashes untranslated.
+ * Locale JSON is fetched from ./locales/{lang}.json on load. When the page
+ * language is server-forced (always the case today), the served HTML stays
+ * visible until the fetch lands and re-activates; the embedded English
+ * defaults below only back the fallback path (no <html lang> declared, or
+ * a failed fetch), so text never flashes untranslated.
  */
 
 const EMBEDDED_EN = {
@@ -203,8 +205,8 @@ export const I18N = {
 // The server-rendered language wins. Every page declares <html lang="en"> or
 // <html lang="zh-CN">; its served HTML IS the canonical content for that
 // language, so it must never be swapped by client detection (localStorage
-// or navigator.language) or cross-tab sync — the URL is the source of
-// truth, and the language switcher is a plain link between locales.
+// or navigator.language) — the URL is the source of truth, and the
+// language switcher is a plain link between locales.
 function forcedLang() {
   const lang = (document.documentElement.getAttribute("lang") || "").toLowerCase();
   if (lang.indexOf("zh") === 0) return "zh";
@@ -342,9 +344,9 @@ window.dispatchEvent(new CustomEvent("languagechange"));
 export function setLang(lang) {
   if (!SUPPORTED[lang]) return;
   I18N.lang = lang;
-  // Only persist when the stored value actually changes. This is the ONLY
-  // place localStorage is written — the cross-tab sync path (storage event)
-  // never writes, so a write can never be triggered by a write (no loop).
+  // Only persist when the stored value actually changes. This is the only
+  // writer of STORAGE_KEY in i18n.js; the language switcher sets the
+  // preference directly when it navigates between locales.
   try {
     if (localStorage.getItem(STORAGE_KEY) !== lang) {
       localStorage.setItem(STORAGE_KEY, lang);
@@ -352,15 +354,6 @@ export function setLang(lang) {
   } catch (e) {
     // Ignore persistence failures.
   }
-  activateOrFetch(lang);
-}
-
-// Apply a language WITHOUT persisting. Used by the cross-tab storage sync:
-// another tab already wrote the value; we just mirror it. Never calls
-// setItem, so it cannot echo back and loop.
-function applySyncedLang(lang) {
-  if (!SUPPORTED[lang]) return;
-  I18N.lang = lang;
   activateOrFetch(lang);
 }
 
@@ -393,29 +386,25 @@ async function loadLocale(lang) {
   }
 }
 
-// Initialise: detect language and apply. The detected language renders
-// immediately from embedded defaults (synchronous, nothing flashes blank);
-// preloadLocales() then fetches every locale in the background so any later
-// setLang() is an instant in-memory swap with no fetch.
-setLang(detectLang());
-preloadLocales();
-
-// Cross-tab sync: when ANOTHER tab of this site changes the language, the
-// storage event fires here — switch this tab to match, so the whole site
-// (all open tabs) shows one language instantly, not just the tab you
-// clicked in. Debounced: rapid storage events (many tabs, or tabs loading
-// while another flips) collapse into one render instead of a seizure of
-// back-to-back re-renders.
-let storageTimer = null;
-window.addEventListener("storage", (e) => {
-  if (e.key !== STORAGE_KEY || !e.newValue || !SUPPORTED[e.newValue]) return;
-  if (forcedLang()) return; // /zh/ pages never leave zh via cross-tab sync
-  clearTimeout(storageTimer);
-  storageTimer = setTimeout(() => {
-    if (I18N.lang !== e.newValue) applySyncedLang(e.newValue);
-  }, 30);
-});
-
+// Initialise: the server-rendered language (<html lang>) is authoritative
+// on every page. When it is forced, adopt it WITHOUT applying the embedded
+// English fallback over the served HTML — the page is already fully
+// translated and must not flash English while the locale JSON loads;
+// loadLocale() re-activates with the merged table when the fetch lands.
+// Only when no language is forced (no <html lang> declared) do we fall
+// back to detectLang(): stored preference → browser language → en,
+// rendered synchronously from embedded defaults (nothing flashes blank).
+// Either way preloadLocales() fills the cache so a later setLang() is an
+// instant in-memory swap with no fetch.
+const forced = forcedLang();
+if (forced) {
+  I18N.lang = forced;
+  loadLocale(forced);
+  preloadLocales();
+} else {
+  setLang(detectLang());
+  preloadLocales();
+}
 
 // Expose globals for classic scripts (nav.js, footer.js, etc.).
 window.I18N = I18N;

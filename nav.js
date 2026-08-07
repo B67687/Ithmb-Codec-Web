@@ -54,18 +54,22 @@
     active = "enterprise";
 
   var links = [
-    { id: "home", href: "/", text: "Home", i18n: "nav.home" },
-    { id: "decoder", href: "/ithmb-decoder/", text: "Decoder", i18n: "nav.decoder" },
-    { id: "guide", href: "/guide/how-to-open-ithmb-files", text: "Guide", i18n: "nav.guide" },
+    { id: "home", href: "/", text: "Home", zhText: "首页", i18n: "nav.home" },
+    { id: "decoder", href: "/ithmb-decoder/", text: "Decoder", zhText: "解码器", i18n: "nav.decoder" },
+    { id: "guide", href: "/guide/how-to-open-ithmb-files", text: "Guide", zhText: "指南", i18n: "nav.guide" },
   ];
 
   function linkHTML(item) {
     var isActive = item.id === active;
     var cls = "top-nav-link" + (isActive ? " active" : "");
     var href = isZh && zhPages[item.href] ? zhPages[item.href] : item.href;
+    // On /zh/ pages the nav is injected BEFORE i18n.js runs, so the visible
+    // labels are the static Chinese strings (matching zh.json's nav.* keys);
+    // data-i18n stays so i18n re-applies the authoritative text on activation.
+    var text = isZh ? item.zhText : item.text;
     var html =
       '<a href="' + href + '" class="' + cls + '" data-i18n="' + item.i18n + '">';
-    html += item.text + "</a>";
+    html += text + "</a>";
     return html;
   }
 
@@ -76,11 +80,14 @@
 
   // EN / 中 language switcher — a plain navigation link to the counterpart
   // page in the other locale (server-rendered, indexable). i18n.js (loaded
-  // below) highlights the active option via updateLangToggle().
+  // below) highlights the active option via updateLangToggle(). On /zh/
+  // pages the static Chinese label is emitted inline (nav.js runs before
+  // i18n); data-i18n-aria-label/title stay for the authoritative strings.
+  var toggleLabel = isZh ? "切换语言" : "Switch language";
   var langToggle =
     '<a href="' + counterpart(path) + '" id="langToggle" class="lang-toggle" ' +
     'data-i18n-aria-label="nav.toggleLabel" data-i18n-title="nav.toggleLabel" ' +
-    'aria-label="Switch language" title="Switch language" ' +
+    'aria-label="' + toggleLabel + '" title="' + toggleLabel + '" ' +
     'style="background:transparent;border:1px solid var(--border,#d2d2d7);border-radius:999px;color:var(--text,#1d1d1f);font-size:0.75rem;line-height:1;padding:3px 8px;display:inline-flex;align-items:center;gap:5px;vertical-align:middle;font-family:inherit;margin-right:8px;text-decoration:none;cursor:pointer">' +
     '<span class="lang-opt" data-lang="en">EN</span>' +
     '<span style="color:var(--muted,#86868b)">/</span>' +
@@ -106,6 +113,20 @@
 
   document.body.insertAdjacentHTML("afterbegin", navHtml);
 
+  // Persist the language preference when the switcher is clicked, BEFORE
+  // the plain-link navigation happens — lang-redirect.js reads it on the
+  // next page load. Only the switcher writes the preference; nav links
+  // just navigate (the redirect script handles the rest).
+  var toggle = document.getElementById("langToggle");
+  if (toggle) {
+    toggle.addEventListener("click", function () {
+      try {
+        localStorage.setItem("ithmbLang", isZh ? "en" : "zh");
+      } catch (e) {
+        // Storage blocked — navigation still proceeds.
+      }
+    });
+  }
   // Load the i18n module on pages that don't include it directly
   // (decoder page adds its own <script type="module" src="i18n.js">). The
   // browser dedupes by URL, so this is harmless when both are present.

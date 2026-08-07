@@ -21,7 +21,7 @@
       "<footer>" +
       "<div>" +
       '<a href="https://github.com/B67687/Ithmb-Codec" target="_blank" rel="noopener" aria-label="GitHub">' +
-      '<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="vertical-align:middle;display:inline-block">' +
+      '<svg width="16" height="16" viewBox="0 0 16 16" fill="#7c3aed" style="vertical-align:middle;display:inline-block">' +
       '<path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>' +
       "</svg>" +
       "</a>" +
@@ -29,7 +29,12 @@
       ' <a href="https://github.com/B67687/Ithmb-Codec">Ithmb-Codec</a>' +
       t("footer.poweredBySuffix") +
       " \u00B7 " +
-      '<a href="/enterprise/" rel="noopener">' + t("home.enterprise") + "</a>" +
+      '<a href="/enterprise/" rel="noopener">' +
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;display:inline-block" aria-hidden="true">' +
+      '<path fill-rule="evenodd" d="M7.5 5.25a3 3 0 0 1 3-3h3a3 3 0 0 1 3 3V6h1.5A4.5 4.5 0 0 1 22.5 10.5v6a4.5 4.5 0 0 1-4.5 4.5H6a4.5 4.5 0 0 1-4.5-4.5v-6A4.5 4.5 0 0 1 6 6h1.5v-.75ZM15 5.25a1.5 1.5 0 0 0-1.5-1.5h-3a1.5 1.5 0 0 0-1.5 1.5V6h6v-.75Z" clip-rule="evenodd"/>' +
+      '<path d="M3 12.75a6 6 0 0 1 9-5.197V9.75a.75.75 0 0 0 1.5 0V7.553a6 6 0 0 1 9 5.197v4.05c0 1.824-1.479 3.3-3.3 3.3H6.3A3.3 3.3 0 0 1 3 16.8v-4.05Z"/>' +
+      "</svg> " +
+      t("home.enterprise") + "</a>" +
       " \u00B7 " +
       '<a href="https://buymeacoffee.com/ThumbNami" target="_blank" rel="noopener">' +
       '<img src="/bmc-icon.svg" alt="" width="14" height="20" style="vertical-align:middle;display:inline-block">' +

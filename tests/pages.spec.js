@@ -14,6 +14,22 @@ test.describe("Landing page", () => {
   });
 });
 
+test.describe("Landing page subtitle centering", () => {
+  test("EN subtitle is horizontally centered", async ({ page }) => {
+    await page.goto("/", { waitUntil: "networkidle" });
+    const box = await page.locator(".subtitle").boundingBox();
+    const vw = await page.evaluate(() => document.documentElement.clientWidth);
+    expect(Math.abs(box.x - (vw - box.x - box.width))).toBeLessThan(2);
+  });
+
+  test("zh subtitle is horizontally centered (not broken by :lang(zh) p margin)", async ({ page }) => {
+    await page.goto("/zh/", { waitUntil: "networkidle" });
+    const box = await page.locator(".subtitle").boundingBox();
+    const vw = await page.evaluate(() => document.documentElement.clientWidth);
+    expect(Math.abs(box.x - (vw - box.x - box.width))).toBeLessThan(2);
+  });
+});
+
 test.describe("Enterprise page", () => {
   test("loads with correct title", async ({ page }) => {
     await page.goto("/enterprise/", {

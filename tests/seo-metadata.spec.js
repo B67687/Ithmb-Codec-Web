@@ -72,29 +72,77 @@ for (const [name, path] of PAGES) {
       expect(content.length).toBeGreaterThan(30);
     });
 
-test("EN description stays English despite a zh stored preference", async ({ page }) => {
-  await page.goto(path, { waitUntil: "domcontentloaded" });
-  const en = await page.locator('meta[name="description"]').getAttribute("content");
-  // Regression guard (Phase 3): the URL is the source of truth. A stale
-  // zh preference in localStorage must NOT flip the server-rendered
-  // English page — the switcher is a plain link between / and /zh/ pages,
-  // so client detection can never override the URL's language. This test
-  // would have caught the forcedLang() asymmetry that made EN pages
-  // default to Chinese for zh browsers.
-  await page.evaluate(() => localStorage.setItem("ithmbLang", "zh"));
-  await page.reload({ waitUntil: "domcontentloaded" });
-  // Wait until the i18n module has initialized and detected on load, so a
-  // detection bug that swaps the page after paint still gets caught.
-  await page.waitForFunction(() => window.I18N && window.I18N.lang === "en");
-  const after = await page.locator('meta[name="description"]').getAttribute("content");
-  await page.evaluate(() => localStorage.removeItem("ithmbLang"));
-  expect(en).toBeTruthy();
-  expect(after).toBe(en);
-  // English description must not contain CJK characters
-  expect(/[\u4e00-\u9fff]/.test(after)).toBe(false);
-});
   });
 }
+
+test.describe("language preference redirect", () => {
+  const baseURL = process.env.BASE_URL || "https://ithmb-codec.dev";
+
+  test("stored zh preference redirects an EN page to its /zh/ counterpart", async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("ithmbLang", "zh"));
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => location.pathname === "/zh/");
+    const htmlLang = await page.locator("html").getAttribute("lang");
+    expect(htmlLang.toLowerCase().startsWith("zh")).toBe(true);
+    const desc = await page.locator('meta[name="description"]').getAttribute("content");
+    expect(/[\u4e00-\u9fff]/.test(desc)).toBe(true);
+  });
+
+  test("stored zh preference redirects the guide .html URL to the zh guide", async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("ithmbLang", "zh"));
+    await page.goto("/guide/how-to-open-ithmb-files.html", { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => location.pathname === "/zh/guide/how-to-open-ithmb-files");
+    const htmlLang = await page.locator("html").getAttribute("lang");
+    expect(htmlLang.toLowerCase().startsWith("zh")).toBe(true);
+  });
+
+  test("stored en preference redirects a /zh/ page to its EN counterpart", async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("ithmbLang", "en"));
+    await page.goto("/zh/", { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => location.pathname === "/");
+    const htmlLang = await page.locator("html").getAttribute("lang");
+    expect(htmlLang.toLowerCase().startsWith("en")).toBe(true);
+    const desc = await page.locator('meta[name="description"]').getAttribute("content");
+    expect(/[\u4e00-\u9fff]/.test(desc)).toBe(false);
+  });
+
+  test("no preference + non-zh browser keeps an EN page in place", async ({ page }) => {
+    await page.addInitScript(() => localStorage.removeItem("ithmbLang"));
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    expect(new URL(page.url()).pathname).toBe("/");
+    const htmlLang = await page.locator("html").getAttribute("lang");
+    expect(htmlLang.toLowerCase().startsWith("en")).toBe(true);
+    const desc = await page.locator('meta[name="description"]').getAttribute("content");
+    expect(/[\u4e00-\u9fff]/.test(desc)).toBe(false);
+  });
+
+  test("no preference + zh browser redirects an EN page to /zh/", async ({ browser }) => {
+    const context = await browser.newContext({ locale: "zh-CN", baseURL });
+    const page = await context.newPage();
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => location.pathname === "/zh/");
+    const htmlLang = await page.locator("html").getAttribute("lang");
+    expect(htmlLang.toLowerCase().startsWith("zh")).toBe(true);
+    await context.close();
+  });
+
+  test("no preference + zh browser stays on a /zh/ page (never bounces to EN)", async ({ browser }) => {
+    const context = await browser.newContext({ locale: "zh-CN", baseURL });
+    const page = await context.newPage();
+    await page.goto("/zh/", { waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(300); // give any (wrong) redirect time to fire
+    expect(new URL(page.url()).pathname).toBe("/zh/");
+    const htmlLang = await page.locator("html").getAttribute("lang");
+    expect(htmlLang.toLowerCase().startsWith("zh")).toBe(true);
+    await context.close();
+  });
+
+  test("an unmapped path is never redirected (404 stays put)", async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("ithmbLang", "zh"));
+    await page.goto("/404.html", { waitUntil: "domcontentloaded" });
+    expect(new URL(page.url()).pathname).toBe("/404.html");
+  });
+});
 
 test.describe("hreflang + canonical (real /zh/ URLs)", () => {
   for (const [name, path, enUrl, zhUrl] of CONTENT_PAGES) {

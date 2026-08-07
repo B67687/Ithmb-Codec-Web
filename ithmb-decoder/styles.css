@@ -95,7 +95,7 @@ h1.logo-text {
 .subtitle {
   font-size: 1.05rem;
   color: var(--muted);
-  max-width: 480px;
+  max-width: 640px;
   margin: 0 auto;
   line-height: 1.5;
 }
