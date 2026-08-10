@@ -1,0 +1,767 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title data-i18n="guide.title">How to Open ITHMB Files | ITHMB Codec</title>
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://ithmb-telemetry.ithmb-codec.workers.dev"
+    />
+    <script src="/theme.js?v=05536bb1"></script>
+    <script src="/lang-redirect.js?v=ba1561d1"></script>
+    <meta
+      name="description"
+      data-i18n-content="guide.description"
+      content="Free online tool to open and convert Apple iPod/iPhone .ithmb thumbnail files to JPEG. Private by default — nothing is uploaded unless you opt in to share."
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link
+      rel="canonical"
+      href="https://ithmb-codec.dev/guide/how-to-open-ithmb-files"
+    />
+    <link rel="alternate" hreflang="en" href="https://ithmb-codec.dev/guide/how-to-open-ithmb-files" />
+    <link rel="alternate" hreflang="zh" href="https://ithmb-codec.dev/zh/guide/how-to-open-ithmb-files" />
+    <link rel="alternate" hreflang="x-default" href="https://ithmb-codec.dev/guide/how-to-open-ithmb-files" />
+
+    <meta
+      property="og:title"
+      content="How to Open .ITHMB Files — Free Online ITHMB Decoder"
+    />
+    <meta
+      property="og:description"
+      content="Free online tool to open and convert Apple iPod/iPhone .ithmb thumbnail files to JPEG. Private by default — nothing is uploaded unless you opt in to share."
+    />
+    <meta property="og:image" content="https://ithmb-codec.dev/thumb-decoder-preview.png" />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:url"
+      content="https://ithmb-codec.dev/guide/how-to-open-ithmb-files"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta property="og:site_name" content="ITHMB Codec" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <link rel="stylesheet" href="/ithmb-decoder/styles.css?v=d1817a45" />
+    <style>
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+
+      .article,
+      .article p,
+      .article li,
+      .article ul,
+      .article ol,
+      .article h1,
+      .article h2,
+      .article strong,
+      .faq-question,
+      .faq-answer,
+      .logo-text,
+      header .subtitle {
+        -webkit-user-select: text;
+        user-select: text;
+      }
+
+      /* ─── Article Content ─── */
+
+      .article {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 40px 44px;
+        margin-bottom: 48px;
+      }
+
+      .article h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1.3;
+        margin-bottom: 20px;
+        color: var(--text);
+      }
+
+      .article h2 {
+        font-size: 1.35rem;
+        font-weight: 600;
+        margin-top: 36px;
+        margin-bottom: 12px;
+        color: var(--text);
+        letter-spacing: -0.01em;
+      }
+      .article h2:first-of-type {
+        margin-top: 0;
+      }
+
+      .article p {
+        font-size: 0.95rem;
+        color: var(--text);
+        line-height: 1.7;
+        margin-bottom: 16px;
+      }
+
+      .article a {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .article a:hover {
+        text-decoration: underline;
+      }
+
+      .article ul,
+      .article ol {
+        margin: 0 0 16px 0;
+        padding-left: 24px;
+      }
+
+      .article li {
+        font-size: 0.95rem;
+        color: var(--text);
+        line-height: 1.7;
+        margin-bottom: 6px;
+      }
+
+      .article li:last-child {
+        margin-bottom: 0;
+      }
+
+      .article strong {
+        font-weight: 600;
+      }
+
+      /* ─── Lead ─── */
+
+      .lead {
+        font-size: 1.05rem !important;
+        color: var(--muted) !important;
+        line-height: 1.7 !important;
+        margin-bottom: 24px !important;
+      }
+
+      /* ─── Steps ─── */
+
+      .steps {
+        counter-reset: step;
+        list-style: none;
+        padding-left: 0 !important;
+      }
+
+      .steps li {
+        counter-increment: step;
+        position: relative;
+        padding-left: 40px;
+        margin-bottom: 14px !important;
+        min-height: 32px;
+      }
+
+      .steps li::before {
+        content: counter(step);
+        position: absolute;
+        left: 0;
+        top: 1px;
+        width: 28px;
+        height: 28px;
+        background: var(--accent);
+        color: #fff;
+        font-size: 0.82rem;
+        font-weight: 600;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      /* ─── FAQ ─── */
+
+      .faq-item {
+        border-bottom: 1px solid var(--border);
+        padding: 18px 0;
+      }
+
+      .faq-item:first-of-type {
+        padding-top: 0;
+      }
+
+      .faq-item:last-of-type {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
+
+      .faq-question {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 6px;
+      }
+
+      .faq-answer {
+        font-size: 0.92rem;
+        color: var(--muted);
+        line-height: 1.65;
+      }
+
+      .faq-answer a {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .faq-answer a:hover {
+        text-decoration: underline;
+      }
+
+      /* ─── Responsive ─── */
+
+      @media (max-width: 768px) {
+        .article {
+          padding: 28px 24px;
+        }
+
+        .article h1 {
+          font-size: 1.6rem;
+        }
+
+        .article h2 {
+          font-size: 1.15rem;
+        }
+
+        .article p,
+        .article li {
+          font-size: 0.9rem;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .article {
+          padding: 20px 16px;
+          margin-bottom: 36px;
+        }
+
+        .article h1 {
+          font-size: 1.35rem;
+        }
+
+        .article h2 {
+          font-size: 1.05rem;
+          margin-top: 28px;
+        }
+
+        .article p,
+        .article li {
+          font-size: 0.85rem;
+        }
+
+        .faq-item {
+          padding: 14px 0;
+        }
+
+      }
+
+      /* Decoder UI mockup — static, no-JS recreation of the decoder for visual clarity */
+
+      /* Decoder UI mockup — static, no-JS recreation of the decoder for visual clarity */
+      .decoder-mockup {
+        margin: 24px 0;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--bg);
+        padding: 16px;
+      }
+      .mockup-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 14px;
+      }
+      .mockup-toolbar-left, .mockup-toolbar-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .mockup-nav {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .mockup-pos {
+        font-size: 0.8rem;
+        color: var(--text);
+        min-width: 48px;
+        text-align: center;
+      }
+      .mockup-fmt {
+        height: 26px;
+        font-size: 0.75rem;
+        padding: 2px 4px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: var(--surface);
+        color: var(--text);
+      }
+      .mockup-viewer-box {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        text-align: center;
+        width: 100%;
+        margin-bottom: 14px;
+      }
+      .mockup-viewer-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 6px 16px;
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+        font-size: 0.85rem;
+      }
+      .mockup-viewer-head .vh-enc {
+        font-weight: 600;
+      }
+      .mockup-viewer-head .vh-file {
+        color: var(--text);
+      }
+      .mockup-viewer-head .vh-dims {
+        margin-left: auto;
+        color: var(--muted);
+      }
+      .mockup-viewer {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 260px;
+        background: var(--surface);
+        padding: 20px;
+      }
+      .mockup-stage-img {
+        max-width: 100%;
+        max-height: 320px;
+        border-radius: 4px;
+        box-shadow: var(--shadow);
+      }
+      .mockup-filmstrip {
+        display: flex;
+        justify-content: flex-start;
+        gap: 6px;
+        padding: 10px 12px;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        background: var(--bg);
+        border-top: 1px solid var(--border);
+      }
+      .mockup-filmstrip .filmstrip-thumb {
+        flex: 0 0 auto;
+        width: 80px;
+        height: 60px;
+        border-radius: 4px;
+        overflow: hidden;
+        cursor: default;
+        border: 2px solid transparent;
+        opacity: 0.6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg);
+      }
+      .mockup-filmstrip .filmstrip-thumb.active {
+        opacity: 1;
+        border-color: var(--accent);
+      }
+      .mockup-filmstrip .filmstrip-thumb img {
+        width: 80px;
+        height: 60px;
+        object-fit: cover;
+      }
+      .mockup-cards {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .mockup-card {
+        flex: 1 1 200px;
+        min-width: 200px;
+        box-shadow: none;
+        border: 1px solid var(--border);
+      }
+      .mockup-card .preview {
+        justify-content: center;
+      }
+      .mockup-card .preview img {
+        max-width: 100%;
+        border-radius: 8px;
+      }
+      .mockup-cards-grid {
+        margin-top: 0;
+      }
+      /* Disabled but keep original colors — the live .btn:disabled rules grey them out */
+      .decoder-mockup .btn:disabled {
+        opacity: 1;
+        cursor: default;
+      }
+      .decoder-mockup .btn-primary:disabled {
+        background: #3e7cc7;
+        color: #fff;
+      }
+        background: #7fa3c4;
+        color: #fff;
+      }
+        background: var(--accent);
+        color: #fff;
+      }
+      .decoder-mockup .btn-outline:disabled {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text);
+      }
+      .decoder-mockup .mockup-fmt {
+        opacity: 1;
+        cursor: default;
+      }
+      .decoder-mockup select {
+        pointer-events: none;
+      }
+    </style>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      "headline": "How to Open ITHMB Files — Guide",
+      "description": "Free online tool to open and convert Apple iPod/iPhone .ithmb thumbnail files to JPEG. Private by default — nothing is uploaded unless you opt in to share.",
+      "image": "https://ithmb-codec.dev/thumb-decoder-preview.png",
+      "datePublished": "2026-07-13",
+      "dateModified": "2026-08-06",
+      "author": { "@type": "Organization", "name": "ITHMB Codec" }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://ithmb-codec.dev/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Guide",
+          "item": "https://ithmb-codec.dev/guide/how-to-open-ithmb-files"
+        }
+      ]
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "ITHMB Codec",
+      "url": "https://ithmb-codec.dev",
+      "logo": "https://ithmb-codec.dev/favicon.svg",
+      "sameAs": [
+        "https://github.com/B67687/Ithmb-Codec",
+        "https://github.com/B67687/Ithmb-Codec-Web",
+        "https://github.com/B67687/ImageGlass-Ithmb-Plugin"
+      ]
+    }
+    </script>
+  </head>
+  <body>
+    <script src="/nav.js?v=de8ea6a0"></script>
+
+    <div class="container">
+      <header>
+        <div class="logo">
+          <div class="logo-icon">iT</div>
+          <span class="logo-text">ITHMB Codec</span>
+        </div>
+        <p class="subtitle" data-i18n="guide.subtitle">
+          Guides &amp; documentation for the Apple thumbnail decoder
+        </p>
+      </header>
+
+      <main class="article">
+        <h1 data-i18n="guide.h1">How to Open .ITHMB Files</h1>
+
+        <p class="lead" data-i18n="guide.lead">
+          ITHMB (short for iThumbnail — Apple's thumbnail image format) is a
+          binary container format used by Apple's iOS and macOS to store
+          thumbnail caches. You'll find these files scattered inside PhotoData
+          folders on old iPods, iPhones, and Macs when recovering data,
+          migrating devices, or digging through backups. They don't open with a
+          regular image viewer. This guide shows you how to decode them.
+        </p>
+
+        <h2 data-i18n="guide.whatIs.h2">What Is an ITHMB File?</h2>
+
+        <p data-i18n="guide.whatIs.p1">
+          Apple created the ITHMB format to batch-store small thumbnail images
+          in a single file. Apps like Photos, Preview, and Finder use it to
+          serve up thumbnail previews without loading the full-resolution
+          originals. The format packs multiple JPEG images together with a
+          binary index, which is why double-clicking an .ithmb file does nothing
+          useful on its own.
+        </p>
+
+        <p data-i18n-html="guide.whatIs.p2">
+          ITHMB files are most commonly encountered when extracting data from
+          older Apple devices (iPhone 3G through iPhone 5-era, early iPod Touch
+          models, and Macs running macOS 10.4 through 10.14). If you've ever
+          copied a &ldquo;PhotoData&rdquo; folder from an iPod or iPhone backup,
+          you've probably seen them. The closely related
+          <strong>.ipm</strong> format works the same way for iPod Photo caches.
+        </p>
+
+        <h2 data-i18n="guide.howTo.h2">How to Use the Free Online Decoder</h2>
+
+        <p data-i18n-html="guide.howTo.p">
+          The fastest way to <strong>open ithmb online</strong> is the
+          <a href="https://ithmb-codec.dev/ithmb-decoder/"
+            >free ITHMB to JPEG converter</a
+          >
+          built by the Ithmb-Codec project. It runs entirely in your browser —
+          no installation, no account, and it works on Windows, macOS, Linux,
+          and even your phone. Here's how:
+        </p>
+
+        <ol class="steps">
+          <li data-i18n-html="guide.howTo.step1">
+            <strong>Go to the decoder.</strong> Open
+            <a href="https://ithmb-codec.dev/ithmb-decoder/"
+              >ithmb-codec.dev/ithmb-decoder</a
+            >
+            in any modern browser (Chrome, Firefox, Safari, Edge).
+          </li>
+          <li data-i18n-html="guide.howTo.step2">
+            <strong>Drag and drop your .ithmb files.</strong> You can drag one
+            file or many at once. The decoder also accepts .ipm files.
+          </li>
+          <li data-i18n-html="guide.howTo.step3">
+            <strong>View and download as JPEG.</strong> Each thumbnail in the
+            container is extracted and displayed. Download individual images or
+            grab them all at once as a ZIP archive.
+          </li>
+        </ol>
+
+        <div class="decoder-mockup" aria-label="The decoder in action: a UYVY test image displayed in the viewer" data-i18n-aria-label="guide.mockup.ariaDecoder">
+          <div class="mockup-toolbar">
+            <div class="mockup-toolbar-left">
+              <button class="btn btn-outline btn-small" disabled data-i18n="guide.mockup.gridView">Grid view</button>
+              <span class="mockup-nav">
+                <button class="btn btn-outline btn-small" disabled>&#9664;</button>
+                <span class="mockup-pos">1 / 3</span>
+                <button class="btn btn-outline btn-small" disabled>&#9654;</button>
+              </span>
+            </div>
+            <div class="mockup-toolbar-right">
+              <button class="btn btn-primary btn-small" disabled data-i18n="guide.mockup.downloadAll">Download All</button>
+              <select class="mockup-fmt" aria-hidden="true" tabindex="-1">
+                <option selected>JPEG</option><option>PNG</option><option>BMP</option><option>WebP</option>
+              </select>
+            </div>
+          </div>
+          <div class="mockup-viewer-box">
+            <div class="mockup-viewer-head">
+              <span class="vh-enc">UYVY 4:2:2</span>
+              <span class="vh-file">uyvy.ithmb</span>
+              <span class="vh-dims">675.0 KB &#183; 720&#215;480 px</span>
+            </div>
+            <div class="mockup-viewer">
+              <img src="sample-uyvy.png" alt="Decoded UYVY synthetic test image, 720 by 480 pixels" class="mockup-stage-img">
+            </div>
+            <div class="mockup-filmstrip">
+              <span class="filmstrip-thumb active"><img src="sample-uyvy.png" alt="uyvy.ithmb thumbnail"></span>
+              <span class="filmstrip-thumb"><img src="sample-ycbcr420.png" alt="ycbcr420.ithmb thumbnail"></span>
+              <span class="filmstrip-thumb"><img src="sample-rgb555.png" alt="rgb555.ithmb thumbnail"></span>
+            </div>
+          </div>
+        </div>
+
+        <p data-i18n-html="guide.afterSteps.p">
+          That's it. No account, no upload button, no waiting. The decoder is
+          the most straightforward
+          <strong>online ITHMB viewer</strong> available.
+        </p>
+
+        <h2 data-i18n="guide.why.h2">Why Use This Decoder?</h2>
+
+        <div class="decoder-mockup" aria-label="Batch of decoded test images in grid view, ready to download" data-i18n-aria-label="guide.mockup.ariaBatch">
+          <div class="mockup-cards mockup-cards-grid">
+            <div class="file-card mockup-card">
+              <div class="meta"><span class="name">uyvy.ithmb</span><span class="size">675.0 KB</span></div>
+              <div class="status ok" data-i18n="guide.mockup.status720">Decoded &#8212; 720&#215;480</div>
+              <div class="preview">
+                <img src="sample-uyvy.png" alt="UYVY test image thumbnail">
+                <div class="info">
+                  <div data-i18n-html="guide.mockup.fmtPrefix1019">Format prefix: <span class="prefix-badge">1019</span></div>
+                  <div data-i18n-html="guide.mockup.dims720">Dimensions: 720&#215;480 px</div>
+                  <div data-i18n-html="guide.mockup.encUyvy">Encoding: UYVY 4:2:2</div>
+                  <div data-i18n-html="guide.mockup.size675">File size: 675.0 KB</div>
+                  <div class="actions" style="display:flex;align-items:center;gap:4px;margin-top:6px">
+                    <button class="btn btn-primary btn-small" disabled data-i18n="guide.mockup.saveJpeg">Save JPEG</button>
+                    <select class="fmt-select card-format-select" style="height:28px;font-size:0.75rem;padding:2px 4px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text)" disabled>
+                      <option value="image/jpeg">JPEG</option><option value="image/png">PNG</option><option value="image/bmp">BMP</option><option value="image/webp">WebP</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="file-card mockup-card">
+              <div class="meta"><span class="name">ycbcr420.ithmb</span><span class="size">506.3 KB</span></div>
+              <div class="status ok" data-i18n="guide.mockup.status720">Decoded &#8212; 720&#215;480</div>
+              <div class="preview">
+                <img src="sample-ycbcr420.png" alt="YCbCr 4:2:0 test image thumbnail">
+                <div class="info">
+                  <div data-i18n-html="guide.mockup.fmtPrefix1067">Format prefix: <span class="prefix-badge">1067</span></div>
+                  <div data-i18n-html="guide.mockup.dims720">Dimensions: 720&#215;480 px</div>
+                  <div data-i18n-html="guide.mockup.encYcbcr">Encoding: YCbCr 4:2:0</div>
+                  <div data-i18n-html="guide.mockup.size506">File size: 506.3 KB</div>
+                  <div class="actions" style="display:flex;align-items:center;gap:4px;margin-top:6px">
+                    <button class="btn btn-primary btn-small" disabled data-i18n="guide.mockup.saveJpeg">Save JPEG</button>
+                    <select class="fmt-select card-format-select" style="height:28px;font-size:0.75rem;padding:2px 4px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text)" disabled>
+                      <option value="image/jpeg">JPEG</option><option value="image/png">PNG</option><option value="image/bmp">BMP</option><option value="image/webp">WebP</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="file-card mockup-card">
+              <div class="meta"><span class="name">rgb555.ithmb</span><span class="size">200.0 KB</span></div>
+              <div class="status ok" data-i18n="guide.mockup.status320">Decoded &#8212; 320&#215;320</div>
+              <div class="preview">
+                <img src="sample-rgb555.png" alt="RGB555 test image thumbnail">
+                <div class="info">
+                  <div data-i18n-html="guide.mockup.fmtPrefix3005">Format prefix: <span class="prefix-badge">3005</span></div>
+                  <div data-i18n-html="guide.mockup.dims320">Dimensions: 320&#215;320 px</div>
+                  <div data-i18n-html="guide.mockup.encRgb555">Encoding: RGB555</div>
+                  <div data-i18n-html="guide.mockup.size200">File size: 200.0 KB</div>
+                  <div class="actions" style="display:flex;align-items:center;gap:4px;margin-top:6px">
+                    <button class="btn btn-primary btn-small" disabled data-i18n="guide.mockup.saveJpeg">Save JPEG</button>
+                    <select class="fmt-select card-format-select" style="height:28px;font-size:0.75rem;padding:2px 4px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text)" disabled>
+                      <option value="image/jpeg">JPEG</option><option value="image/png">PNG</option><option value="image/bmp">BMP</option><option value="image/webp">WebP</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <ul>
+          <li data-i18n-html="guide.why.private">
+            <strong>Private.</strong> No data leaves your computer by default. The
+            decoder runs via WebAssembly with zero automatic uploads. Your
+            thumbnail files never touch a network unless you click a
+            one-click &ldquo;Share&rdquo; button to contribute anonymous format
+            signatures.
+          </li>
+          <li data-i18n-html="guide.why.fast">
+            <strong>Fast.</strong> The WebAssembly core processes files locally
+            at near-native speed. Even large .ithmb containers decode in
+            seconds.
+          </li>
+          <li data-i18n-html="guide.why.free">
+            <strong>Free.</strong> No paywalls, no limits on file size or batch
+            count. It always works at zero cost.
+          </li>
+          <li data-i18n-html="guide.why.openSource">
+            <strong>Open source.</strong> Every line of code is public on
+            GitHub. No hidden tracking, no analytics, no data collection.
+          </li>
+          <li data-i18n-html="guide.why.batch">
+            <strong>Batch support.</strong> Drop multiple .ithmb files at once
+            and download them all as a single ZIP.
+          </li>
+        </ul>
+
+        <p data-i18n-html="guide.why.cta">
+          If you're looking to <strong>convert ithmb to jpg</strong> in bulk or
+          just need to <strong>extract iPod photos</strong> from an old backup,
+          this is the simplest tool for the job.
+        </p>
+
+        <h2 data-i18n="guide.about.h2">About the ITHMB Codec Project</h2>
+
+        <p data-i18n="guide.about.p1">
+          Ithmb-Codec is an open-source reverse-engineering effort to document
+          and decode Apple's proprietary thumbnail container formats. The
+          project maintains the reference decoder library (written in Rust,
+          compiled to WebAssembly), the browser-based decoder linked above, and
+          format documentation for researchers and digital archivists.
+        </p>
+
+        <p data-i18n-html="guide.about.p2">
+          Bug reports and format samples are always welcome &mdash; open an
+          issue on
+          <a href="https://github.com/B67687/Ithmb-Codec">GitHub</a> and we'll
+          investigate. The project is open for everyone.
+        </p>
+
+        <h2 data-i18n="guide.faq.h2">Frequently Asked Questions</h2>
+
+        <div class="faq-item">
+          <p class="faq-question" data-i18n="guide.faq.q1">
+            Can I convert multiple .ithmb files at once?
+          </p>
+          <p class="faq-answer" data-i18n="guide.faq.a1">
+            Yes. Drag multiple files into the decoder and it processes them all.
+            After decoding, click the download button to save every extracted
+            image as a ZIP archive.
+          </p>
+        </div>
+
+        <div class="faq-item">
+          <p class="faq-question" data-i18n="guide.faq.q2">Are my files uploaded to a server?</p>
+          <p class="faq-answer" data-i18n-html="guide.faq.a2">
+            No. The decoder runs entirely in your browser using WebAssembly.
+            Your files are never sent over the network. All processing stays
+            local, which makes this a fully private
+            <strong>free ITHMB converter</strong>.
+          </p>
+        </div>
+
+        <div class="faq-item">
+          <p class="faq-question" data-i18n="guide.faq.q3">What about .ipm files?</p>
+          <p class="faq-answer" data-i18n="guide.faq.a3">
+            They're supported too. The decoder handles both .ithmb and .ipm
+            formats, since they share the same underlying container structure
+            used by Apple's iPod Photo cache system.
+          </p>
+        </div>
+
+        <div class="faq-item">
+          <p class="faq-question" data-i18n="guide.faq.q4">Is this tool free?</p>
+          <p class="faq-answer" data-i18n-html="guide.faq.a4">
+            Always. The tool is and will remain free, open source, and free of
+            usage limits. If you'd like to support development, you can
+            <a href="https://buymeacoffee.com/ThumbNami"
+              >buy the author a coffee</a
+            >
+          </p>
+        </div>
+      </main>
+
+      <script src="/footer.js?v=ab042cc1"></script>
+    </div>
+  </body>
+</html>

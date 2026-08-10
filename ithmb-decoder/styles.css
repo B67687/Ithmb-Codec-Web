@@ -1,0 +1,1357 @@
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/Inter-latin-400.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("fonts/Inter-latin-500.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("fonts/Inter-latin-600.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("fonts/Inter-latin-700.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+:root {
+  --bg: #f5f5f7;
+  --surface: #fff;
+  --border: #d2d2d7;
+  --text: #1d1d1f;
+  --muted: #86868b;
+  --accent: #007aff;
+  --accent-hover: #0066d6;
+  --success: #30d158;
+  --warn: #ff9f0a;
+  --radius: 12px;
+  --shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  --card-bg: var(--surface);
+  /* badge tints (theme-aware via variables — dark overrides below) */
+  --badge-free-bg: #f0fdf4; --badge-free: #16a34a;
+  --badge-popular-bg: #fff7ed; --badge-popular: #ea580c;
+  --badge-blue-bg: #e8f0fe; --badge-blue: #0071e3;
+  --badge-violet-bg: #f5f3ff; --badge-violet: #7c3aed;
+}
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+body {
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  padding: 68px 24px;
+  min-height: 100vh;
+}
+
+::selection {
+  background: var(--accent);
+  color: #fff;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+}
+header p {
+  color: var(--muted);
+  font-size: 1rem;
+}
+header p a {
+  color: var(--accent);
+  text-decoration: none;
+}
+header p a:hover {
+  text-decoration: underline;
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.logo-icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--accent);
+  border-radius: 9px;
+  color: #fff;
+  font-size: 19px;
+  font-weight: 700;
+  font-family: "Inter", system-ui, sans-serif;
+  line-height: 1;
+}
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: "Inter", system-ui, sans-serif;
+  line-height: 1;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.logo-text,
+h1.logo-text {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 1.05rem;
+  color: var(--muted);
+  max-width: 640px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+#dropzone {
+  border: 2px dashed var(--accent);
+  border-radius: var(--radius);
+  padding: 48px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+  background: var(--surface);
+  margin-bottom: 24px;
+}
+#dropzone.drag-over {
+  border-color: var(--accent);
+  background: #e8f0fe;
+}
+/* Full-page drop highlight — highlights the drop zone when dragging anywhere */
+body.drag-active #dropzone {
+  border-color: var(--accent);
+  background: #e8f0fe;
+  transform: scale(1.02);
+}
+body.drag-active::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+}
+#dropzone .icon {
+  font-family: "Noto Color Emoji", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 3rem;
+  margin-bottom: 8px;
+  opacity: 0.4;
+}
+#dropzone .label {
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+#dropzone .hint {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+/* File list in grid view mode (viewer-mode class removed) */
+.file-list:not(.viewer-mode) {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.file-list:not(.viewer-mode) .file-card {
+  display: block;
+  cursor: pointer;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+.file-list:not(.viewer-mode) .file-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+.file-list:not(.viewer-mode) .file-card .preview {
+  display: block !important;
+}
+.file-list:not(.viewer-mode) .file-card .preview canvas {
+  max-width: 100%;
+  max-height: 150px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+.file-list:not(.viewer-mode) .file-card .preview .info {
+  margin-top: 8px;
+}
+.file-list:not(.viewer-mode) .file-card .status.loading .spinner {
+  display: none;
+}
+.file-list:not(.viewer-mode) .file-card .meta {
+  margin-top: 8px;
+}
+.file-card {
+  position: relative;
+background: var(--surface);
+border-radius: var(--radius);
+box-shadow: var(--shadow);
+padding: 16px;
+transition: opacity 0.3s;
+}
+.file-card .meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.file-card .name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  overflow-wrap: break-word;
+}
+.file-card .size {
+  color: var(--muted);
+  font-size: 0.85rem;
+  white-space: nowrap;
+  margin-left: 12px;
+}
+.file-card .status {
+  font-size: 0.85rem;
+}
+
+.file-card .status.ok {
+  color: var(--success);
+}
+.file-card .status.unknown {
+  color: var(--warn);
+}
+.file-card .status.err {
+  color: var(--warn);
+}
+.file-card .status.loading {
+  color: var(--accent);
+}
+
+.preview {
+  margin-top: 8px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.preview canvas {
+  border-radius: 6px;
+  max-width: 100%;
+  border: 1px solid var(--border);
+}
+.preview .info {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.preview.stack-below {
+  flex-direction: column;
+}
+.preview .actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* ImageGlass-style viewer layout */
+#viewer-container {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-top: 12px;
+  overflow: hidden;
+  position: relative;
+  text-align: center;
+  width: 100%;
+}
+#viewer-main {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  overflow: hidden;
+  padding: 20px;
+}
+#viewer-stage {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 480px; /* fixed stage — image fits via object-fit: contain, never resizes the gallery */
+  width: 100%;
+  transition: none; /* Desktop: no transition */
+}
+
+/* Column wrapper so contextual share/report UI sits below the image */
+.viewer-stage-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  max-width: 100%;
+  height: 100%;
+  overflow-y: auto;
+}
+
+#viewer-stage canvas {
+  max-width: 100%;
+  max-height: 100%; /* fit inside the fixed 480px stage — gallery never resizes */
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: var(--shadow);
+}
+.viewer-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 1.5rem;
+  padding: 16px 10px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s;
+  z-index: 10;
+  line-height: 1;
+}
+.viewer-arrow:hover {
+  background: rgba(0, 0, 0, 0.12);
+}
+#viewerArrowLeft {
+  left: 12px;
+}
+#viewerArrowRight {
+  right: 12px;
+}
+
+/* Filmstrip */
+#viewer-filmstrip {
+  display: flex;
+  justify-content: flex-start;
+  gap: 6px;
+  padding: 10px 12px;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+#viewer-filmstrip::-webkit-scrollbar {
+  height: 6px;
+}
+#viewer-filmstrip::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+.filmstrip-thumb {
+  flex: 0 0 auto;
+  width: 80px;
+  height: 60px;
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 2px solid transparent;
+  opacity: 0.6;
+  transition:
+    opacity 0.15s,
+    border-color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+}
+.filmstrip-thumb:hover {
+  opacity: 0.85;
+}
+.filmstrip-thumb.active {
+  opacity: 1;
+  /* Unified active treatment with .failed.active — an outer outline
+     (2px + 1px offset) instead of a border-color swap, so the selector
+     is the SAME size/position for decoded and failed thumbnails. */
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.filmstrip-thumb.failed {
+  border: 1px solid var(--warn);
+  border-radius: 4px;
+  background: rgba(255, 159, 10, 0.08);
+}
+.filmstrip-thumb.failed.active {
+  outline: 2px solid var(--warn);
+  outline-offset: 1px;
+}
+.filmstrip-thumb.failed svg {
+  color: var(--warn);
+}
+.filmstrip-thumb canvas {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: cover;
+}
+#viewer-header {
+  display: flex;
+  align-items: center;
+  padding: 6px 16px;
+  font-size: 0.85rem;
+  color: var(--text);
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.vh-enc {
+  flex: 0 0 auto;
+  font-weight: 600;
+  color: var(--accent);
+  text-align: left;
+  min-width: 120px;
+}
+.vh-file {
+  flex: 1;
+  text-align: center;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 12px;
+}
+.vh-dims {
+  flex: 0 0 auto;
+  text-align: right;
+  color: var(--muted);
+  min-width: 160px;
+}
+
+/* Viewer navigation */
+.viewer-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 8px;
+}
+.viewer-nav button {
+  font-size: 0.85rem;
+  padding: 4px 8px;
+}
+#viewerNav .btn:not(#downloadAllBtn):not(#viewToggleBtn) {
+  padding: 9px 14px;
+  font-size: 0.95rem;
+}
+#viewToggleBtn {
+  padding: 9px 16px;
+  font-size: 0.95rem;
+}
+.header-center {
+  text-align: center; /* centers the inline-flex logo AND the tagline together (guide-style) */
+}
+
+#viewerNav .btn-small {
+  font-size: 0.8rem;
+}
+#viewerPos {
+  padding: 4px 0;
+  font-size: 0.95rem;
+  line-height: 1;
+  min-width: 3ch;
+  text-align: center;
+}
+
+.viewer-placeholder {
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+gap: 8px;
+padding: 32px 24px;
+color: var(--muted);
+text-align: center;
+width: min(440px, 92%);
+height: auto;
+min-height: 300px;
+border: 1px dashed var(--border);
+border-radius: var(--radius);
+background: var(--surface);
+margin: 0 auto;
+}
+/* Decode-failed placeholder: same format as the file card's share box —
+   orange border on a light orange/cream background, normal dark text
+   (the orange is the background, NOT the text/icon color). */
+.viewer-placeholder.failed {
+  border: 1px solid var(--warn);
+  background: #fffbf0;
+  color: var(--text);
+}
+.viewer-placeholder.failed .placeholder-title {
+  color: var(--text);
+}
+.viewer-placeholder.failed .placeholder-icon {
+  color: var(--warn);
+}
+.viewer-placeholder .placeholder-icon {
+  font-size: 2rem;
+}
+.viewer-placeholder .placeholder-title {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text);
+}
+.viewer-placeholder .placeholder-msg {
+  font-size: 0.85rem;
+}
+.viewer-placeholder .placeholder-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+/* When a failed-decode entry exists the share box is embedded INSIDE
+   the placeholder so the two read as one integrated card. Neutralize
+   the share box's own chrome (border, warm bg, padding, radius) and let
+   it stretch full-width. A subtle top border separates the "what went
+   wrong" header from the "help improve" footer. The hexdump and
+   buttons inside keep their own styles (handled by global .share-hexdump
+   and .share-actions rules). The card-level share box is unaffected
+   because it is not nested under .viewer-placeholder. */
+.viewer-placeholder .share-box {
+  margin-top: 12px;
+  padding: 16px 0 0;
+  border: none;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+}
+.viewer-placeholder .share-box .share-actions {
+  justify-content: center;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 16px;
+  border-radius: 6px;
+  border: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+  text-decoration: none;
+}
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+.btn-primary:hover {
+  background: var(--accent-hover);
+}
+.btn-primary:disabled {
+  background: var(--border);
+  color: var(--muted);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.btn-outline:hover {
+  background: var(--bg);
+}
+.btn-small {
+  padding: 4px 8px;
+  font-size: 0.8rem;
+}
+
+
+.prefix-badge {
+  display: inline-block;
+  background: #f0f0f0;
+  border-radius: 6px;
+  padding: 2px 8px;
+font-family: "SF Mono", "Fira Code", monospace;
+font-size: 0.8rem;
+}
+
+/* Pin symbol glyphs to a single font so they render IDENTICALLY in every
+   language. Without this, ⚠ ✓ × · ← → etc. inherit the locale font stack
+   (Latin vs CJK) and the browser picks a DIFFERENT glyph per language —
+   the warning triangle visibly changes shape between EN and ZH. */
+.prefix-badge,
+.share-hexdump,
+.fmt-select,
+.info-value,
+.placeholder-icon,
+.placeholder-msg,
+.viewer-stage-content {
+  font-family: "SF Mono", "Fira Code", "DejaVu Sans", "Apple Symbols",
+    -apple-system, BlinkMacSystemFont, "Segoe UI Symbol", sans-serif;
+}
+/* Failure-card share box */
+.share-box {
+  margin-top: 8px;
+  padding: 12px;
+  border: 1px solid var(--warn);
+  background: #fffbf0;
+  border-radius: 6px;
+}
+.share-box h4 { font-size: 0.9rem; font-weight: 600; margin-bottom: 4px; }
+.share-box p { font-size: 0.85rem; color: var(--muted); margin-bottom: 8px; }
+.share-hexdump { font-family: "SF Mono", "Fira Code", monospace; font-size: 0.8rem; background: var(--bg); border-radius: 4px; padding: 6px 8px; margin-bottom: 8px; overflow-x: auto; }
+.share-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.success-report { margin-top: 6px; font-size: 0.78rem; }
+.success-report a {
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+  /* Stay above the overlay form so clicking the link again (toggle
+     close) is always possible even while the form floats over the card. */
+  position: relative;
+  z-index: 40;
+}
+.report-form { margin-top: 8px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); text-align: left; max-width: 360px; }
+/* Decoded-image thumbnail at the top of the report modal. */
+.report-thumb {
+  display: block;
+  /* Just the picture: fixed WIDTH upscales small source canvases to a
+     readable preview, and height:auto keeps the image's own aspect ratio
+     so there is NO letterbox/background bars (no fixed height, no bg). */
+  width: 220px;
+  height: auto;
+  margin: 0 auto 12px;
+  border-radius: 8px;
+}
+.report-issues { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-bottom: 8px; }
+.report-issue { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text); cursor: pointer; padding: 4px 6px; border: 1px solid var(--border); border-radius: 6px; transition: background 0.15s, border-color 0.15s; }
+.report-issue:hover { background: var(--bg); }
+.report-issue input { accent-color: var(--accent); margin: 0; }
+.report-detail { width: 100%; box-sizing: border-box; padding: 6px 8px; font-size: 0.8rem; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); margin-bottom: 8px; }
+.report-detail:focus { outline: none; border-color: var(--accent); }
+.report-form-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.viewer-stage-content .report-form { max-width: 100%; }
+
+/* The report form inside a FILE CARD overlays the card instead of
+   expanding it in-flow (which grew the file-list and caused scroll).
+   Applies in BOTH viewer mode and grid mode — the card report form is
+   the same element. Anchored to the card (position:relative), floating
+   over the preview, high z-index, solid background = popover. The
+   viewer-STAGE report form (below the stage image) stays in-flow.
+   max-height + overflow-y contain the form (taller than the card). */
+.file-card .report-form {
+  position: absolute;
+  top: 48px;
+  right: 16px;
+  left: 16px;
+  z-index: 30;
+  max-width: none;
+  box-shadow: var(--shadow);
+  max-height: calc(100% - 60px);
+  overflow-y: auto;
+}
+
+footer {
+  margin-top: 24px;
+  padding: 16px 0 32px;
+  border-top: 1px solid var(--border);
+  font-size: 0.8rem;
+  color: var(--muted);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  text-align: center;
+}
+footer a {
+  color: var(--accent);
+  text-decoration: none;
+}
+footer a:hover {
+  text-decoration: underline;
+}
+
+footer > div {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.file-card .err-msg {
+  color: var(--warn);
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+/* Processing indicator */
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  vertical-align: middle;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Shared report/contribute modal — centered dialog over a dimmed +
+   blurred backdrop (restored from the original contribute workflow).
+   One container in the HTML; populated per-click from any card or the
+   viewer stage. */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000000;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease;
+}
+.modal-overlay.active {
+  visibility: visible;
+  opacity: 1;
+}
+.modal-dialog {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15);
+  padding: 24px;
+  max-width: 420px;
+  width: 90vw;
+  position: relative;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+.modal-dialog h3 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.modal-dialog .modal-body {
+  font-size: 1.0625rem;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+/* Inside the modal, the report-form's own border/padding is redundant
+   (the .modal-dialog is already the bordered rounded card). */
+.modal-dialog .report-form {
+  border: none;
+  background: transparent;
+  padding: 0;
+  max-width: none;
+  margin: 0;
+}
+
+/* Thanks toast */
+/* GitHub corner — clean icon */
+.github-corner {
+  display: inline-flex;
+  align-items: center;
+  color: var(--muted);
+  transition: color 0.2s;
+  line-height: 0;
+}
+.github-corner:hover {
+  color: var(--accent);
+}
+.github-corner svg {
+  display: block;
+  width: 32px;
+  height: 32px;
+}
+
+/* Full-page drop overlay */
+.drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  display: grid;
+  place-items: center;
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    visibility 175ms,
+    opacity 175ms;
+}
+.drop-overlay.active {
+  visibility: visible;
+  opacity: 1;
+}
+.drop-overlay svg {
+  width: 64px;
+  height: 64px;
+  fill: rgba(255, 255, 255, 0.7);
+  margin-bottom: 16px;
+}
+.drop-overlay p {
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+.toast.show {
+  opacity: 1;
+}
+
+
+/* Toolbar */
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.toolbar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.toolbar-row:first-child {
+  justify-content: space-between;
+}
+#downloadAllBtn {
+  white-space: nowrap;
+  font-size: 0.95rem;
+  padding: 9px 22px;
+}
+#viewToggleBtn {
+  min-width: 80px;
+  justify-content: center;
+}
+
+
+
+#helpBtn {
+  font-weight: 700;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  text-align: center;
+  line-height: 28px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  margin-right: auto;
+  font-size: 0.85rem;
+}
+#helpBtn:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* BMC corner */
+.bmc-corner {
+  display: inline-flex;
+  align-items: center;
+  color: var(--muted);
+  transition: color 0.2s;
+  line-height: 0;
+}
+.bmc-corner:hover {
+  color: var(--accent);
+}
+.bmc-corner svg {
+  display: block;
+}
+
+
+#backToTop {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 999;
+}
+#backToTop a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 50%;
+  text-decoration: none;
+  font-size: 1.3rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition:
+    transform 0.15s,
+    opacity 0.15s;
+  border: none;
+}
+#backToTop a:hover {
+  transform: scale(1.1);
+}
+#backToPosition {
+  position: fixed;
+  bottom: 76px;
+  right: 24px;
+  z-index: 999;
+}
+#backToPosition a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: var(--card-bg);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 50%;
+  text-decoration: none;
+  font-size: 1.3rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition:
+    transform 0.15s,
+    opacity 0.15s;
+}
+#backToPosition a:hover {
+  transform: scale(1.1);
+}
+
+/* Focus visible for keyboard navigation */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+body {
+  padding-bottom: 68px;
+}
+
+/* === Shared Navigation (extracted from nav.js) === */
+.top-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 53px;
+  background: rgba(255, 255, 255, 0.6);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  font-family: "Inter", system-ui, sans-serif;
+}
+.top-nav-brand {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+}
+.top-nav-links {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.top-nav-link {
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 0.9375rem;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.top-nav-link.active {
+  color: var(--text);
+  font-weight: 600;
+}
+.top-nav-link:not(.active) {
+  color: var(--muted);
+}
+.top-nav-link:not(.active):hover {
+  background: var(--bg);
+}
+.top-nav-icons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+/* ─── Mobile Responsive ─── */
+
+@media (max-width: 768px) {
+  body {
+    padding: 68px 12px;
+  }
+
+  .logo-text {
+    font-size: 1.6rem;
+  }
+
+  .logo-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .logo-icon svg {
+    width: 36px;
+    height: 36px;
+  }
+
+  header .subtitle {
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    padding: 68px 8px;
+  }
+
+  .logo {
+    gap: 10px;
+  }
+
+  .logo-text {
+    font-size: 1.35rem;
+  }
+
+  .logo-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .logo-icon svg {
+    width: 32px;
+    height: 32px;
+  }
+
+  header .subtitle {
+    font-size: 0.88rem;
+  }
+
+  .container {
+    padding: 0;
+  }
+
+  #dropzone {
+    padding: 20px 12px;
+  }
+  #dropzone .label {
+    font-size: 1.0625rem;
+  }
+
+  .toolbar-row {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .toolbar-row:last-child {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  #viewer-main {
+    min-height: 200px;
+    padding: 8px;
+  }
+  #viewer-header {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    flex-wrap: wrap;
+  }
+  .vh-enc,
+  .vh-dims {
+    min-width: auto;
+  }
+
+  #viewer-filmstrip {
+    padding: 4px 8px;
+    gap: 4px;
+  }
+  .filmstrip-thumb {
+    width: 48px;
+    height: 36px;
+    min-width: 48px;
+  }
+  .filmstrip-thumb canvas {
+    width: 48px !important;
+    height: 36px !important;
+  }
+
+  #viewer-stage {
+    min-height: 300px;
+  }
+  #viewer-stage canvas {
+    max-width: 100%;
+    max-height: 50vh;
+  }
+
+  .viewer-arrow {
+    display: none;
+  }
+
+  .github-corner {
+    display: none !important;
+  }
+  .bmc-corner {
+    display: none;
+  }
+  .file-list:not(.viewer-mode) .file-card {
+    padding: 8px;
+  }
+  .file-list:not(.viewer-mode) .file-card .meta {
+    font-size: 0.75rem;
+  }
+  .file-list:not(.viewer-mode) .file-card .preview canvas {
+    max-height: 100px;
+  }
+  .file-list:not(.viewer-mode) {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
+
+  #backToTop {
+    bottom: 12px;
+    right: 12px;
+  }
+  #backToTop a {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+  }
+  #backToPosition {
+    bottom: 56px;
+    right: 12px;
+  }
+  #backToPosition a {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+  }
+}
+
+/* ─── Decoder info section (SEO copy) ─────────────────────────────── */
+.decoder-info {
+  margin-top: 48px;
+  padding-top: 40px;
+  border-top: 1px solid var(--border);
+  text-align: left;
+}
+.decoder-info h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 28px 0 8px;
+}
+.decoder-info h2:first-child {
+  margin-top: 0;
+}
+.decoder-info p {
+  color: var(--muted);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+.decoder-info a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.decoder-info a:hover {
+  text-decoration: underline;
+}
+
+/* ─── Dark mode (follows the system preference) ─── */
+/* ─── Dark mode ───
+ * Default follows the system (theme.js resolves it before first paint);
+ * the nav toggle sets an explicit data-theme="dark"/"light" override. */
+:root[data-theme="dark"] {
+  --bg: #26262a;
+  --surface: #303036;
+  --card-bg: #303036;
+  --border: #45454b;
+  --text: #f2f2f4;
+  --muted: #a1a1a8;
+  --accent: #0a84ff;
+  --accent-hover: #0a6fd6;
+  --success: #30d158;
+  --warn: #ff9f0a;
+  --shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+  --badge-free-bg: rgba(22, 163, 74, 0.16); --badge-free: #4ade80;
+  --badge-popular-bg: rgba(234, 88, 12, 0.16); --badge-popular: #fb923c;
+  --badge-blue-bg: rgba(10, 132, 255, 0.16); --badge-blue: #60a5fa;
+  --badge-violet-bg: rgba(124, 58, 237, 0.16); --badge-violet: #a78bfa;
+}
+/* hardcoded-light sweeps (only under the dark theme) */
+:root[data-theme="dark"] .top-nav {
+  background: rgba(30, 30, 34, 0.72);
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+:root[data-theme="dark"] .share-box,
+:root[data-theme="dark"] .viewer-placeholder.failed {
+  background: rgba(255, 159, 10, 0.12);
+}
+:root[data-theme="dark"] .prefix-badge {
+  background: var(--surface);
+  color: var(--muted);
+}
+:root[data-theme="dark"] .toast {
+  background: #3a3a3c;
+  color: #fff;
+}
+:root[data-theme="dark"] .filmstrip-thumb.failed,
+:root[data-theme="dark"] .filmstrip-thumb.failed.active {
+  background: rgba(255, 159, 10, 0.15);
+}
+
+/* dark-mode surface refinements: share-box double-tint fix, visible
+   outline buttons, and a subtle chip so the BMC cup's transparent top
+   reads on the dark bar/footer */
+:root[data-theme="dark"] .viewer-placeholder .share-box {
+  background: transparent; /* sits on the parent's single tint — no double-composite */
+  border-top-color: #6b6b71; /* match the button outline — divider reads */
+}
+:root[data-theme="dark"] .btn-outline {
+  border-color: #6b6b71; /* brighter than the surface border so the outline reads */
+}
+
+
+/* theme toggle button (nav, right of the brand) */
+.top-nav-left {
+  display: flex;
+  align-items: center;
+}
+.theme-toggle {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  border-radius: 6px;
+  margin-right: 10px;
+  margin-left: 2px;
+}
+.theme-toggle:hover { color: var(--accent); }
+.theme-toggle .sun { display: none; }
+:root[data-theme="dark"] .theme-toggle .moon { display: none; }
+:root[data-theme="dark"] .theme-toggle .sun { display: block; }

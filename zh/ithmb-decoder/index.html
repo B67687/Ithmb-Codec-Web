@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-i18n="decoder.title">ITHMB 解码器 | ITHMB Codec</title>
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://ithmb-telemetry.ithmb-codec.workers.dev"
+    />
+    <script src="/theme.js?v=0"></script>
+    <script src="/lang-redirect.js?v=0"></script>
+    <meta
+      name="description"
+      data-i18n-content="decoder.description"
+      content="在浏览器中直接解码 Apple iPod/iPhone 的 .ithmb 和 .ipm 缩略图文件，并将其转换为 JPG、PNG 或 WebP。免费、保护隐私、开源，无需上传。"
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta
+      property="og:title"
+      content="ITHMB 解码器 — 免费的 .ithmb 文件查看器"
+    />
+    <meta
+      property="og:description"
+      content="直接在浏览器中解码 Apple iPod/iPhone 的缩略图文件 (.ithmb, .ipm)。无需上传，100% 保护隐私。"
+    />
+    <meta property="og:image" content="https://ithmb-codec.dev/thumb-decoder-preview.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://ithmb-codec.dev/zh/ithmb-decoder/" />
+    <meta property="og:site_name" content="ITHMB Codec" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="canonical" href="https://ithmb-codec.dev/zh/ithmb-decoder/" />
+    <link rel="alternate" hreflang="en" href="https://ithmb-codec.dev/ithmb-decoder/" />
+    <link rel="alternate" hreflang="zh" href="https://ithmb-codec.dev/zh/ithmb-decoder/" />
+    <link rel="alternate" hreflang="x-default" href="https://ithmb-codec.dev/ithmb-decoder/" />
+    <link rel="stylesheet" href="/ithmb-decoder/styles.css?v=3" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script type="module" src="/ithmb-decoder/i18n.js"></script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "ITHMB 解码器",
+      "url": "https://ithmb-codec.dev/zh/ithmb-decoder/",
+      "description": "在浏览器中直接解码 Apple iPod/iPhone 的 .ithmb 和 .ipm 缩略图文件，并将其转换为 JPG、PNG 或 WebP。免费、保护隐私、开源，无需上传。",
+      "applicationCategory": "Multimedia",
+      "operatingSystem": "All",
+      "browserRequirements": "Requires JavaScript",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "ITHMB Codec"
+      }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "首页",
+          "item": "https://ithmb-codec.dev/zh/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "解码器",
+          "item": "https://ithmb-codec.dev/zh/ithmb-decoder/"
+        }
+      ]
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "ITHMB Codec",
+      "url": "https://ithmb-codec.dev",
+      "logo": "https://ithmb-codec.dev/favicon.svg",
+      "sameAs": [
+        "https://github.com/B67687/Ithmb-Codec",
+        "https://github.com/B67687/Ithmb-Codec-Web",
+        "https://github.com/B67687/ImageGlass-Ithmb-Plugin"
+      ]
+    }
+    </script>
+  </head>
+  <body>
+    <script src="/nav.js?v=3"></script>
+
+    <!-- Full-page drop overlay -->
+    <div class="drop-overlay" id="dropOverlay">
+      <div style="text-align: center">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M12 2a1 1 0 011 1v6.5l2.5-2.5a1 1 0 111.414 1.414L12 12.828 7.086 7.914A1 1 0 118.5 6.5L11 9V3a1 1 0 011-1zM3 12a1 1 0 011 1v5a2 2 0 002 2h12a2 2 0 002-2v-5a1 1 0 112 0v5a4 4 0 01-4 4H6a4 4 0 01-4-4v-5a1 1 0 011-1z"
+          />
+        </svg>
+        <p data-i18n="decoder.dropAnywhere">将 .ithmb 或 .ipm 文件拖到任意位置</p>
+      </div>
+    </div>
+
+    <div class="container">
+      <header class="header-center">
+        <div class="logo">
+          <div class="logo-icon">iT</div>
+          <span class="logo-text">ITHMB Codec</span>
+        </div>
+        <p class="subtitle">
+          <span data-i18n="decoder.subtitle1">免费，本地，无追踪</span>
+          <code>.ithmb</code> &amp; <code>.ipm</code>
+          <span data-i18n="decoder.subtitle2">文件解码器 —</span>
+          <a href="https://github.com/B67687/Ithmb-Codec" data-i18n="decoder.openSource">开源</a>
+        </p>
+      </header>
+
+      <div id="dropzone">
+        <div class="icon">&#x1F4C1;</div>
+        <div class="label" data-i18n="decoder.dropzoneLabel">将 .ithmb 或 .ipm 文件拖到此处</div>
+        <div class="hint" data-i18n="decoder.dropzoneHint">
+          或点击浏览 — 所有处理均在你的浏览器中完成
+        </div>
+      </div>
+
+      <div id="toolbar" class="toolbar">
+        <div
+          class="toolbar-row toolbar-actions"
+          style="justify-content: space-between; flex-wrap: wrap"
+        >
+          <button
+            class="btn btn-outline btn-small"
+            id="helpBtn"
+            title="键盘快捷键"
+            data-i18n-title="decoder.keyboardShortcuts"
+            style="display: none; margin-right: auto"
+          >
+            ?
+          </button>
+          <div style="display: flex; align-items: center; gap: 8px">
+            <button
+              class="btn btn-outline btn-small"
+              id="viewToggleBtn"
+              title="切换网格 (Esc)"
+              data-i18n-title="decoder.toggleGrid"
+              style="display: none"
+            >
+              网格视图
+            </button>
+
+            <div class="viewer-nav" id="viewerNav" style="display: none">
+
+              <button
+
+                class="btn btn-outline btn-small"
+
+                id="prevBtn"
+
+                title="上一个 (←)"
+                data-i18n-title="decoder.previous"
+
+              >
+
+                ◀
+
+              </button>
+
+              <span
+
+                id="viewerPos"
+
+                style="
+
+                  font-size: 0.85rem;
+
+                  color: var(--muted);
+
+                  min-width: 48px;
+
+                  text-align: center;
+
+                "
+
+                >0 / 0</span
+
+              >
+
+              <button
+
+                class="btn btn-outline btn-small"
+
+                id="nextBtn"
+
+                title="下一个 (→)"
+                data-i18n-title="decoder.next"
+
+              >
+
+                ▶
+
+              </button>
+
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px">
+            <button
+              class="btn btn-primary"
+              id="downloadAllBtn"
+              data-i18n="app.downloadAll"
+              style="display: none"
+            >
+              全部下载
+            </button>
+            <select
+              id="downloadFormatSelect"
+              style="
+                display: none;
+                font-size: 0.8rem;
+                padding: 4px 4px;
+                border: 1px solid var(--border);
+                border-radius: 4px;
+                background: var(--surface);
+                color: var(--text);
+                margin-left: 4px;
+              "
+            >
+              <option value="image/jpeg" selected>JPEG</option>
+              <option value="image/png">PNG</option>
+              <option value="image/bmp">BMP</option>
+              <option value="image/webp">WebP</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div id="viewer-container" style="display: none">
+        <!-- Populated by openViewer() with filename, dims, encoding -->
+        <div id="viewer-header">
+          <span class="vh-enc" id="vhEnc"></span>
+          <span class="vh-file" id="vhFile"></span>
+          <span class="vh-dims" id="vhDims"></span>
+        </div>
+        <div id="viewer-main">
+          <div id="viewer-stage"></div>
+          <button
+            class="viewer-arrow"
+            type="button"
+            id="viewerArrowLeft"
+            title="上一个 (←)"
+            data-i18n-title="decoder.previous"
+            data-i18n-aria-label="decoder.prevImage"
+          >
+            ◀
+          </button>
+          <button
+            class="viewer-arrow"
+            type="button"
+            id="viewerArrowRight"
+            title="下一个 (→)"
+            data-i18n-title="decoder.next"
+            data-i18n-aria-label="decoder.nextImage"
+          >
+            ▶
+          </button>
+        </div>
+        <div id="viewer-filmstrip"></div>
+      </div>
+
+      <div id="file-list" class="file-list"></div>
+      <section class="decoder-info">
+        <h2 data-i18n="decoder.convertH2">将 ITHMB 转换为 JPG 或 PNG</h2>
+        <p data-i18n="decoder.convertP1">将你的 .ithmb 文件拖到本页面，容器中的每张缩略图都会被立即解码并显示。下载单张图片时可以选择 JPG、PNG、BMP 或 WebP，也可以把全部图片打包为 ZIP 压缩包保存。</p>
+        <p data-i18n="decoder.convertP2">转换完全在浏览器本地通过 WebAssembly 完成 — 无需上传、无需安装、无需注册账号。</p>
+        <h2 data-i18n="decoder.platformH2">支持 Windows、macOS 和 Linux</h2>
+        <p data-i18n-html="decoder.platformP1">解码器可在任何现代浏览器（Chrome、Firefox、Safari、Edge）中运行，在 Windows、macOS、Linux 乃至手机上的体验完全一致 — 无需安装。Windows 桌面用户还可以使用本项目的原生 <a href="https://github.com/B67687/ImageGlass-Ithmb-Plugin">ImageGlass 插件</a> 直接在 ImageGlass 中打开 .ithmb 文件。</p>
+        <h2 data-i18n="decoder.originH2">什么是 ITHMB 文件？</h2>
+        <p data-i18n="decoder.originP1">ITHMB（iThumbnail）是 Apple 经典 iPod 用于照片预览的缩略图缓存格式。每个文件将缩略图大小的专辑封面、照片和菜单图形打包在一起，iPod 的界面直接从磁盘读取这些内容，无需加载全尺寸原图即可浏览照片库。</p>
+        <p data-i18n="decoder.originP2">该格式从未被公开记录，且在不同设备和固件版本之间存在差异，因此普通图像查看器无法直接打开它。这些文件最常见于数据恢复或备份时从旧 iPod 中复制出来的 PhotoData 文件夹。</p>
+      </section>
+
+
+      <div id="backToTop" style="display: none">
+        <a href="#" id="backToTopLink" title="返回顶部" data-i18n-title="decoder.backToTop">↑</a>
+      </div>
+      <div id="backToPosition" style="display: none">
+        <a href="#" id="backToPositionLink" title="返回上次位置" data-i18n-title="decoder.backToPosition">↓</a>
+      </div>
+
+      <script src="/footer.js?v=5"></script>
+    </div>
+
+    <!-- Shared report/contribute modal (populated per-click) -->
+    <div id="reportModal" class="modal-overlay" aria-hidden="true">
+      <div class="modal-dialog" role="dialog" aria-modal="true">
+        <div id="reportModalContent"></div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"
+      integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG"
+      crossorigin="anonymous"
+    ></script>
+    <script type="module" src="/ithmb-decoder/app.js?v=2"></script>
+  </body>
+</html>

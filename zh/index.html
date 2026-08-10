@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ITHMB Codec | 免费 ITHMB / IPM 缩略图解码器</title>
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://ithmb-telemetry.ithmb-codec.workers.dev"
+    />
+    <script src="/theme.js?v=05536bb1"></script>
+    <script src="/lang-redirect.js?v=ba1561d1"></script>
+    <meta name="google-site-verification" content="6TGpFnLw-D-nzVIF6TVc4ayVt5PQMWhtoV-yEIsY_NQ" />
+    <link rel="canonical" href="https://ithmb-codec.dev/zh/" />
+    <link rel="alternate" hreflang="en" href="https://ithmb-codec.dev/" />
+    <link rel="alternate" hreflang="zh" href="https://ithmb-codec.dev/zh/" />
+    <link rel="alternate" hreflang="x-default" href="https://ithmb-codec.dev/" />
+    <meta
+      name="description"
+      data-i18n-content="home.description"
+      content="免费在线 ITHMB / IPM 缩略图解码器。在浏览器中即时将 Apple iPod/iPhone 的 .ithmb 文件转换为 JPEG。保护隐私 — 除非你主动选择分享，文件始终留在你的设备上。"
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta
+      property="og:title"
+      data-i18n-content="home.ogTitle"
+      content="ITHMB Codec — 免费、私密、浏览器端的 .ithmb 解码器"
+    />
+    <meta
+      property="og:description"
+      data-i18n-content="home.ogDescription"
+      content="在浏览器中直接解码 Apple 图标 + 缩略图二进制格式 (.ithmb, .ipm)。默认私密，不自动上传。"
+    />
+    <meta property="og:image" content="https://ithmb-codec.dev/thumb-decoder-preview.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://ithmb-codec.dev/zh/" />
+    <meta property="og:site_name" content="ITHMB Codec" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <link rel="stylesheet" href="/ithmb-decoder/styles.css?v=d1817a45" />
+    <style>
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* ─── Cards ─── */
+
+      .cards {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        margin-bottom: 48px;
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 24px 28px;
+        transition:
+          box-shadow 0.2s,
+          transform 0.2s;
+        display: block;
+        text-decoration: none;
+        color: inherit;
+      }
+
+      .card:hover {
+        box-shadow: var(--shadow);
+        transform: translateY(-2px);
+      }
+
+      .card h2 {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 6px;
+        color: var(--text);
+      }
+
+      .card h2 .arrow {
+        color: var(--accent);
+        margin-left: 4px;
+        transition: margin 0.2s;
+      }
+
+      .card:hover h2 .arrow {
+        margin-left: 8px;
+      }
+
+      .card p {
+        font-size: 0.92rem;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .card .badge {
+        display: inline-block;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 2px 8px;
+        border-radius: 4px;
+        background: var(--badge-blue-bg);
+        color: var(--accent);
+        margin-bottom: 8px;
+      }
+
+      .card-decoder .badge {
+        background: var(--badge-blue-bg);
+        color: var(--badge-blue);
+      }
+      .card-guide .badge {
+        background: var(--badge-blue-bg);
+        color: var(--badge-blue);
+      }
+      .card-enterprise .badge {
+        background: var(--badge-violet-bg);
+        color: var(--badge-violet);
+      }
+
+      /* ─── About ─── */
+
+      .about {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 28px;
+        margin-bottom: 48px;
+      }
+
+      .about h2 {
+        font-size: 1rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text);
+        margin-bottom: 12px;
+      }
+
+      .about p {
+        font-size: 0.92rem;
+        color: var(--text);
+        line-height: 1.65;
+      }
+
+      .about p + p {
+        margin-top: 10px;
+      }
+
+      .about a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+
+      .about a:hover {
+        text-decoration: underline;
+      }
+
+      /* ─── Responsive ─── */
+
+      @media (max-width: 768px) {
+        .card {
+          padding: 20px;
+        }
+
+        .about {
+          padding: 20px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .cards {
+          gap: 12px;
+          margin-bottom: 36px;
+        }
+
+        .card {
+          padding: 16px;
+        }
+
+        .card h2 {
+          font-size: 1.05rem;
+        }
+
+        .card p {
+          font-size: 0.85rem;
+        }
+
+        .about {
+          padding: 16px;
+          margin-bottom: 36px;
+        }
+
+        .about p {
+          font-size: 0.85rem;
+        }
+      }
+    </style>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "ITHMB Codec",
+      "url": "https://ithmb-codec.dev/zh/",
+      "description": "免费在线 ITHMB / IPM 缩略图解码器。在浏览器中即时将 Apple iPod/iPhone 的 .ithmb 文件转换为 JPEG。保护隐私 — 除非你主动选择分享，文件始终留在你的设备上。",
+      "applicationCategory": "Multimedia",
+      "operatingSystem": "All",
+      "browserRequirements": "Requires JavaScript",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "ITHMB Codec"
+      }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "首页",
+          "item": "https://ithmb-codec.dev/zh/"
+        }
+      ]
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "ITHMB Codec",
+      "url": "https://ithmb-codec.dev",
+      "logo": "https://ithmb-codec.dev/favicon.svg",
+      "sameAs": [
+        "https://github.com/B67687/Ithmb-Codec",
+        "https://github.com/B67687/Ithmb-Codec-Web",
+        "https://github.com/B67687/ImageGlass-Ithmb-Plugin"
+      ]
+    }
+    </script>
+  </head>
+  <body>
+    <script src="/nav.js?v=de8ea6a0"></script>
+
+    <div class="container">
+      <header>
+        <div class="logo">
+          <div class="logo-icon">iT</div>
+          <h1 class="logo-text">ITHMB Codec</h1>
+        </div>
+        <p class="subtitle" data-i18n="home.subtitle">
+          解码 Apple 缩略图文件 (.ithmb, .ipm) — 免费，本地，无追踪
+        </p>
+      </header>
+      <main>
+
+      <div class="cards">
+        <a href="/zh/ithmb-decoder/" class="card card-decoder">
+          <div style="display: flex; gap: 6px">
+            <span class="badge" style="background: var(--badge-free-bg); color: var(--badge-free)"
+              data-i18n="home.free">免费</span
+            ><span class="badge" style="background: var(--badge-popular-bg); color: var(--badge-popular)"
+              data-i18n="home.popular">热门</span
+            >
+          </div>
+          <h2>
+            <span data-i18n="home.decoderCardTitle">ITHMB 解码器</span> <span class="arrow">&rarr;</span>
+          </h2>
+          <p data-i18n="home.decoderDesc">
+            免费在线解码器。拖入 .ithmb 或 .ipm 文件，立即获得 JPEG 图片。所有处理均在你的浏览器中完成。
+          </p>
+        </a>
+        <a href="/zh/guide/how-to-open-ithmb-files" class="card card-guide">
+          <span class="badge" data-i18n="home.guide">指南</span>
+          <h2>
+            <span data-i18n="home.guideCardTitle">关于 ITHMB 文件</span> <span class="arrow">&rarr;</span>
+          </h2>
+          <p data-i18n="home.guideDesc">
+            了解 .ithmb 文件是什么、如何解码，以及本工具的由来。
+          </p>
+        </a>
+        <a href="/zh/enterprise/" class="card card-enterprise">
+          <span class="badge" data-i18n="home.enterprise">企业版</span>
+          <h2>
+            <span data-i18n="home.enterpriseCardTitle">企业授权</span> <span class="arrow">&rarr;</span>
+          </h2>
+          <p data-i18n="home.enterpriseDesc">
+            面向组织的定制集成与授权。
+          </p>
+        </a>
+
+      </div>
+      </main>
+
+      <script src="/footer.js?v=ab042cc1"></script>
+    </div>
+  </body>
+</html>

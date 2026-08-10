@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title data-i18n="guide.title">如何打开 ITHMB 文件 | ITHMB Codec</title>
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://ithmb-telemetry.ithmb-codec.workers.dev"
+    />
+    <script src="/theme.js?v=05536bb1"></script>
+    <script src="/lang-redirect.js?v=ba1561d1"></script>
+    <meta
+      name="description"
+      data-i18n-content="guide.description"
+      content="免费在线打开并转换 Apple iPod/iPhone 的 .ithmb 缩略图文件为 JPEG。默认保护隐私 — 除非你主动选择分享，否则不会上传任何内容。"
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link
+      rel="canonical"
+      href="https://ithmb-codec.dev/zh/guide/how-to-open-ithmb-files"
+    />
+    <link rel="alternate" hreflang="en" href="https://ithmb-codec.dev/guide/how-to-open-ithmb-files" />
+    <link rel="alternate" hreflang="zh" href="https://ithmb-codec.dev/zh/guide/how-to-open-ithmb-files" />
+    <link rel="alternate" hreflang="x-default" href="https://ithmb-codec.dev/guide/how-to-open-ithmb-files" />
+
+    <meta
+      property="og:title"
+      content="如何打开 .ITHMB 文件 — 免费在线 ITHMB 解码器"
+    />
+    <meta
+      property="og:description"
+      content="免费在线打开并转换 Apple iPod/iPhone 的 .ithmb 缩略图文件为 JPEG。默认保护隐私 — 除非你主动选择分享，否则不会上传任何内容。"
+    />
+    <meta property="og:image" content="https://ithmb-codec.dev/thumb-decoder-preview.png" />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:url"
+      content="https://ithmb-codec.dev/zh/guide/how-to-open-ithmb-files"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta property="og:site_name" content="ITHMB Codec" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <link rel="stylesheet" href="/ithmb-decoder/styles.css?v=d1817a45" />
+    <style>
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+
+      .article,
+      .article p,
+      .article li,
+      .article ul,
+      .article ol,
+      .article h1,
+      .article h2,
+      .article strong,
+      .faq-question,
+      .faq-answer,
+      .logo-text,
+      header .subtitle {
+        -webkit-user-select: text;
+        user-select: text;
+      }
+
+      /* ─── Article Content ─── */
+
+      .article {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 40px 44px;
+        margin-bottom: 48px;
+      }
+
+      .article h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1.3;
+        margin-bottom: 20px;
+        color: var(--text);
+      }
+
+      .article h2 {
+        font-size: 1.35rem;
+        font-weight: 600;
+        margin-top: 36px;
+        margin-bottom: 12px;
+        color: var(--text);
+        letter-spacing: -0.01em;
+      }
+      .article h2:first-of-type {
+        margin-top: 0;
+      }
+
+      .article p {
+        font-size: 0.95rem;
+        color: var(--text);
+        line-height: 1.7;
+        margin-bottom: 16px;
+      }
+
+      .article a {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .article a:hover {
+        text-decoration: underline;
+      }
+
+      .article ul,
+      .article ol {
+        margin: 0 0 16px 0;
+        padding-left: 24px;
+      }
+
+      .article li {
+        font-size: 0.95rem;
+        color: var(--text);
+        line-height: 1.7;
+        margin-bottom: 6px;
+      }
+
+      .article li:last-child {
+        margin-bottom: 0;
+      }
+
+      .article strong {
+        font-weight: 600;
+      }
+
+      /* ─── Lead ─── */
+
+      .lead {
+        font-size: 1.05rem !important;
+        color: var(--muted) !important;
+        line-height: 1.7 !important;
+        margin-bottom: 24px !important;
+      }
+
+      /* ─── Steps ─── */
+
+      .steps {
+        counter-reset: step;
+        list-style: none;
+        padding-left: 0 !important;
+      }
+
+      .steps li {
+        counter-increment: step;
+        position: relative;
+        padding-left: 40px;
+        margin-bottom: 14px !important;
+        min-height: 32px;
+      }
+
+      .steps li::before {
+        content: counter(step);
+        position: absolute;
+        left: 0;
+        top: 1px;
+        width: 28px;
+        height: 28px;
+        background: var(--accent);
+        color: #fff;
+        font-size: 0.82rem;
+        font-weight: 600;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      /* ─── FAQ ─── */
+
+      .faq-item {
+        border-bottom: 1px solid var(--border);
+        padding: 18px 0;
+      }
+
+      .faq-item:first-of-type {
+        padding-top: 0;
+      }
+
+      .faq-item:last-of-type {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
+
+      .faq-question {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 6px;
+      }
+
+      .faq-answer {
+        font-size: 0.92rem;
+        color: var(--muted);
+        line-height: 1.65;
+      }
+
+      .faq-answer a {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .faq-answer a:hover {
+        text-decoration: underline;
+      }
+
+      /* ─── Responsive ─── */
+
+      @media (max-width: 768px) {
+        .article {
+          padding: 28px 24px;
+        }
+
+        .article h1 {
+          font-size: 1.6rem;
+        }
+
+        .article h2 {
+          font-size: 1.15rem;
+        }
+
+        .article p,
+        .article li {
+          font-size: 0.9rem;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .article {
+          padding: 20px 16px;
+          margin-bottom: 36px;
+        }
+
+        .article h1 {
+          font-size: 1.35rem;
+        }
+
+        .article h2 {
+          font-size: 1.05rem;
+          margin-top: 28px;
+        }
+
+        .article p,
+        .article li {
+          font-size: 0.85rem;
+        }
+
+        .faq-item {
+          padding: 14px 0;
+        }
+
+      }
+
+      /* Decoder UI mockup — static, no-JS recreation of the decoder for visual clarity */
+
+      /* Decoder UI mockup — static, no-JS recreation of the decoder for visual clarity */
+      .decoder-mockup {
+        margin: 24px 0;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--bg);
+        padding: 16px;
+      }
+      .mockup-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 14px;
+      }
+      .mockup-toolbar-left, .mockup-toolbar-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .mockup-nav {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .mockup-pos {
+        font-size: 0.8rem;
+        color: var(--text);
+        min-width: 48px;
+        text-align: center;
+      }
+      .mockup-fmt {
+        height: 26px;
+        font-size: 0.75rem;
+        padding: 2px 4px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: var(--surface);
+        color: var(--text);
+      }
+      .mockup-viewer-box {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        text-align: center;
+        width: 100%;
+        margin-bottom: 14px;
+      }
+      .mockup-viewer-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 6px 16px;
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+        font-size: 0.85rem;
+      }
+      .mockup-viewer-head .vh-enc {
+        font-weight: 600;
+      }
+      .mockup-viewer-head .vh-file {
+        color: var(--text);
+      }
+      .mockup-viewer-head .vh-dims {
+        margin-left: auto;
+        color: var(--muted);
+      }
+      .mockup-viewer {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 260px;
+        background: var(--surface);
+        padding: 20px;
+      }
+      .mockup-stage-img {
+        max-width: 100%;
+        max-height: 320px;
+        border-radius: 4px;
+        box-shadow: var(--shadow);
+      }
+      .mockup-filmstrip {
+        display: flex;
+        justify-content: flex-start;
+        gap: 6px;
+        padding: 10px 12px;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        background: var(--bg);
+        border-top: 1px solid var(--border);
+      }
+      .mockup-filmstrip .filmstrip-thumb {
+        flex: 0 0 auto;
+        width: 80px;
+        height: 60px;
+        border-radius: 4px;
+        overflow: hidden;
+        cursor: default;
+        border: 2px solid transparent;
+        opacity: 0.6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg);
+      }
+      .mockup-filmstrip .filmstrip-thumb.active {
+        opacity: 1;
+        border-color: var(--accent);
+      }
+      .mockup-filmstrip .filmstrip-thumb img {
+        width: 80px;
+        height: 60px;
+        object-fit: cover;
+      }
+      .mockup-cards {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .mockup-card {
+        flex: 1 1 200px;
+        min-width: 200px;
+        box-shadow: none;
+        border: 1px solid var(--border);
+      }
+      .mockup-card .preview {
+        justify-content: center;
+      }
+      .mockup-card .preview img {
+        max-width: 100%;
+        border-radius: 8px;
+      }
+      .mockup-cards-grid {
+        margin-top: 0;
+      }
+      /* Disabled but keep original colors — the live .btn:disabled rules grey them out */
+      .decoder-mockup .btn:disabled {
+        opacity: 1;
+        cursor: default;
+      }
+      .decoder-mockup .btn-primary:disabled {
+        background: #3e7cc7;
+        color: #fff;
+      }
+        background: #7fa3c4;
+        color: #fff;
+      }
+        background: var(--accent);
+        color: #fff;
+      }
+      .decoder-mockup .btn-outline:disabled {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text);
+      }
+      .decoder-mockup .mockup-fmt {
+        opacity: 1;
+        cursor: default;
+      }
+      .decoder-mockup select {
+        pointer-events: none;
+      }
+    </style>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      "headline": "如何打开 .ITHMB 文件 — 指南",
+      "description": "免费在线打开并转换 Apple iPod/iPhone 的 .ithmb 缩略图文件为 JPEG。默认保护隐私 — 除非你主动选择分享，否则不会上传任何内容。",
+      "image": "https://ithmb-codec.dev/thumb-decoder-preview.png",
+      "datePublished": "2026-07-13",
+      "dateModified": "2026-08-06",
+      "author": { "@type": "Organization", "name": "ITHMB Codec" }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "首页",
+          "item": "https://ithmb-codec.dev/zh/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "指南",
+          "item": "https://ithmb-codec.dev/zh/guide/how-to-open-ithmb-files"
+        }
+      ]
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "ITHMB Codec",
+      "url": "https://ithmb-codec.dev",
+      "logo": "https://ithmb-codec.dev/favicon.svg",
+      "sameAs": [
+        "https://github.com/B67687/Ithmb-Codec",
+        "https://github.com/B67687/Ithmb-Codec-Web",
+        "https://github.com/B67687/ImageGlass-Ithmb-Plugin"
+      ]
+    }
+    </script>
+  </head>
+  <body>
+    <script src="/nav.js?v=de8ea6a0"></script>
+
+    <div class="container">
+      <header>
+        <div class="logo">
+          <div class="logo-icon">iT</div>
+          <span class="logo-text">ITHMB Codec</span>
+        </div>
+        <p class="subtitle" data-i18n="guide.subtitle">
+          Apple 缩略图解码器的指南与文档
+        </p>
+      </header>
+
+      <main class="article">
+        <h1 data-i18n="guide.h1">如何打开 .ITHMB 文件</h1>
+
+        <p class="lead" data-i18n="guide.lead">
+          ITHMB（即 iThumbnail — Apple 的缩略图图像格式）是 Apple 的 iOS 和 macOS 用于存储缩略图缓存的二进制容器格式。在恢复数据、迁移设备或翻查备份时，你会在旧款 iPod、iPhone 和 Mac 的 PhotoData 文件夹中发现散落的此类文件。普通图像查看器无法直接打开它们。本指南将教你如何解码这些文件。
+        </p>
+
+        <h2 data-i18n="guide.whatIs.h2">什么是 ITHMB 文件？</h2>
+
+        <p data-i18n="guide.whatIs.p1">
+          Apple 创建 ITHMB 格式的目的是把大量小缩略图批量存储在一个文件中。照片、预览和访达等应用使用它来提供缩略图预览，而无需加载全分辨率原图。该格式将多张 JPEG 图像与一个二进制索引打包在一起，因此直接双击 .ithmb 文件无法打开。
+        </p>
+
+        <p data-i18n-html="guide.whatIs.p2">
+          你最容易在从较旧的 Apple 设备（iPhone 3G 到 iPhone 5 时代、早期的 iPod Touch 型号，以及运行 macOS 10.4 至 10.14 的 Mac）中提取数据时遇到 ITHMB 文件。如果你曾从 iPod 或 iPhone 备份中复制过 &ldquo;PhotoData&rdquo; 文件夹，很可能见过它们。与之密切相关的
+          <strong>.ipm</strong> 格式以相同方式用于 iPod Photo 缓存。
+        </p>
+
+        <h2 data-i18n="guide.howTo.h2">如何使用免费的在线解码器</h2>
+
+        <p data-i18n-html="guide.howTo.p">
+          <strong>在线打开 ithmb</strong> 最快的方式，是使用 Ithmb-Codec 项目打造的
+          <a href="https://ithmb-codec.dev/ithmb-decoder/"
+            >免费 ITHMB 转 JPEG 转换器</a
+          >
+          它完全在你的浏览器中运行 — 无需安装、无需注册账号，适用于 Windows、macOS、Linux，甚至手机。操作步骤如下：
+        </p>
+
+        <ol class="steps">
+          <li data-i18n-html="guide.howTo.step1">
+            <strong>前往解码器。</strong>在任何现代浏览器（Chrome、Firefox、Safari、Edge）中打开
+            <a href="https://ithmb-codec.dev/ithmb-decoder/"
+              >ithmb-codec.dev/ithmb-decoder</a
+            >。
+          </li>
+          <li data-i18n-html="guide.howTo.step2">
+            <strong>拖放你的 .ithmb 文件。</strong>你可以一次拖入一个或多个文件。解码器同样接受 .ipm 文件。
+          </li>
+          <li data-i18n-html="guide.howTo.step3">
+            <strong>以 JPEG 格式查看并下载。</strong>容器中的每一张缩略图都会被提取并显示。你可以下载单张图片，也可以一次性全部打包为 ZIP 压缩包下载。
+          </li>
+        </ol>
+
+        <div class="decoder-mockup" aria-label="运行中的解码器：查看器中显示的 UYVY 测试图像" data-i18n-aria-label="guide.mockup.ariaDecoder">
+          <div class="mockup-toolbar">
+            <div class="mockup-toolbar-left">
+              <button class="btn btn-outline btn-small" disabled data-i18n="guide.mockup.gridView">网格视图</button>
+              <span class="mockup-nav">
+                <button class="btn btn-outline btn-small" disabled>&#9664;</button>
+                <span class="mockup-pos">1 / 3</span>
+                <button class="btn btn-outline btn-small" disabled>&#9654;</button>
+              </span>
+            </div>
+            <div class="mockup-toolbar-right">
+              <button class="btn btn-primary btn-small" disabled data-i18n="guide.mockup.downloadAll">全部下载</button>
+              <select class="mockup-fmt" aria-hidden="true" tabindex="-1">
+                <option selected>JPEG</option><option>PNG</option><option>BMP</option><option>WebP</option>
+              </select>
+            </div>
+          </div>
+          <div class="mockup-viewer-box">
+            <div class="mockup-viewer-head">
+              <span class="vh-enc">UYVY 4:2:2</span>
+              <span class="vh-file">uyvy.ithmb</span>
+              <span class="vh-dims">675.0 KB &#183; 720&#215;480 px</span>
+            </div>
+            <div class="mockup-viewer">
+              <img src="/guide/sample-uyvy.png" alt="已解码的 UYVY 合成测试图像，720 × 480 像素" class="mockup-stage-img">
+            </div>
+            <div class="mockup-filmstrip">
+              <span class="filmstrip-thumb active"><img src="/guide/sample-uyvy.png" alt="uyvy.ithmb 缩略图"></span>
+              <span class="filmstrip-thumb"><img src="/guide/sample-ycbcr420.png" alt="ycbcr420.ithmb 缩略图"></span>
+              <span class="filmstrip-thumb"><img src="/guide/sample-rgb555.png" alt="rgb555.ithmb 缩略图"></span>
+            </div>
+          </div>
+        </div>
+
+        <p data-i18n-html="guide.afterSteps.p">
+          就这样。无需账号、无需上传、无需等待。这款解码器是目前最简单直接的
+          <strong>在线 ITHMB 查看器</strong>。
+        </p>
+
+        <h2 data-i18n="guide.why.h2">为什么选择这款解码器？</h2>
+
+        <div class="decoder-mockup" aria-label="以网格视图显示的一批已解码测试图像，可随时下载" data-i18n-aria-label="guide.mockup.ariaBatch">
+          <div class="mockup-cards mockup-cards-grid">
+            <div class="file-card mockup-card">
+              <div class="meta"><span class="name">uyvy.ithmb</span><span class="size">675.0 KB</span></div>
+              <div class="status ok" data-i18n="guide.mockup.status720">已解码 &#8212; 720&#215;480</div>
+              <div class="preview">
+                <img src="/guide/sample-uyvy.png" alt="UYVY 测试图像缩略图">
+                <div class="info">
+                  <div data-i18n-html="guide.mockup.fmtPrefix1019">格式前缀：<span class="prefix-badge">1019</span></div>
+                  <div data-i18n-html="guide.mockup.dims720">尺寸：720&#215;480 px</div>
+                  <div data-i18n-html="guide.mockup.encUyvy">编码：UYVY 4:2:2</div>
+                  <div data-i18n-html="guide.mockup.size675">文件大小：675.0 KB</div>
+                  <div class="actions" style="display:flex;align-items:center;gap:4px;margin-top:6px">
+                    <button class="btn btn-primary btn-small" disabled data-i18n="guide.mockup.saveJpeg">保存 JPEG</button>
+                    <select class="fmt-select card-format-select" style="height:28px;font-size:0.75rem;padding:2px 4px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text)" disabled>
+                      <option value="image/jpeg">JPEG</option><option value="image/png">PNG</option><option value="image/bmp">BMP</option><option value="image/webp">WebP</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="file-card mockup-card">
+              <div class="meta"><span class="name">ycbcr420.ithmb</span><span class="size">506.3 KB</span></div>
+              <div class="status ok" data-i18n="guide.mockup.status720">已解码 &#8212; 720&#215;480</div>
+              <div class="preview">
+                <img src="/guide/sample-ycbcr420.png" alt="YCbCr 4:2:0 测试图像缩略图">
+                <div class="info">
+                  <div data-i18n-html="guide.mockup.fmtPrefix1067">格式前缀：<span class="prefix-badge">1067</span></div>
+                  <div data-i18n-html="guide.mockup.dims720">尺寸：720&#215;480 px</div>
+                  <div data-i18n-html="guide.mockup.encYcbcr">编码：YCbCr 4:2:0</div>
+                  <div data-i18n-html="guide.mockup.size506">文件大小：506.3 KB</div>
+                  <div class="actions" style="display:flex;align-items:center;gap:4px;margin-top:6px">
+                    <button class="btn btn-primary btn-small" disabled data-i18n="guide.mockup.saveJpeg">保存 JPEG</button>
+                    <select class="fmt-select card-format-select" style="height:28px;font-size:0.75rem;padding:2px 4px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text)" disabled>
+                      <option value="image/jpeg">JPEG</option><option value="image/png">PNG</option><option value="image/bmp">BMP</option><option value="image/webp">WebP</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="file-card mockup-card">
+              <div class="meta"><span class="name">rgb555.ithmb</span><span class="size">200.0 KB</span></div>
+              <div class="status ok" data-i18n="guide.mockup.status320">已解码 &#8212; 320&#215;320</div>
+              <div class="preview">
+                <img src="/guide/sample-rgb555.png" alt="RGB555 测试图像缩略图">
+                <div class="info">
+                  <div data-i18n-html="guide.mockup.fmtPrefix3005">格式前缀：<span class="prefix-badge">3005</span></div>
+                  <div data-i18n-html="guide.mockup.dims320">尺寸：320&#215;320 px</div>
+                  <div data-i18n-html="guide.mockup.encRgb555">编码：RGB555</div>
+                  <div data-i18n-html="guide.mockup.size200">文件大小：200.0 KB</div>
+                  <div class="actions" style="display:flex;align-items:center;gap:4px;margin-top:6px">
+                    <button class="btn btn-primary btn-small" disabled data-i18n="guide.mockup.saveJpeg">保存 JPEG</button>
+                    <select class="fmt-select card-format-select" style="height:28px;font-size:0.75rem;padding:2px 4px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text)" disabled>
+                      <option value="image/jpeg">JPEG</option><option value="image/png">PNG</option><option value="image/bmp">BMP</option><option value="image/webp">WebP</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <ul>
+          <li data-i18n-html="guide.why.private">
+            <strong>隐私。</strong>默认情况下，没有任何数据会离开你的电脑。解码器通过 WebAssembly 运行，不会自动上传任何内容。除非你点击一键&ldquo;分享&rdquo;按钮贡献匿名格式签名，否则你的缩略图文件绝不会接触网络。
+          </li>
+          <li data-i18n-html="guide.why.fast">
+            <strong>快速。</strong>WebAssembly 内核在本地处理文件，速度接近原生水平。即使是大型 .ithmb 容器也能在数秒内完成解码。
+          </li>
+          <li data-i18n-html="guide.why.free">
+            <strong>免费。</strong>没有付费墙，对文件大小或批处理数量均无限制。始终零成本使用。
+          </li>
+          <li data-i18n-html="guide.why.openSource">
+            <strong>开源。</strong>每一行代码都公开在 GitHub 上。无隐藏追踪、无数据分析、无数据收集。
+          </li>
+          <li data-i18n-html="guide.why.batch">
+            <strong>批量支持。</strong>一次拖入多个 .ithmb 文件，即可打包下载为 ZIP。
+          </li>
+        </ul>
+
+        <p data-i18n-html="guide.why.cta">
+          如果你需要<strong>批量将 ithmb 转换为 jpg</strong>，或只是要从旧备份中<strong>提取 iPod 照片</strong>，这款工具是最简单的选择。
+        </p>
+
+        <h2 data-i18n="guide.about.h2">关于 ITHMB Codec 项目</h2>
+
+        <p data-i18n="guide.about.p1">
+          Ithmb-Codec 是一个开源逆向工程项目，致力于记录和解码 Apple 专有的缩略图容器格式。该项目维护着参考解码器库（用 Rust 编写，编译为 WebAssembly）、上面链接的浏览器端解码器，以及面向研究人员和数字归档人员的格式文档。
+        </p>
+
+        <p data-i18n-html="guide.about.p2">
+          欢迎随时提交错误报告和格式样本 &mdash; 在
+          <a href="https://github.com/B67687/Ithmb-Codec">GitHub</a> 上提交 issue，我们会进行调查。如果对你有帮助，欢迎在 GitHub 上给个 ⭐。
+        </p>
+
+        <h2 data-i18n="guide.faq.h2">常见问题</h2>
+
+        <div class="faq-item">
+          <p class="faq-question" data-i18n="guide.faq.q1">
+            我可以一次转换多个 .ithmb 文件吗？
+          </p>
+          <p class="faq-answer" data-i18n="guide.faq.a1">
+            可以。将多个文件拖入解码器，它会全部处理。解码完成后，点击下载按钮即可将每张提取出的图片保存为 ZIP 压缩包。
+          </p>
+        </div>
+
+        <div class="faq-item">
+          <p class="faq-question" data-i18n="guide.faq.q2">我的文件会被上传到服务器吗？</p>
+          <p class="faq-answer" data-i18n-html="guide.faq.a2">
+            不会。解码器完全通过 WebAssembly 在你的浏览器中运行。你的文件绝不会通过网络发送。所有处理都在本地完成，这是一款完全保护隐私的
+            <strong>免费 ITHMB 转换器</strong>。
+          </p>
+        </div>
+
+        <div class="faq-item">
+          <p class="faq-question" data-i18n="guide.faq.q3">.ipm 文件呢？</p>
+          <p class="faq-answer" data-i18n="guide.faq.a3">
+            同样支持。解码器可处理 .ithmb 和 .ipm 两种格式，因为它们共用 Apple iPod Photo 缓存系统相同的底层容器结构。
+          </p>
+        </div>
+
+        <div class="faq-item">
+          <p class="faq-question" data-i18n="guide.faq.q4">这个工具免费吗？</p>
+          <p class="faq-answer" data-i18n-html="guide.faq.a4">
+            永远免费。该工具现在和将来都保持免费、开源，且无使用限制。如果你想支持开发，可以
+            <a href="https://buymeacoffee.com/ThumbNami"
+              >请作者喝杯奶茶</a
+            >
+          </p>
+        </div>
+      </main>
+
+      <script src="/footer.js?v=ab042cc1"></script>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ITHMB Codec</title>
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://ithmb-telemetry.ithmb-codec.workers.dev"
+    />
+    <script src="/theme.js?v=05536bb1"></script>
+    <script src="/lang-redirect.js?v=ba1561d1"></script>
+    <meta name="google-site-verification" content="6TGpFnLw-D-nzVIF6TVc4ayVt5PQMWhtoV-yEIsY_NQ" />
+    <link rel="canonical" href="https://ithmb-codec.dev/" />
+    <link rel="alternate" hreflang="en" href="https://ithmb-codec.dev/" />
+    <link rel="alternate" hreflang="zh" href="https://ithmb-codec.dev/zh/" />
+    <link rel="alternate" hreflang="x-default" href="https://ithmb-codec.dev/" />
+    <meta
+      name="description"
+      data-i18n-content="home.description"
+      content="Free online ITHMB and IPM thumbnail decoder. Convert Apple iPod/iPhone .ithmb files to JPEG instantly in your browser. Private — files stay on your device unless you opt in to share."
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta
+      property="og:title"
+      data-i18n-content="home.ogTitle"
+      content="ITHMB Codec — free, private, browser-based .ithmb decoder"
+    />
+    <meta
+      property="og:description"
+      data-i18n-content="home.ogDescription"
+      content="Decode Apple Icons + Thumbnails binary format (.ithmb, .ipm) directly in your browser. Private by default, no automatic uploads."
+    />
+    <meta property="og:image" content="https://ithmb-codec.dev/thumb-decoder-preview.png" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta property="og:url" content="https://ithmb-codec.dev/" />
+    <meta property="og:site_name" content="ITHMB Codec" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <link rel="stylesheet" href="/ithmb-decoder/styles.css?v=d1817a45" />
+    <style>
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* ─── Cards ─── */
+
+      .cards {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        margin-bottom: 48px;
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 24px 28px;
+        transition:
+          box-shadow 0.2s,
+          transform 0.2s;
+        display: block;
+        text-decoration: none;
+        color: inherit;
+      }
+
+      .card:hover {
+        box-shadow: var(--shadow);
+        transform: translateY(-2px);
+      }
+
+      .card h2 {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 6px;
+        color: var(--text);
+      }
+
+      .card h2 .arrow {
+        color: var(--badge-blue);
+        margin-left: 4px;
+        transition: margin 0.2s;
+      }
+
+      .card:hover h2 .arrow {
+        margin-left: 8px;
+      }
+
+      .card p {
+        font-size: 0.92rem;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .card .badge {
+        display: inline-block;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 2px 8px;
+        border-radius: 4px;
+        background: var(--badge-blue-bg);
+        color: var(--badge-blue);
+        margin-bottom: 8px;
+      }
+
+      .card-decoder .badge {
+        background: var(--badge-blue-bg);
+        color: var(--badge-blue);
+      }
+      .card-guide .badge {
+        background: var(--badge-blue-bg);
+        color: var(--badge-blue);
+      }
+      .card-enterprise .badge {
+        background: var(--badge-violet-bg);
+        color: var(--badge-violet);
+      }
+
+      /* ─── About ─── */
+
+      .about {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 28px;
+        margin-bottom: 48px;
+      }
+
+      .about h2 {
+        font-size: 1rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text);
+        margin-bottom: 12px;
+      }
+
+      .about p {
+        font-size: 0.92rem;
+        color: var(--text);
+        line-height: 1.65;
+      }
+
+      .about p + p {
+        margin-top: 10px;
+      }
+
+      .about a {
+        color: var(--badge-blue);
+        text-decoration: none;
+      }
+
+      .about a:hover {
+        text-decoration: underline;
+      }
+
+      /* ─── Responsive ─── */
+
+      @media (max-width: 768px) {
+        .card {
+          padding: 20px;
+        }
+
+        .about {
+          padding: 20px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .cards {
+          gap: 12px;
+          margin-bottom: 36px;
+        }
+
+        .card {
+          padding: 16px;
+        }
+
+        .card h2 {
+          font-size: 1.05rem;
+        }
+
+        .card p {
+          font-size: 0.85rem;
+        }
+
+        .about {
+          padding: 16px;
+          margin-bottom: 36px;
+        }
+
+        .about p {
+          font-size: 0.85rem;
+        }
+      }
+    </style>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "ITHMB Codec",
+      "url": "https://ithmb-codec.dev/",
+      "description": "Free online ITHMB and IPM thumbnail decoder. Convert Apple iPod/iPhone .ithmb files to JPEG instantly in your browser. Private — files stay on your device unless you opt in to share.",
+      "applicationCategory": "Multimedia",
+      "operatingSystem": "All",
+      "browserRequirements": "Requires JavaScript",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "ITHMB Codec"
+      }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://ithmb-codec.dev/"
+        }
+      ]
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "ITHMB Codec",
+      "url": "https://ithmb-codec.dev",
+      "logo": "https://ithmb-codec.dev/favicon.svg",
+      "sameAs": [
+        "https://github.com/B67687/Ithmb-Codec",
+        "https://github.com/B67687/Ithmb-Codec-Web",
+        "https://github.com/B67687/ImageGlass-Ithmb-Plugin"
+      ]
+    }
+    </script>
+  </head>
+  <body>
+    <script src="/nav.js?v=de8ea6a0"></script>
+
+    <div class="container">
+      <header>
+        <div class="logo">
+          <div class="logo-icon">iT</div>
+          <h1 class="logo-text">ITHMB Codec</h1>
+        </div>
+        <p class="subtitle" data-i18n="home.subtitle">
+          Decode Apple thumbnail files (.ithmb, .ipm) &mdash; free, private,
+          browser-based
+        </p>
+      </header>
+      <main>
+
+      <div class="cards">
+        <a href="/ithmb-decoder/" class="card card-decoder">
+          <div style="display: flex; gap: 6px">
+            <span class="badge" style="background: var(--badge-free-bg); color: var(--badge-free)"
+              data-i18n="home.free">Free</span
+            ><span class="badge" style="background: var(--badge-popular-bg); color: var(--badge-popular)"
+              data-i18n="home.popular">Popular</span
+            >
+          </div>
+          <h2>
+            <span data-i18n="home.decoderCardTitle">ITHMB Decoder</span> <span class="arrow">&rarr;</span>
+          </h2>
+          <p data-i18n="home.decoderDesc">
+            Free online decoder. Drop .ithmb or .ipm files and get JPEG images
+            instantly. All processing happens in your browser.
+          </p>
+        </a>
+        <a href="/guide/how-to-open-ithmb-files" class="card card-guide">
+          <span class="badge" data-i18n="home.guide">Guide</span>
+          <h2>
+            <span data-i18n="home.guideCardTitle">About ITHMB Files</span> <span class="arrow">&rarr;</span>
+          </h2>
+          <p data-i18n="home.guideDesc">
+            Learn what .ithmb files are, how to decode them, and why this tool
+            exists.
+          </p>
+        </a>
+        <a href="/enterprise/" class="card card-enterprise">
+          <span class="badge" data-i18n="home.enterprise">Enterprise</span>
+          <h2>
+            <span data-i18n="home.enterpriseCardTitle">Enterprise Licensing</span> <span class="arrow">&rarr;</span>
+          </h2>
+          <p data-i18n="home.enterpriseDesc">
+            Custom integration and licensing for organizations.
+          </p>
+        </a>
+
+      </div>
+      </main>
+
+      <script src="/footer.js?v=ab042cc1"></script>
+    </div>
+  </body>
+</html>
