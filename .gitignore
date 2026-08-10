@@ -1,0 +1,32 @@
+# Normal .gitignore — ignore the known ephemera; everything else tracks.
+# (The old whitelist approach silently excluded real files — theme.ts was
+# never committed and broke CI. Known patterns are just as safe and far
+# less footgun-prone.)
+
+# dependencies
+node_modules/
+
+# build outputs — generated from .ts by `npm run build` (build-from-source
+# model). The wasm glue is external (wasm-pack output) and stays tracked.
+nav.js
+footer.js
+lang-redirect.js
+theme.js
+ithmb-decoder/*.js
+!ithmb-decoder/ithmb_wasm.js
+!ithmb-decoder/ithmb_wasm_bg.js
+
+# agent / tooling ephemera (privacy: never commit session scratch)
+.omo/
+.codegraph/
+.playwright-mcp/
+test-results/
+preview/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Cloudflare wrangler state/temp (telemetry worker local dev)
+.wrangler/
