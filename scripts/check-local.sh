@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# check-local.sh — the full local CI for the TypeScript web repo.
+#
+# One command runs every gate the GitHub CI runs, locally:
+#   npm run check:local
+#
+#   1. dependency security  (npm audit — FAILS on any vulnerability)
+#   2. dependency staleness (npm outdated — informational only)
+#   3. typecheck            (browser + node + worker tsconfigs)
+#   4. build + determinism  (build must not dirty the tracked tree)
+#   5. i18n + mirror parity + zero-third-party guard
+#   6. wasm-drift           (committed wasm imports vs loader glue)
+#   7. telemetry worker test (miniflare)
+#   8. full Playwright suite, all three browsers, against localhost:8899
+#
+# Exit 0 = everything green. Non-zero = a gate failed.
+set -e
+cd "$(dirname "$0")/.."
+
+echo "── check:local — full local CI ──"
+
+echo "── [1] npm audit (dependency security)"
+npm audit
+
+echo "── [2] npm outdated (informational)"
+npm outdated --long || true
+
+echo "── [3] typecheck (browser + node + worker)"
+npm run typecheck
+
+echo "── [4] build + determinism"
+BEFORE="$(git status --porcelain | md5sum)"
+npm run build
+AFTER="$(git status --porcelain | md5sum)"
+if [ "$BEFORE" != "$AFTER" ]; then
+  echo "FAIL: build dirtied the tracked tree (uncommitted ?v= hashes?)"
+  git status --porcelain
+  exit 1
+fi
+
+echo "── [5] i18n integrity + mirror parity + zero third-party"
+npm run lint:i18n
+
+echo "── [6] wasm-drift"
+bash scripts/check-wasm-drift.sh
+
+echo "── [7] telemetry worker test"
+npm run test:worker
+
+echo "── [8] full Playwright suite (all browsers, localhost:8899)"
+if curl -s -o /dev/null --max-time 2 http://localhost:8899/; then
+  echo "    (using the server already running on :8899)"
+else
+  echo "    (starting http-server on :8899)"
+  npx http-server -p 8899 -c-1 -s >/tmp/check-local-server.log 2>&1 &
+  SERVER_PID=$!
+  trap 'kill "$SERVER_PID" 2>/dev/null' EXIT
+  sleep 2
+fi
+BASE_URL=http://localhost:8899 npx playwright test
+
+echo
+echo "── check:local — ALL GREEN ──"
