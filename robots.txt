@@ -1,0 +1,6 @@
+User-agent: *
+
+Disallow: /test-results/
+Disallow: /.github/
+Allow: /
+Sitemap: https://ithmb-codec.dev/sitemap.xml

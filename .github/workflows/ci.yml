@@ -1,0 +1,75 @@
+# ci.yml — the web repo's only automated gate.
+# Runs on the PUBLIC repo (Ithmb-Codec-Web) where Actions minutes are free;
+# the private -Web-Dev repo's CI is blocked by the account's paid-minute
+# billing state, so public CI is the source of truth (same code, squash-pushed).
+name: ci
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+permissions: { contents: read }
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: lint:modules (typecheck + build + determinism)
+        run: npm run lint:modules && git diff --exit-code # fail if the build mutated tracked files (uncommitted ?v= hashes)
+      - name: lint:i18n (key parity / embedded-en drift gate)
+        run: npm run lint:i18n
+      - name: wasm drift (committed wasm imports vs loader glue)
+        run: bash scripts/check-wasm-drift.sh
+
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright ${{ matrix.browser }}
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Build (TS -> JS)
+        run: npm run build
+      - name: Playwright (${{ matrix.browser }}, local server)
+        env:
+          BASE_URL: "http://localhost:8899"
+        run: |
+          # http-server (pinned devDependency, same as local dev) maps
+          # extensionless URLs to .html like Cloudflare Pages; python
+          # http.server 404s on them, so the language-redirect tests failed
+          # in CI only.
+          npx http-server -p 8899 -c-1 -s >/tmp/http-server.log 2>&1 &
+          SERVER_PID=$!
+          trap "kill $SERVER_PID" EXIT
+          sleep 3
+          npx playwright test --project=${{ matrix.browser }}
+
+  secrets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - name: Gitleaks (secrets in history)
+        run: |
+          # The gitleaks-action computes a commit range (<first>^..<last>) that
+          # breaks on root-commit histories (no parent). Scan all commits
+          # directly instead.
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz" -o /tmp/gitleaks.tar.gz
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+          /tmp/gitleaks git --no-banner --log-opts="--no-merges --all"
