@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>隐私与条款 | ITHMB Codec</title>
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://ithmb-telemetry.ithmb-codec.workers.dev"
+    />
+    <script src="/theme.js?v=0"></script>
+    <script src="/lang-redirect.js?v=0"></script>
+    <meta
+      name="description"
+      content="ITHMB Codec 网页解码器如何处理你的数据：所有解码都在浏览器本地完成，遥测严格自愿参与，不涉及任何第三方。"
+    />
+    <link rel="canonical" href="https://ithmb-codec.dev/zh/privacy/" />
+    <link rel="alternate" hreflang="en" href="https://ithmb-codec.dev/privacy/" />
+    <link rel="alternate" hreflang="zh" href="https://ithmb-codec.dev/zh/privacy/" />
+    <link rel="alternate" hreflang="x-default" href="https://ithmb-codec.dev/privacy/" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/ithmb-decoder/styles.css?v=0" />
+    <meta property="og:title" content="隐私与条款 — ITHMB Codec" />
+    <meta property="og:description" content="ITHMB Codec 网页解码器如何处理你的数据：本地解码、自愿遥测、无第三方。" />
+    <meta property="og:url" content="https://ithmb-codec.dev/zh/privacy/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ITHMB Codec" />
+    <meta name="twitter:card" content="summary" />
+    <style>
+      body {
+        font-family: "Inter", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        margin: 0;
+        padding: 0 0 68px; /* the guide-standard bottom spacing */
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+      main.legal {
+        flex: 1;
+        min-height: calc(100vh - 53px);
+        width: 100%;
+        max-width: 680px;
+        margin: 0 auto;
+        padding: 56px 24px 96px;
+        box-sizing: border-box;
+      }
+      main.legal h1 {
+        font-size: 1.7rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+      main.legal .logo { justify-content: flex-start; }
+      main.legal .updated {
+        color: var(--muted);
+        font-size: 0.85rem;
+        margin-bottom: 28px;
+      }
+      main.legal h2 {
+        font-size: 1.15rem;
+        font-weight: 600;
+        margin: 28px 0 10px;
+      }
+      main.legal p,
+      main.legal li {
+        font-size: 0.95rem;
+        line-height: 1.65;
+        color: var(--text);
+      }
+      main.legal ul {
+        padding-left: 20px;
+        margin: 8px 0;
+      }
+      main.legal a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      main.legal a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="legal">
+      <header>
+        <div class="logo">
+          <div class="logo-icon">iT</div>
+          <span class="logo-text">ITHMB Codec</span>
+        </div>
+      </header>
+      <h1>隐私与条款</h1>
+      <p class="updated">最后更新：2026 年 8 月 9 日</p>
+
+      <h2>你的文件只留在你的设备上</h2>
+      <p>
+        ITHMB Codec 解码器完全在你的浏览器中运行。解码由开源
+        <a href="https://github.com/B67687/Ithmb-Codec">Ithmb-Codec</a>
+        库的 WebAssembly 版本在本地完成——你的
+        <code>.ithmb</code> 和 <code>.ipm</code> 文件绝不会离开你的设备，
+        单纯使用解码器不会上传任何内容。
+      </p>
+
+      <h2>遥测——严格自愿</h2>
+      <p>
+        除非你主动点击解码卡片上的
+        <strong>分享</strong> 或 <strong>报告问题</strong> 按钮，否则不会发送任何数据。
+        这些操作有助于改进解码器对真实文件的支持。各操作发送的内容：
+      </p>
+      <ul>
+        <li>
+          <strong>分享前 16 字节</strong> —— 文件的格式前缀（前 16 字节）
+          以及文件大小和解码状态。
+        </li>
+        <li>
+          <strong>分享完整文件</strong> —— 上述元数据加上文件本身，用于分析未知格式。
+        </li>
+        <li>
+          <strong>报告问题</strong> —— 元数据加上你选择的问题类别和填写的内容。
+        </li>
+      </ul>
+      <p>
+        提交有速率限制，且基于 IP 的标识符会通过带密钥的哈希进行伪匿名化——
+        你的原始 IP 地址不会被存储。
+      </p>
+
+      <h2>我们不做的事</h2>
+      <ul>
+        <li>不使用 Cookie。</li>
+        <li>不接入第三方跟踪器或分析工具。</li>
+        <li>不投放广告。</li>
+        <li>不要求注册、不登录、不收集你的任何个人信息。</li>
+      </ul>
+      <p>
+        唯一保存在你设备上的是语言偏好（localStorage），它不会离开你的浏览器。
+      </p>
+
+      <h2>开源</h2>
+      <p>
+        解码器、底层
+        <a href="https://github.com/B67687/Ithmb-Codec">编解码库</a>
+        以及本网站均采用 MIT 许可证并开源。你可以
+        在
+        <a href="https://github.com/B67687/Ithmb-Codec-Web">网页仓库</a>
+        中查看遥测服务的完整实现。
+      </p>
+
+      <h2>使用条款</h2>
+      <p>
+        本工具按现状提供，不作任何担保。它用于从你自己的设备中恢复你自己的照片和缩略图。
+        由于解码在本地完成，不会有任何内容经过我们的服务器。
+      </p>
+      <p>
+        需要定制集成、批量转换或商业授权的组织，可通过
+        <a href="/zh/enterprise/">企业版</a> 页面联系我们。
+      </p>
+
+      <h2>变更</h2>
+      <p>
+        本页面可能随服务演进而更新。重大变更会体现在
+        <a href="https://github.com/B67687/Ithmb-Codec-Web">仓库历史</a>
+        中。如有疑问或顾虑，请在
+        <a href="https://github.com/B67687/Ithmb-Codec-Web">GitHub</a>
+        上提交 issue。
+      </p>
+    </main>
+    <script src="/nav.js?v=0"></script>
+    <script src="/footer.js?v=0"></script>
+  </body>
+</html>

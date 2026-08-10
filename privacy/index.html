@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Privacy &amp; Terms | ITHMB Codec</title>
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://ithmb-telemetry.ithmb-codec.workers.dev"
+    />
+    <script src="/theme.js?v=0"></script>
+    <script src="/lang-redirect.js?v=0"></script>
+    <meta
+      name="description"
+      content="How the ITHMB Codec web decoder handles your data: all decoding happens in your browser, telemetry is strictly opt-in, and no third parties are involved."
+    />
+    <link rel="canonical" href="https://ithmb-codec.dev/privacy/" />
+    <link rel="alternate" hreflang="en" href="https://ithmb-codec.dev/privacy/" />
+    <link rel="alternate" hreflang="zh" href="https://ithmb-codec.dev/zh/privacy/" />
+    <link rel="alternate" hreflang="x-default" href="https://ithmb-codec.dev/privacy/" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/ithmb-decoder/styles.css?v=0" />
+    <meta property="og:title" content="Privacy &amp; Terms — ITHMB Codec" />
+    <meta property="og:description" content="How the ITHMB Codec web decoder handles your data: local decoding, opt-in telemetry, no third parties." />
+    <meta property="og:url" content="https://ithmb-codec.dev/privacy/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ITHMB Codec" />
+    <meta name="twitter:card" content="summary" />
+    <style>
+      body {
+        font-family: "Inter", system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        margin: 0;
+        padding: 0 0 68px; /* the guide-standard bottom spacing */
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+      main.legal {
+        flex: 1;
+        min-height: calc(100vh - 53px);
+        width: 100%;
+        max-width: 680px;
+        margin: 0 auto;
+        padding: 56px 24px 96px;
+        box-sizing: border-box;
+      }
+      main.legal h1 {
+        font-size: 1.7rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+      main.legal .logo { justify-content: flex-start; }
+      main.legal .updated {
+        color: var(--muted);
+        font-size: 0.85rem;
+        margin-bottom: 28px;
+      }
+      main.legal h2 {
+        font-size: 1.15rem;
+        font-weight: 600;
+        margin: 28px 0 10px;
+      }
+      main.legal p,
+      main.legal li {
+        font-size: 0.95rem;
+        line-height: 1.65;
+        color: var(--text);
+      }
+      main.legal ul {
+        padding-left: 20px;
+        margin: 8px 0;
+      }
+      main.legal a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      main.legal a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="legal">
+      <header>
+        <div class="logo">
+          <div class="logo-icon">iT</div>
+          <span class="logo-text">ITHMB Codec</span>
+        </div>
+      </header>
+      <h1>Privacy &amp; Terms</h1>
+      <p class="updated">Last updated: August 9, 2026</p>
+
+      <h2>Your files stay on your device</h2>
+      <p>
+        The ITHMB Codec decoder runs entirely in your browser. Decoding is done
+        locally by the WebAssembly build of the open-source
+        <a href="https://github.com/B67687/Ithmb-Codec">Ithmb-Codec</a> library —
+        your <code>.ithmb</code> and <code>.ipm</code> files never leave your
+        device, and nothing is uploaded by simply using the decoder.
+      </p>
+
+      <h2>Telemetry — strictly opt-in</h2>
+      <p>
+        Nothing is sent anywhere unless <em>you</em> click a
+        <strong>Share</strong> or <strong>Report</strong> button on a decode
+        card. Those actions help improve decoder support for real-world files.
+        What each action sends:
+      </p>
+      <ul>
+        <li>
+          <strong>Share 16 bytes</strong> — the file's format prefix (first 16
+          bytes) plus its size and decode status.
+        </li>
+        <li>
+          <strong>Share full file</strong> — the same metadata plus the file
+          itself, so an unknown format can be analyzed.
+        </li>
+        <li>
+          <strong>Report an issue</strong> — the metadata plus your chosen issue
+          category and any detail you type.
+        </li>
+      </ul>
+      <p>
+        Submissions are rate-limited, and IP-derived identifiers are
+        pseudonymized with a keyed hash — your raw IP address is never stored.
+      </p>
+
+      <h2>What we don't do</h2>
+      <ul>
+        <li>No cookies.</li>
+        <li>No third-party trackers or analytics.</li>
+        <li>No advertising.</li>
+        <li>No account, no login, no personal data collected from you.</li>
+      </ul>
+      <p>
+        The only thing stored on your device is your language preference
+        (localStorage), which never leaves your browser.
+      </p>
+
+      <h2>Open source</h2>
+      <p>
+        The decoder, the underlying
+        <a href="https://github.com/B67687/Ithmb-Codec">codec</a>, and this
+        website are MIT-licensed and open source. You can read exactly what the
+        telemetry worker does in the
+        <a href="https://github.com/B67687/Ithmb-Codec-Web">web repository</a>.
+      </p>
+
+      <h2>Terms of use</h2>
+      <p>
+        This tool is provided as-is, without warranty of any kind. It is meant
+        for recovering your own photos and thumbnails from your own devices.
+        Because decoding happens locally, no content passes through our servers.
+      </p>
+      <p>
+        Organizations that need custom integration, volume conversion, or
+        licensing can contact us via the
+        <a href="/enterprise/">enterprise</a> page.
+      </p>
+
+      <h2>Changes</h2>
+      <p>
+        This page may be updated as the service evolves. Material changes are
+        reflected in the
+        <a href="https://github.com/B67687/Ithmb-Codec-Web">repository
+        history</a>. Questions or concerns: open an issue on
+        <a href="https://github.com/B67687/Ithmb-Codec-Web">GitHub</a>.
+      </p>
+    </main>
+    <script src="/nav.js?v=0"></script>
+    <script src="/footer.js?v=0"></script>
+  </body>
+</html>
