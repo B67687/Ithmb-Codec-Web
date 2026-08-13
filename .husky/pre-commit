@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # i18n integrity gate — fail fast before tests if key parity / raw literals / t() refs broken
 echo "=== Running i18n integrity gate ==="
-node scripts/check-i18n.mjs
+npx tsx scripts/check-i18n.mts
 i18n_result=$?
 if [ $i18n_result -ne 0 ]; then
   echo "i18n integrity gate FAILED — aborting commit"
@@ -14,13 +14,13 @@ if ! bash scripts/check-wasm-drift.sh; then
   exit 1
 fi
 echo "=== Running pre-commit Playwright smoke tests ==="
-python3 -m http.server 8899 &
+npx http-server -p 8899 -a 0.0.0.0 -c-1 --no-dotfiles > /tmp/ithmb-husky-server.log 2>&1 &
 SERVER_PID=$!
 sleep 2
 # BASE_URL points the smoke tests at the LOCAL server — never the live site
-# (playwright.config.js would default to https://ithmb-codec.dev otherwise,
+# (playwright.config.ts would default to https://ithmb-codec.dev otherwise,
 # giving false confidence by testing the deployed code, not your changes).
-BASE_URL=http://localhost:8899 npx playwright test tests/pages.spec.js tests/ithmb-decoder.spec.js tests/gallery.spec.js --reporter=list
+BASE_URL=http://localhost:8899 npx playwright test tests/pages.spec.ts tests/ithmb-decoder.spec.ts tests/gallery.spec.ts --reporter=list
 result=$?
 kill $SERVER_PID 2>/dev/null
 echo "=== Smoke tests completed (exit=$result) ==="

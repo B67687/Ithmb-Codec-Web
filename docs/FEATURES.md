@@ -164,6 +164,7 @@ Title "ITHMB Decoder | ITHMB Codec", canonical, JSZip 3.10.1 (cdnjs, with SRI), 
 | ----- | ------------ | ------- |
 | Initial | Header + dropzone only | Page load |
 | Processing | Cards with spinner + "Decoding…" | Files selected |
+| Progressive display | Cards appear + paint in waves of 4 as they decode; wasm `decode_ithmb` is synchronous so `processFiles` batches decodes and yields a macrotask (`setTimeout(0)`, not rAF — rAF pauses in background tabs) between waves so each wave paints instead of all cards flashing in at once | Multi-file decode |
 | Decode success | Canvas + green "Decoded" + Save + format select + **report link** (no share box) | WASM decode succeeds |
 | Decode failure | Share box (hex dump + Share 16 bytes / full file) | Known format fails |
 | Decode unknown | Share box with "Unknown format" note | Unrecognized prefix |

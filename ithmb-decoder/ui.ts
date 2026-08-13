@@ -86,18 +86,27 @@ export async function processFiles(files: File[]): Promise<void> {
 
   S.totalFiles += valid.length;
   const cardCountBefore = [...fileList.querySelectorAll(".file-card")].length;
-  for (const file of valid) {
-    const cardId = addFileCard(file);
-    decodeFile(file, cardId);
+  // Decode in small waves and yield the event loop between waves. The wasm
+  // decode_ithmb call is synchronous (blocks the main thread), so firing
+  // every file at once renders all cards but the browser only paints once
+  // at the end — images "flash in all at once". Batching + a macrotask yield
+  // lets the browser paint each wave progressively as decodes complete.
+  // (setTimeout, not requestAnimationFrame: rAF is paused in background tabs,
+  // which stalled the whole decode loop if the user switched tabs.)
+  const CONCURRENCY = 4;
+  let viewerOpened = false;
+  for (let i = 0; i < valid.length; i += CONCURRENCY) {
+    const batch = valid.slice(i, i + CONCURRENCY);
+    // Create cards synchronously (addFileCard is pure DOM, no wasm) so the
+    // viewer opens at card-creation time — matching the original behavior
+    // where openViewer fired on drop, before any decode completed.
+    const cardIds = batch.map((file) => addFileCard(file));
+    if (!viewerOpened) {
+      openViewer(isFirstBatch ? 0 : cardCountBefore + i);
+      viewerOpened = true;
+    }
+    await Promise.all(batch.map((file, j) => decodeFile(file, cardIds[j])));
+    await new Promise((resolve) => setTimeout(resolve, 0));
   }
-  const cardCountAfter = [...fileList.querySelectorAll(".file-card")].length;
-  const newlyAdded = cardCountAfter - cardCountBefore;
-
   updateToolbar();
-  if (isFirstBatch && valid.length > 0) {
-    openViewer(0);
-  } else if (!isFirstBatch && newlyAdded > 0) {
-    // Focus on the first newly added file
-    openViewer(cardCountBefore);
-  }
 }
