@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.4.17 — 2026-08-13
+
+### Added
+- **Progressive display** (`ithmb-decoder/ui.ts`): when multiple files are dropped, decoding now proceeds in waves of 4 with a macrotask yield (`setTimeout 0`) between waves, so thumbnails appear as they decode instead of flashing in all at once. The viewer still opens immediately on the first card.
+
+### Changed
+- **Wasm regenerated from ithmb-core 1.9.6**: ships the Nano 7G cover-art alternates (1013/1015/1016), the reordered RGB555 encoder endianness fix, the profile-1044 disable (53 active profiles), and the `swaps_dimensions` encoder fix. Wasm cache-bust bumped to `?v=1.9.6`.
+
+### Fixed
+- **Pre-commit hook repaired for the TypeScript codebase**: `.husky/pre-commit` now runs the TS toolchain (`tsx scripts/check-i18n.mts`), the wasm-drift check, and the Playwright smoke specs against a local http-server, matching CI.
+
 ## 1.4.16 — 2026-08-06
 
 ### Added
