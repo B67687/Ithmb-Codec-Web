@@ -1,6 +1,6 @@
 # ITHMB Codec Web — Feature Inventory & Architecture
 
-> Updated: 2026-08-06 (1.4.16: server-rendered /zh/ tree, language-preference redirect, plain-link switcher, cross-tab sync removed)
+> Updated: 2026-08-13 (1.4.17: progressive display — decode files in waves of 4 with viewer opening on the first card; wasm regenerated from ithmb-core 1.9.6; telemetry GET surface token-gated)
 > Purpose: Authoritative, current source of truth for features + the architecture that serves them.
 > **Keep this file in sync with every behavior change.** A stale spec is how bugs look like features.
 
