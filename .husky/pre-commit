@@ -1,4 +1,16 @@
 #!/usr/bin/env bash
+# gitleaks secret scan — fail fast if staged changes leak secrets (defense in depth)
+if command -v gitleaks >/dev/null 2>&1; then
+  if ! gitleaks git --pre-commit --staged --no-banner --exit-code 1 --redact 2>/tmp/gitleaks-hook.log; then
+    echo "GITLEAKS: secrets or high-entropy strings found in staged changes — aborting commit" >&2
+    cat /tmp/gitleaks-hook.log >&2
+    echo "Use git commit --no-verify to bypass this check." >&2
+    exit 1
+  fi
+  echo "=== gitleaks scan clean ==="
+else
+  echo "— gitleaks not installed; skipping scan (install to ~/.local/bin/gitleaks)" >&2
+fi
 # i18n integrity gate — fail fast before tests if key parity / raw literals / t() refs broken
 echo "=== Running i18n integrity gate ==="
 npx tsx scripts/check-i18n.mts
