@@ -323,7 +323,6 @@ export default {
       return new Response(null, { status: 204, headers: corsHeaders });
     }
     if (request.method === "GET") {
-      const url = new URL(request.url);
       // Dashboard auth: Authorization: Bearer <ADMIN_TOKEN> ONLY. The legacy
       // ?token=<ADMIN_TOKEN> query path is gone — a bearer credential must
       // never ride in URLs (browser history, access logs, Referer) (CWE-200).
@@ -420,59 +419,15 @@ export default {
         });
       }
 
-      // /dashboard requires the admin token — never falls through to public JSON
-      if (url.pathname === "/dashboard") {
-        return new Response(
-          JSON.stringify({ ok: false, error: "unauthorized" }),
-          {
-            status: 401,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-          },
-        );
-      }
-
-      // CLI data dashboard — prefix counts derived from KEY NAMES ONLY (zero
-      // value fetches). The prefix is the leading number of `fmt_<prefix>_<id>`
-      // keys, so counting is metadata-only — the old code fetched and parsed
-      // every record value (incl. multi-MB full_file payloads) just to tally
-      // prefixes, making this unauthenticated endpoint a storage-egress/CPU
-      // amplifier for anyone (CWE-400).
-      // Usage: curl https://ithmb-telemetry.ithmb-codec.workers.dev
-      const prefixCounts: Record<string, number> = {};
-      let cursor: string | null | undefined;
-      let scanned = 0;
-      // Bounded scan, same as the dashboard: this unauthenticated endpoint
-      // must not paginate the whole namespace as the store grows (CWE-400).
-      // Counts reflect the first MAX_SCAN records.
-      const MAX_SCAN = 5000;
-      do {
-        const list = await env.FORMAT_TELEMETRY.list({
-          prefix: "fmt_",
-          cursor,
-          limit: 1000,
-        });
-        for (const key of list.keys) {
-          if (scanned >= MAX_SCAN) break;
-          const m = /^fmt_(\d+)_/.exec(key.name);
-          if (m) {
-            const p = m[1];
-            prefixCounts[p] = (prefixCounts[p] || 0) + 1;
-          }
-          scanned++;
-        }
-        cursor = list.list_complete ? undefined : list.cursor;
-      } while (cursor && scanned < MAX_SCAN);
+      // Every other GET — including the old public JSON counts endpoint — is
+      // private: nothing in the app reads counts (the only telemetry call in
+      // ithmb-decoder/*.ts is the POST submit), and the worker promises
+      // "No public exposure". Without a valid bearer token everything else
+      // returns 401 (CWE-200: bearer never rides in URLs).
       return new Response(
-        JSON.stringify(
-          {
-            ok: true,
-            prefixCounts,
-            total: Object.values(prefixCounts).reduce((a, b) => a + b, 0),
-          },
-          null,
-          2,
-        ),
+        JSON.stringify({ ok: false, error: "unauthorized" }),
         {
+          status: 401,
           headers: { "Content-Type": "application/json", ...corsHeaders },
         },
       );

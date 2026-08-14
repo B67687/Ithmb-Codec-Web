@@ -7,7 +7,7 @@ Deploys a Cloudflare Worker that stores format metadata submissions from the WAS
 Committed integration test (miniflare/workerd, in-memory KV, no external processes):
 
 ```bash
-node workers/telemetry/test-worker.mjs   # or: npm run test:worker
+npx tsx workers/telemetry/test-worker.ts   # or: npm run test:worker
 ```
 
 Covers: valid + garbage-base64 POSTs, Bearer-only auth (`?token=` dead), no raw IP in KV keys, `fullfile_` payload separation, uuid record keys.
@@ -97,4 +97,4 @@ curl -H "Authorization: Bearer $ADMIN_TOKEN" \
 - **Headers:** `Cache-Control: no-store` + `Referrer-Policy: no-referrer` (token leak prevention) + CSP + `nosniff`
 - **Scan is bounded** (5000 records) and reads slim records only — full-file payloads are never fetched during a render
 - Shows: total submissions, unique prefixes, unknown vs known-failed counts, full-file count, prefix distribution, recent 50 records
-- `GET /` (no token) is the public JSON endpoint used by the app's share buttons — prefix counts are derived from KV key names (zero value fetches)
+- `GET /` is also **token-gated** (same `Authorization: Bearer <ADMIN_TOKEN>`) — the JSON prefix-counts endpoint was previously public but nothing in the app reads it (the only telemetry call is the POST submit), so the entire read surface is now private. Returns 401 without a valid token.

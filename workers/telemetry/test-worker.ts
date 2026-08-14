@@ -8,7 +8,7 @@
 //   - a valid full_file payload lands under a separate `fullfile_` key
 //   - `?token=` no longer authenticates; Bearer does
 //   - no raw IP appears in KV key names (per-IP keys are hashed)
-//   - public JSON derives prefix counts from key names (zero value fetches)
+//   - GET / JSON is token-gated; prefix counts derive from key names (zero value fetches)
 //
 // The worker source is TypeScript, and miniflare's scriptPath loader passes
 // the file to workerd verbatim (it cannot parse TS), so the worker is
@@ -102,10 +102,17 @@ async function main(): Promise<void> {
   check("fullfile_ payload key separated", /^fullfile_/m.test(keys));
   check("uuid record keys (no Date.now)", /^fmt_1009_[0-9a-f-]{36}$/m.test(keys));
 
-  // 6. Public JSON derives prefix counts from key names (zero value fetches)
+  // 6. The entire GET surface is token-gated (was partially public; nothing in
+  //    the app reads counts — the only telemetry call is the POST submit).
+  //    No token → 401; valid Bearer → dashboard HTML.
   r = await mf.dispatchFetch("http://localhost/");
-  const j = await json<{ prefixCounts?: Record<string, number> }>(r);
-  check("public JSON prefix count == 3", j.prefixCounts?.["1009"] === 3, JSON.stringify(j.prefixCounts));
+  check("GET / without token is 401", r.status === 401);
+
+  r = await mf.dispatchFetch("http://localhost/", {
+    headers: { Authorization: "Bearer smoke-test-token-0001" },
+  });
+  const j = await r.text();
+  check("GET / with token returns dashboard HTML", /<html|<!doctype/i.test(j));
 
   // 7. Dashboard tracks the full-file record (separation)
   check("dashboard Full File Uploads == 1", /Full File Uploads<\/h3><div class="value">1<\/div>/.test(dashBody));
