@@ -44,6 +44,8 @@ images or grab them all as a ZIP archive.
 
 Found an .ithmb file that doesn't decode? [Open an issue on the codec repo](https://github.com/B67687/Ithmb-Codec/issues).
 
+Using ImageGlass? The [native .ithmb plugin](https://github.com/B67687/ImageGlass-Ithmb-Plugin) decodes files in-viewer without a browser.
+
 Enjoying the tool? [Buy me a coffee](https://buymeacoffee.com/thumbnami).
 
 ## Built with
