@@ -23,7 +23,7 @@ Free, private, browser-based .ithmb file decoder.
 <br>
 </div>
 
-ITHMB files are Apple iThumbnail images found in iPod Classic, iPod Nano, and other legacy Apple devices. They store thumbnail-sized album art, photos, and menu graphics that the iPod's UI reads directly from its disk. The format is undocumented and varies across devices and firmware versions. This project decodes them.
+ITHMB files are Apple iThumbnail images found in iPod Classic, iPod Nano, and other legacy Apple devices — thumbnail-sized album art, photos, and menu graphics that the iPod's UI reads directly from its disk. The format is undocumented and varies across devices and firmware versions. This project decodes them in your browser via WebAssembly, powered by [ithmb-core](https://crates.io/crates/ithmb-core) from the parent repo [Ithmb-Codec](https://github.com/B67687/Ithmb-Codec).
 
 ## Features
 
@@ -43,8 +43,6 @@ images or grab them all as a ZIP archive.
 ## Support
 
 Found an .ithmb file that doesn't decode? [Open an issue on the codec repo](https://github.com/B67687/Ithmb-Codec/issues).
-
-Using ImageGlass? The [native .ithmb plugin](https://github.com/B67687/ImageGlass-Ithmb-Plugin) decodes files in-viewer without a browser.
 
 Enjoying the tool? [Buy me a coffee](https://buymeacoffee.com/thumbnami).
 
