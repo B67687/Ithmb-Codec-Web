@@ -23,20 +23,20 @@ const decoderEntries = readdirSync(join(ROOT, "ithmb-decoder"))
   .filter((f) => f.endsWith(".ts") && !f.endsWith(".d.ts"))
   .map((f) => join("ithmb-decoder", f));
 
-// jszip is an npm dependency that the browser module graph cannot resolve
+// fflate is an npm dependency that the browser module graph cannot resolve
 // (native ESM has no node_modules resolution). Bundle it once into a
 // self-contained ES module; download.ts imports it via a relative path.
 await build({
   stdin: {
-    contents: 'export { default } from "jszip";',
-    sourcefile: "jszip-bundle-entry.ts",
+    contents: 'export * from "fflate";',
+    sourcefile: "fflate-bundle-entry.ts",
     resolveDir: ROOT,
   },
   bundle: true,
   format: "esm",
   platform: "browser",
   target: "es2022",
-  outfile: "ithmb-decoder/jszip-bundle.js",
+  outfile: "ithmb-decoder/fflate-bundle.js",
   logLevel: "info",
 });
 

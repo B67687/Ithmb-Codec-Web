@@ -1,10 +1,10 @@
 import { S } from "./state.js";
 import { successCards } from "./cards.js";
 import { formatLabels, extMap } from "./utils.js";
-import JSZip from "./jszip-bundle.js";
+import { zipSync } from "./fflate-bundle.js";
 
 export async function downloadAll(): Promise<void> {
-  const zip = new JSZip();
+  const files: Record<string, Uint8Array> = {};
   for (const { canvas, fileName } of successCards()) {
     const ext = extMap[S.downloadFormat] || ".jpg";
     const blob = await new Promise<Blob | null>((resolve) =>
@@ -18,20 +18,20 @@ export async function downloadAll(): Promise<void> {
       let name = base.replace(/[\\/]/g, "_").replace(/^\.+/, "");
       if (!name) name = "decoded";
       name += ext;
-      // Dedupe: JSZip silently overwrites duplicate names — suffix so every
+      // Dedupe: fflate silently overwrites duplicate names — suffix so every
       // image survives the archive.
-      if (zip.files[name]) {
+      if (files[name]) {
         const dot = name.lastIndexOf(".");
         const stem = dot > 0 ? name.slice(0, dot) : name;
         const suffix = dot > 0 ? name.slice(dot) : "";
         let i = 2;
-        while (zip.files[stem + "-" + i + suffix]) i++;
+        while (files[stem + "-" + i + suffix]) i++;
         name = stem + "-" + i + suffix;
       }
-      zip.file(name, blob);
+      files[name] = new Uint8Array(await blob.arrayBuffer());
     }
   }
-  const content = await zip.generateAsync({ type: "blob" });
+  const content = new Blob([zipSync(files)], { type: "application/zip" });
   const url = URL.createObjectURL(content);
   const a = document.createElement("a");
   a.href = url;
