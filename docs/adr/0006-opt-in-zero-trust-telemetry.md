@@ -15,6 +15,16 @@ contribution flow. See note below.
 > 365 days, and viewable only via the dashboard gated by ADMIN_TOKEN.
 > The rest of this ADR's rationale (zero-trust, opt-in, metadata-only)
 > remains valid.
+>
+> **Amendment (2026-08-14, commit 4ac172a)**: the earlier design briefly
+> exposed a public `GET /` JSON endpoint returning aggregate prefix counts
+> (format ID → count, derived from KV key names with zero value fetches,
+> bounded scan). The app never consumed it (the only app call is `POST /`
+> from `submitTelemetry`). It was removed entirely — the whole GET surface
+> is now token-gated (`Authorization: Bearer <ADMIN_TOKEN>`, constant-time
+> compare; legacy `?token=` removed). Post-lock, any unauthenticated GET
+> returns 401. This keeps telemetry data fully private: the dashboard
+> (authenticated) is the only way to view what formats are being seen.
 **Context**: The ITHMB decoder at `docs/ithmb-decoder/` allows users to decode .ithmb files entirely in the browser. To improve format coverage and detect unknown profiles, we need a mechanism to collect format usage data without compromising user privacy or trust.
 
 ## Decision

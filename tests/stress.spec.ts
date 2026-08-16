@@ -194,7 +194,6 @@ test.describe("Stress: Full user flows", () => {
 test("13: Viewer arrows hidden in grid mode", async ({ page }) => {
   await page.goto(PAGE_URL, { waitUntil: "load" });
   await dropFiles(page, [path.join(FIXTURES, "test1.ithmb")]);
-  await dropFiles(page, [path.join(FIXTURES, "test1.ithmb")]);
   await waitForDecode(page);
 
   // Viewer arrows should be visible initially (inside viewer container)
