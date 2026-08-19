@@ -17,6 +17,16 @@ export default defineConfig({
     trace: "on-first-retry",
     headless: true,
   },
+  // Own the local server lifecycle: Playwright starts it, polls the URL until
+  // ready (replacing the fixed `sleep 3` + shell trap that was racy on slow
+  // runners), and kills it on exit. Reuses an already-running server when not
+  // in CI (preserves `npm run serve` local flow). See ADR-0007.
+  webServer: {
+    command: "npx http-server -p 8899 -c-1 -s",
+    url: "http://localhost:8899",
+    reuseExistingServer: !process.env.CI,
+    timeout: 30000,
+  },
   projects: [
     {
       name: "chromium",

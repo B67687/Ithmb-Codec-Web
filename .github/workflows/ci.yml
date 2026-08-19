@@ -5,7 +5,14 @@
 name: ci
 on:
   push: { branches: [main] }
-  pull_request: { branches: [main] }
+  pull_request:
+    branches: [main]
+    # Skip the whole CI for doc-only PRs (no code changed): preserves free
+    # Actions minutes with negligible quality loss. Code PRs always run full.
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '.github/**'
 permissions: { contents: read }
 
 jobs:
@@ -40,7 +47,23 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.cache/ms-playwright
+          # Key on browsers.json (exact browser revisions), NOT package-lock.json:
+          # a dep bump must not force a ~200MB browser re-download. Per-browser
+          # keys avoid the concurrent-save last-writer-wins cache thrash across the
+          # 3-browser matrix. See ADR-0007.
+          key: pw-${{ matrix.browser }}-${{ runner.os }}-${{ hashFiles('node_modules/playwright-core/browsers.json') }}
+          restore-keys: |
+            pw-${{ matrix.browser }}-${{ runner.os }}-
+      - name: Install Playwright system deps (apt only)
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps ${{ matrix.browser }}
       - name: Install Playwright ${{ matrix.browser }}
+        if: steps.pw-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps ${{ matrix.browser }}
       - name: Build (TS -> JS)
         run: npm run build
@@ -48,14 +71,9 @@ jobs:
         env:
           BASE_URL: "http://localhost:8899"
         run: |
-          # http-server (pinned devDependency, same as local dev) maps
-          # extensionless URLs to .html like Cloudflare Pages; python
-          # http.server 404s on them, so the language-redirect tests failed
-          # in CI only.
-          npx http-server -p 8899 -c-1 -s >/tmp/http-server.log 2>&1 &
-          SERVER_PID=$!
-          trap "kill $SERVER_PID" EXIT
-          sleep 3
+          # Server lifecycle handled by playwright webServer config (polls
+          # http://localhost:8899 until ready instead of a fixed sleep; owns
+          # start/kill). See ADR-0007.
           npx playwright test --project=${{ matrix.browser }}
 
   secrets:
