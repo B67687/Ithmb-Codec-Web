@@ -41,6 +41,9 @@ async function main(): Promise<void> {
     script: outputFiles[0].text,
     scriptPath: WORKER_SRC,
     kvNamespaces: ["FORMAT_TELEMETRY"],
+    // REVIEW 4.3: intentional non-secret test fixture (miniflare in-memory binding only;
+    // never used in production — the real ADMIN_TOKEN lives in the Cloudflare dashboard,
+    // SOPS/age-encrypted locally per spec D3).
     bindings: { ADMIN_TOKEN: "smoke-test-token-0001" },
   });
 

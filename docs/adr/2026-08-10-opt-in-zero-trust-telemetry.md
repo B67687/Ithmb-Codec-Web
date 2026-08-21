@@ -1,8 +1,10 @@
 # ADR-0006: Opt-In Zero-Trust Telemetry for WASM Decoder
 
-**Status**: Superseded (2026-07-31) — superseded by the quiet-by-default
+**Status:** Superseded (2026-07-31) — superseded by the quiet-by-default
 contribution flow. See note below.
-**Context**: The ITHMB decoder at `docs/ithmb-decoder/` allows users to decode .ithmb files entirely in the browser. To improve format coverage and detect unknown profiles, we need a mechanism to collect format usage data without compromising user privacy or trust.
+## Context
+
+The ITHMB decoder at `docs/ithmb-decoder/` allows users to decode .ithmb files entirely in the browser. To improve format coverage and detect unknown profiles, we need a mechanism to collect format usage data without compromising user privacy or trust.
 
 > **Superseded by**: the quiet-by-default refactor (commit 9374c97, 2026-07-31).
 > The telemetry channel changed from pre-filled GitHub issues to a
@@ -25,7 +27,6 @@ contribution flow. See note below.
 > compare; legacy `?token=` removed). Post-lock, any unauthenticated GET
 > returns 401. This keeps telemetry data fully private: the dashboard
 > (authenticated) is the only way to view what formats are being seen.
-**Context**: The ITHMB decoder at `docs/ithmb-decoder/` allows users to decode .ithmb files entirely in the browser. To improve format coverage and detect unknown profiles, we need a mechanism to collect format usage data without compromising user privacy or trust.
 
 ## Decision
 

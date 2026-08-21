@@ -1,6 +1,8 @@
 # Changelog
 
-## 1.4.17 — 2026-08-13
+## [Unreleased]
+
+## [1.4.17] - 2026-08-13
 
 ### Added
 - **Progressive display** (`ithmb-decoder/ui.ts`): when multiple files are dropped, decoding now proceeds in waves of 4 with a macrotask yield (`setTimeout 0`) between waves, so thumbnails appear as they decode instead of flashing in all at once. The viewer still opens immediately on the first card.
@@ -234,3 +236,4 @@
 - Visual regression testing (8 snapshot baselines)
 - FAQ schema, XML sitemap, Google Search Console integration
 
+[1.4.17]: https://github.com/B67687/Ithmb-Codec-Web-Dev/compare/v1.4.16...v1.4.17

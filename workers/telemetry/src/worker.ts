@@ -352,7 +352,17 @@ export default {
               try {
                 const record = JSON.parse(value) as StoredRecord;
                 allRecords.push(record);
-              } catch {}
+              } catch (err) {
+                // Unparseable record (legacy write or corrupt KV value). Skip
+                // it — the dashboard is best-effort over the store — but surface
+                // the key in Workers Logs so a systematic corruption is
+                // detectable instead of silently vanishing.
+                console.error(
+                  `telemetry: skipping unparseable record at key "${key.name}": ${
+                    err instanceof Error ? err.message : String(err)
+                  }`,
+                );
+              }
             }
             scanned++;
           }

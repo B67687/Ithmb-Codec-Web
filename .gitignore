@@ -30,3 +30,9 @@ Thumbs.db
 
 # Cloudflare wrangler state/temp (telemetry worker local dev)
 .wrangler/
+
+# secrets — never commit local env files or keys
+/.env
+*.pem
+secrets/
+*.key

@@ -1,8 +1,10 @@
 # ADR-0007: CI Speed — Playwright Browser Cache, webServer Config, Doc-Only Path Filters
 
-**Status**: Accepted (2026-08-19)
+**Status:** Accepted (2026-08-19)
 
-**Context**: The web repo's CI is the only automated gate (it runs on the public
+## Context
+
+The web repo's CI is the only automated gate (it runs on the public
 `Ithmb-Codec-Web` repo where Actions minutes are free; the private `-Web-Dev`
 repo is billing-blocked). Full CI was ~6m15s, dominated not by test execution
 but by per-run overhead:
