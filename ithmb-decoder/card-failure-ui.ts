@@ -4,7 +4,6 @@ import { addFilmstripThumb, refreshViewerIfCurrent } from "./viewer.js";
 import { createShareBox } from "./share-actions.js";
 import { t } from "./i18n.js";
 
-export { FULL_FILE_MAX_BYTES, SHARED_TEXT } from "./share-actions.js";
 
 export function renderFailureCard(
   cardId: string,

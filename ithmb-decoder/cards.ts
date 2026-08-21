@@ -50,10 +50,6 @@ export function successCount(): number {
   return successful.length;
 }
 
-export function failureCount(): number {
-  return failed.length;
-}
-
 // Read accessors return copies so callers can iterate/find without being able
 // to mutate the lists (arrays here are small — tens of entries).
 export function successCards(): SuccessEntry[] {
