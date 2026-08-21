@@ -739,8 +739,6 @@ export default {
       // without consuming the per-day budget.)
 
       // ---- Set dedup marker (24h TTL) ----
-
-      // ---- Set dedup marker (24h TTL) ----
       await env.FORMAT_TELEMETRY.put(dedupKey, "1", { expirationTtl: 86400 });
 
       return new Response(JSON.stringify({ ok: true }), {
