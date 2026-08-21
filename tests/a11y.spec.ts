@@ -36,9 +36,7 @@ test.describe("Accessibility", () => {
 
       // Note: some violations are known design choices (contrast, link style)
       // These are intentional tradeoffs for visual aesthetics
-      if (serious.length > 0) {
-        console.log(`  → Known design choices: ${serious.length} violation(s)`);
-      }
+      expect(serious).toHaveLength(0);
     });
   }
 });
