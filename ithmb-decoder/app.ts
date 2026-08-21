@@ -31,6 +31,12 @@ dropzone.addEventListener("click", () => {
   input.click();
 });
 
+
+function clearDragState(): void {
+  overlay.classList.remove("active");
+  dropzone.classList.remove("drag-over");
+  document.body.classList.remove("drag-active");
+}
 // Full-page drop overlay (lastTarget caching pattern from production apps)
 document.addEventListener("dragover", (e) => {
   if (e.dataTransfer!.types.includes("Files")) e.preventDefault();
@@ -44,16 +50,12 @@ document.addEventListener("dragenter", (e) => {
 });
 document.addEventListener("dragleave", (e) => {
   if (e.target === S.lastTarget || e.target === document) {
-    overlay.classList.remove("active");
-    dropzone.classList.remove("drag-over");
-    document.body.classList.remove("drag-active");
+    clearDragState();
   }
 });
 document.addEventListener("drop", (e) => {
   e.preventDefault();
-  overlay.classList.remove("active");
-  dropzone.classList.remove("drag-over");
-  document.body.classList.remove("drag-active");
+  clearDragState();
   if (
     e.dataTransfer!.files &&
     e.dataTransfer!.files.length > 0 &&
@@ -63,9 +65,7 @@ document.addEventListener("drop", (e) => {
   }
 });
 document.addEventListener("dragend", () => {
-  overlay.classList.remove("active");
-  dropzone.classList.remove("drag-over");
-  document.body.classList.remove("drag-active");
+  clearDragState();
 });
 
 setupHoldRepeat("prevBtn", prevViewer);
