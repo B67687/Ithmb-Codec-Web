@@ -1,7 +1,9 @@
 # ci.yml — the web repo's only automated gate.
-# Runs on the PUBLIC repo (Ithmb-Codec-Web) where Actions minutes are free;
-# the private -Web-Dev repo's CI is blocked by the account's paid-minute
-# billing state, so public CI is the source of truth (same code, squash-pushed).
+# Runs on the DEV repo (B67687/Ithmb-Codec-Web-Dev) where CI is the source of
+# truth per the four-layer model (local -> github-dev CI -> public append-only).
+# check-parity.config queries this same Dev repo for same-commit parity; the
+# public repo (Ithmb-Codec-Web) is append-only on explicit user go and does not
+# run CI. (REVIEW warning: comment was stale — claimed public CI; now aligned.)
 name: ci
 on:
   push: { branches: [main] }
@@ -69,11 +71,14 @@ jobs:
         run: npm run build
       - name: Playwright (${{ matrix.browser }}, local server)
         env:
-          BASE_URL: "http://localhost:8899"
+          # Pass the matrix browser so the config can pick a distinct
+          # web-server port per browser under act (parallel jobs, shared
+          # host network would otherwise collide). Config derives baseURL
+          # from the same port; no fixed BASE_URL override here.
+          PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
         run: |
           # Server lifecycle handled by playwright webServer config (polls
-          # http://localhost:8899 until ready instead of a fixed sleep; owns
-          # start/kill). See ADR-0007.
+          # until ready instead of a fixed sleep; owns start/kill). See ADR-0007.
           npx playwright test --project=${{ matrix.browser }}
 
   secrets:

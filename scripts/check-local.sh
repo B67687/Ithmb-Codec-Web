@@ -12,6 +12,7 @@
 #   6. wasm-drift           (committed wasm imports vs loader glue)
 #   7. telemetry worker test (miniflare)
 #   8. full Playwright suite, all three browsers, against localhost:8899
+#   9. parity gate hermetic tests (mocked gh/jq — edge cases, no network)
 #
 # Exit 0 = everything green. Non-zero = a gate failed.
 set -e
@@ -58,6 +59,9 @@ else
   sleep 2
 fi
 BASE_URL=http://localhost:8899 npx playwright test
+
+echo "── [9] parity gate hermetic tests (REVIEW 5.3)"
+bash scripts/test-check-parity.sh
 
 echo
 echo "── check:local — ALL GREEN ──"
