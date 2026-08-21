@@ -1,91 +1,119 @@
-# AGENTS.md — AI Agent Guide for Ithmb-Codec-Web
+# AGENTS.md: AI Agent Guide for Ithmb-Codec-Web
 
 This file tells AI coding agents (Claude Code, Copilot, Cursor, Codex, OpenCode) how to work with this repository. Read this first before editing any code.
 
 ## Repository Purpose
 
-The browser front-end for the ITHMB Codec project: a **zero-runtime-dependency** vanilla-JS decoder web app (`ithmb-codec.dev`) plus a **Cloudflare telemetry worker** that collects opt-in share/report data. Decoding itself happens in WebAssembly (`ithmb_wasm_bg.wasm`) generated from the sibling Rust repo `B67687/Ithmb-Codec` (`crates/ithmb-wasm`). This repo also hosts the marketing pages (home, guide, enterprise, 404) and is fully i18n'd (Simplified Chinese + English).
+The browser front-end for the ITHMB Codec project: a **zero-runtime-dependency** TypeScript decoder web app (`ithmb-codec.dev`) plus a **Cloudflare telemetry worker** that collects opt-in share/report data. Decoding happens in WebAssembly (`ithmb_wasm_bg.wasm`) generated from the sibling Rust repo `B67687/Ithmb-Codec` (`crates/ithmb-wasm`). This repo also hosts the marketing pages (home, guide, enterprise, privacy, 404) and is fully i18n'd (Simplified Chinese + English).
+
+**Build model (read this first):** the tracked artifacts are `.ts` sources. `npm run build` (esbuild, transform-only) compiles them to the same public `.js` paths the HTML already references. Those `.js` outputs are gitignored (except the wasm glue); CI builds before serving. Never edit the generated `.js` files directly. Edit the `.ts` source and rebuild.
 
 ## Repository Layout
 
 ```
 Ithmb-Codec-Web/
-├── ithmb-decoder/           # The decoder SPA (all vanilla ES modules, no deps)
-│   ├── app.js               # Init, keyboard, dropzone wiring, languagechange handler
-│   ├── ui.js                # File cards, processFiles (batch/dedup), filmstrip
-│   ├── decoder.js           # decodeFile: wasm call, success/failure dispatch
-│   ├── cards.js             # Single owner of decode-result lists (add/query/reset)
-│   ├── card-success-ui.js   # Success card render + reRenderCards (language switch)
-│   ├── card-failure-ui.js   # Failed/unknown card render
-│   ├── share-actions.js     # Share box + shared report modal (backdrop bound once)
-│   ├── telemetry.js         # POST to the worker (payload-aware timeout)
-│   ├── viewer.js            # Fullscreen viewer, stage, toolbar, download
-│   ├── download.js          # Download All ZIP (entry-name sanitized + deduped)
-│   ├── i18n.js              # en/zh tables, EMBEDDED_EN fallback, setLang/applyTranslations
-│   ├── state.js             # S singleton + dedup Sets (decode lists live in cards.js)
-│   ├── utils.js             # formatSize, showToast, escapeHtml, bytesToHex/Base64
-│   ├── index.html           # Decoder page markup (viewToggleBtn has NO data-i18n — state-derived)
+├── ithmb-decoder/           # The decoder SPA (vanilla ES modules, no runtime deps)
+│   ├── app.ts               # Init, keyboard, dropzone wiring, languagechange handler
+│   ├── ui.ts                # File cards, processFiles (batch/dedup), filmstrip
+│   ├── decoder.ts           # decodeFile: wasm call, success/failure dispatch
+│   ├── cards.ts             # Single owner of decode-result lists (add/query/reset)
+│   ├── card-success-ui.ts   # Success card render + reRenderCards (language switch)
+│   ├── card-failure-ui.ts   # Failed/unknown card render
+│   ├── share-actions.ts     # Share box + shared report modal (backdrop bound once)
+│   ├── telemetry.ts         # POST to the worker (payload-aware timeout)
+│   ├── viewer.ts            # Fullscreen viewer, stage, toolbar, download
+│   ├── download.ts          # Download All ZIP (zipSync via fflate-bundle.js)
+│   ├── i18n.ts              # en/zh tables, EMBEDDED_EN fallback, setLang/applyTranslations
+│   ├── state.ts             # S singleton + dedup Sets (decode lists live in cards.ts)
+│   ├── utils.ts             # formatSize, showToast, escapeHtml, bytesToHex/Base64
+│   ├── input.ts             # Hold-repeat button helper (mouse/touch)
+│   ├── index.html           # Decoder page markup
+│   ├── styles.css           # All decoder styling
 │   ├── locales/{en,zh}.json # Translation tables (flat keys)
-│   ├── ithmb_wasm.js        # HAND-ADAPTED loader (streaming instantiation) — do NOT replace
-│   ├── ithmb_wasm_bg.js     # GENERATED wasm-bindgen glue (reformatted) — pairs with the loader
-│   └── ithmb_wasm_bg.wasm   # GENERATED decoder binary — copied from Ithmb-Codec
+│   ├── fonts/               # Self-hosted Inter woff2 (400/500/600/700)
+│   ├── ithmb_wasm.js        # HAND-ADAPTED loader (streaming instantiation), do NOT replace
+│   ├── ithmb_wasm_bg.js     # GENERATED wasm-bindgen glue, pairs with the loader
+│   ├── ithmb_wasm_bg.wasm   # GENERATED decoder binary, copied from Ithmb-Codec
+│   ├── ithmb_wasm.d.ts      # Typed wasm boundary (decode_ithmb, peek_prefix, init, ...)
+│   └── fflate-bundle.js     # GENERATED by build (bundled fflate for download.ts)
+├── nav.ts / footer.ts / theme.ts / lang-redirect.ts  # Classic-script globals, built to *.js
+├── globals.d.ts             # window.t / setLang / I18N declarations
+├── index.html               # Home page (og:title/og:description localized)
+├── 404.html                 # Custom 404
+├── guide/ enterprise/ privacy/   # Marketing pages (EN)
+├── zh/                      # Full Simplified-Chinese mirror (index, guide, enterprise, privacy, ithmb-decoder)
 ├── workers/telemetry/       # Cloudflare Worker (see its README for deploy)
-│   ├── src/worker.js        # POST / (single + batch), JSON /, HTML /dashboard (ADMIN_TOKEN)
-│   └── wrangler.toml        # KV binding; ADMIN_TOKEN is set in the CF dashboard, NEVER here
+│   ├── src/worker.ts        # POST / (single + batch), JSON /, HTML /dashboard (Bearer ADMIN_TOKEN)
+│   ├── test-worker.ts       # miniflare integration test (in-memory KV)
+│   ├── wrangler.toml        # KV binding; ADMIN_TOKEN/IP_HMAC_SECRET set in the CF dashboard, NEVER here
+│   └── README.md
 ├── scripts/
+│   ├── build.mts            # esbuild transform-only build + ?v= cache-busting
 │   ├── check-i18n.mts       # i18n integrity gate (key parity, raw literals, EMBEDDED_EN drift)
-│   ├── sync-embedded.mts    # Regenerates EMBEDDED_EN in i18n.js from en.json (run after locale edits)
-│   ├── check-wasm-drift.sh  # Verifies committed wasm imports are all handled by the loader glue
+│   ├── check-mirror-parity.mts  # en/zh mirror parity gate
+│   ├── sync-embedded.mts    # Regenerates EMBEDDED_EN in i18n.ts from en.json
+│   ├── check-wasm-drift.sh  # Committed wasm imports vs loader glue
+│   ├── check-local.sh       # Full local CI (npm run check:local)
+│   ├── check-parity.sh      # Local-vs-GitHub parity gate (exit 0/1/2)
+│   ├── check-parity.config  # Parity config (REPO_SLUG, WORKFLOWS, LOCAL_CMD)
+│   ├── test-check-parity.sh # Hermetic tests for the parity gate
 │   └── real-user-journey.mts # Manual smoke script
 ├── tests/                   # Playwright specs (see test scripts in package.json)
-├── index.html               # Home page (og:title/og:description localized via data-i18n-content)
-├── footer.js                # Shared footer — renders ONLY after window.t exists (no raw-key flash)
-└── package.json             # Zero runtime deps; dev deps: @playwright/test, acorn
+├── docs/                    # FEATURES.md, logo.svg, adr/, badges/, screenshots/
+├── .github/workflows/       # ci.yml (lint+test+secrets), pages-deploy.yml (GitHub Pages)
+├── .husky/pre-commit        # gitleaks + i18n gate + wasm-drift + 3 smoke specs
+├── tsconfig.json            # Browser sources (strict, noEmit)
+├── tsconfig.node.json       # tests/, scripts/, playwright.config.ts, test-worker.ts
+├── tsconfig.worker.json     # workers/telemetry/src/** (Cloudflare types)
+├── playwright.config.ts     # 3-browser projects; webServer owns http-server lifecycle
+├── package.json             # Zero runtime deps; dev deps: esbuild, typescript, tsx, playwright, ...
+├── CNAME _headers _redirects robots.txt sitemap.xml  # Static site config (Cloudflare Pages artifacts)
+├── MIGRATION.md             # JS to TS migration record
+├── Makefile mise.toml .editorconfig .commitlintrc.json .pre-commit-config.yaml  # Tooling config
+├── .sops.yaml .env.encrypted  # SOPS-encrypted env (never edit plaintext)
+└── CHANGELOG.md README.md CREDITS.md LICENSE
 ```
 
 ## Quick Start (build / test / lint)
 
 ```bash
 npm ci                                  # install dev deps
-npm run lint:modules                    # acorn ES-module parse of every ithmb-decoder/*.js
-npm run lint:i18n                       # i18n integrity gate (must pass after any locale/i18n change)
-bash scripts/check-wasm-drift.sh        # committed wasm vs loader glue (run after wasm updates)
+npm run build                           # esbuild: .ts to .js in place + ?v= cache-busting
+npm run typecheck                       # tsc --noEmit across browser + node + worker tsconfigs
+npm run lint:modules                    # typecheck + build (the module gate)
+npm run lint:i18n                       # i18n integrity + en/zh mirror parity
+bash scripts/check-wasm-drift.sh        # committed wasm vs loader glue (after wasm updates)
 
-# Local dev server (serves /ithmb-decoder/ + pages)
-python3 -m http.server 8899
+# Local dev server (serves the whole site)
+npm run serve                           # http-server on :8899
 
-# Tests — ALWAYS point BASE_URL at the local server, never the live site
-BASE_URL=http://localhost:8899 npm run test:quick      # 108 tests, chromium, ~17s
-BASE_URL=http://localhost:8899 npm run test:full       # all projects — NOTE: webkit is NOT
-                                                       # installable in this env; chromium+firefox pass
+# Tests: ALWAYS point BASE_URL at the local server, never the live site
+BASE_URL=http://localhost:8899 npm run test:quick   # fast subset, chromium only
+npm test                                # all specs, all 3 browsers (playwright test)
+npm run test:full                       # same as npm test, explicit
+npm run test:worker                     # telemetry worker miniflare integration test
+npm run check:local                     # the FULL local CI (audit, typecheck, build+determinism, i18n, wasm, worker, all browsers, parity tests)
+bash scripts/check-parity.sh            # local-vs-GitHub parity gate (exit 0/1/2)
 ```
 
-**After editing `locales/*.json`:** run `npm run sync:i18n` (regenerates `EMBEDDED_EN` in i18n.js) then `npm run lint:i18n`. Committing a locale edit without the sync fails the gate.
+**After editing `locales/*.json`:** run `npm run sync:i18n` (regenerates `EMBEDDED_EN` in i18n.ts) then `npm run lint:i18n`. Committing a locale edit without the sync fails the gate.
 
-## Pre-commit (wire once per clone)
+## Pre-commit
 
-The repo ships a `.husky/pre-commit` (i18n gate + wasm drift + 3 smoke specs against a LOCAL server — `BASE_URL` is forced to `localhost` so it never tests production). It is a plain script, NOT the husky package. Activate it:
-
-```bash
-git config core.hooksPath .husky
-```
-
-(A fresh clone does NOT run it until this is set — this is a known gap, kept manual to stay dependency-free.)
+The repo ships `.husky/pre-commit` (already wired via `core.hooksPath = .husky`). It runs: gitleaks secret scan (if installed), the i18n integrity gate, the wasm-drift check, and 3 Playwright smoke specs against a LOCAL server (`BASE_URL` is forced to `localhost` so it never tests production). A fresh clone needs `git config core.hooksPath .husky` to activate it.
 
 ## Dev / Public Dual-Repo Workflow (CRITICAL)
-
-**Canonical standard: `docs/standards/RELEASE_WORKFLOW.md` in the Rust repo** (https://github.com/B67687/Ithmb-Codec/blob/main/docs/standards/RELEASE_WORKFLOW.md) — this section is a summary; the standard is the source of truth.
 
 There are TWO remotes and they are NOT interchangeable:
 
 ```
-origin  → https://github.com/B67687/Ithmb-Codec-Web-Dev   (PRIVATE — editing repo, CI billing-blocked)
-public  → https://github.com/B67687/Ithmb-Codec-Web       (PUBLIC — shipped repo, FREE CI, live site)
+origin  → https://github.com/B67687/Ithmb-Codec-Web-Dev   (PRIVATE, editing repo, CI runs here)
+public  → https://github.com/B67687/Ithmb-Codec-Web       (PUBLIC, shipped repo, append-only)
 ```
 
 - **All work happens on `main` (dev) first** → push to `origin/main`.
+- **CI runs on the DEV repo** (`.github/workflows/ci.yml`): lint (typecheck + build + determinism via `git diff --exit-code`, i18n, wasm-drift), test (chromium/firefox/webkit matrix), and a gitleaks secrets job. The public repo does NOT run CI.
 - **Squash-work branch** (`squash-work`, tracks `public/main`) is where public commits are built: `git cherry-pick -n <dev-commits>` into 1-3 **thematic** squashed commits, verify `git diff --quiet <dev-head> squash-work` shows identical trees, then `git push public squash-work:main`.
-- **Public CI is the gate.** The dev repo's Actions are blocked by the account's paid-minute billing state (private repos need paid minutes); the PUBLIC repo runs the same workflows for free. A red dev CI is cosmetic — check the public repo's run.
 - Version bumps + CHANGELOG entries are added on dev and ride the squash.
 
 ## WASM Regeneration (the fragile part)
@@ -99,40 +127,54 @@ wasm-pack build --target web --release
 cp pkg/ithmb_wasm_bg.wasm ../../Ithmb-Codec-Web/ithmb-decoder/ithmb_wasm_bg.wasm
 ```
 
-**Copy ONLY `ithmb_wasm_bg.wasm`.** `ithmb_wasm.js` is hand-adapted (custom streaming loader, `__wbindgen_start` call) and `ithmb_wasm_bg.js` is the reformatted glue — replacing them with stock wasm-pack output breaks the app. **If the rebuild adds a wasm import the glue doesn't define, the decoder fails at runtime** — `scripts/check-wasm-drift.sh` detects exactly this (it compares the wasm's import list against the glue). Example of a forbidden import: `console_error_panic_hook`'s `__wbg_new_...` (js_sys::Error glue) — a panic hook using it broke the loader once; don't reintroduce it.
+**Copy ONLY `ithmb_wasm_bg.wasm`.** `ithmb_wasm.js` is hand-adapted (custom streaming loader, `__wbindgen_start` call) and `ithmb_wasm_bg.js` is the reformatted glue. Replacing them with stock wasm-pack output breaks the app. **If the rebuild adds a wasm import the glue doesn't define, the decoder fails at runtime**; `scripts/check-wasm-drift.sh` detects exactly this (it compares the wasm's import list against the glue). Example of a forbidden import: `console_error_panic_hook`'s `__wbg_new_...` (js_sys::Error glue). A panic hook using it broke the loader once; don't reintroduce it.
 
 ## Deploy
 
-- **Site (ithmb-codec.dev):** Cloudflare Pages, connected to the PUBLIC repo's `main` branch. Push to public → auto-deploy (~1-2 min). No workflow file involved.
-- **Telemetry worker:** `workers/telemetry/` — see `workers/telemetry/README.md` for `wrangler deploy`, secrets (`ADMIN_TOKEN` set in the CF dashboard, never committed), and the KV/rate-limit/record schema. Local testing: `npm run test:worker` (miniflare integration test — in-memory KV, the canonical path); `wrangler dev` for manual probing.
+- **Site (ithmb-codec.dev):** GitHub Pages via `.github/workflows/pages-deploy.yml` (actions/deploy-pages). Runs on push to `main` in each repo. The `-Dev` repo deploys to its default `github.io` preview (the workflow strips `CNAME`); the public repo claims the custom domain. `_headers`/`_redirects`/`robots.txt`/`sitemap.xml`/`CNAME` are Cloudflare Pages artifacts retained at the root.
+- **Telemetry worker:** `workers/telemetry/`; see `workers/telemetry/README.md` for `wrangler deploy`, secrets (`ADMIN_TOKEN`, `IP_HMAC_SECRET` set in the CF dashboard, never committed), and the KV/rate-limit/record schema. Local testing: `npm run test:worker` (miniflare integration test, in-memory KV, the canonical path); `wrangler dev` for manual probing.
 
 ## Security Posture
 
-- **Telemetry privacy:** fingerprints are SHA-256(IP:UA) truncated to 8 bytes; per-IP rate/record keys hash the IP alone — the raw IP is never stored. `full_file` (opt-in, ≤8 MiB base64) is validated and stored under separate `fullfile_` keys; records are slim.
+- **Telemetry privacy:** the raw IP is never stored in the clear. Per-IP keys use an HMAC-SHA256 keyed pseudonym (server secret `IP_HMAC_SECRET`, falling back to `ADMIN_TOKEN`); the 128-bit truncation keeps cross-IP collisions negligible. `full_file` (opt-in, ≤8 MiB base64) is validated and stored under separate `fullfile_` keys; records are slim.
 - **Worker hardening (2026-08 audit, all fixed):** stored-XSS blocked (every dashboard field escaped + CSP `default-src 'none'` + nosniff), race-free list-based rate/record caps, byte-accurate body cap, Bearer-only constant-time dashboard auth (`?token=` removed).
-- **`ADMIN_TOKEN` is dashboard-managed** — never commit it, never put it in `wrangler.toml`, never reference it in tests.
-- Both repos' histories are secrets-clean; a gitleaks job runs in CI.
+- **`ADMIN_TOKEN` / `IP_HMAC_SECRET` are dashboard-managed**; never commit them, never put them in `wrangler.toml`, never reference them in tests.
+- Both repos' histories are secrets-clean; a gitleaks job runs in CI and in the pre-commit hook.
 
 ## Conventions
 
-- **Zero runtime dependencies** — vanilla ES modules only. Adding a runtime dep requires strong justification.
+- **Zero runtime dependencies**; vanilla ES modules only. `fflate` (the one npm dep the browser module graph needs) is bundled into `ithmb-decoder/fflate-bundle.js` at build time. Adding a runtime dep requires strong justification.
 - `data-i18n` / `data-i18n-html` / `data-i18n-aria-label` / `data-i18n-content` for translatable surface; `t(key, params)` params are HTML-escaped.
 - Every innerHTML sink escapes its input (`escapeHtml`) or interpolates only numbers/static i18n/hex.
-- **Bugfix discipline:** fix minimally; the wasm loader + glue are a hand-adapted contract — never bulk-replace them.
+- **Bugfix discipline:** fix minimally; the wasm loader + glue are a hand-adapted contract, never bulk-replace them.
 - Do NOT add `Co-authored-by`/attribution lines to commits.
 
 ## Release Process (checklist)
 
-1. Bump `package.json` version + add a CHANGELOG entry (`## X.Y.Z — date`, Keep-a-Changelog style).
-2. Commit to dev `main`, run the full local gate (`lint:modules` + `lint:i18n` + `test:quick`).
-3. Push `origin/main` (dev).
+1. Bump `package.json` version + add a CHANGELOG entry (`## X.Y.Z - date`, Keep-a-Changelog style).
+2. Commit to dev `main`, run the full local gate (`npm run check:local`, or at least `lint:modules` + `lint:i18n` + `test:quick`).
+3. Push `origin/main` (dev); CI runs here and is the source of truth.
 4. Squash thematically onto `squash-work`, verify trees identical, push `public squash-work:main`.
-5. Cloudflare Pages auto-deploys; verify the live site (og tags, decoder load, no console errors).
+5. GitHub Pages auto-deploys; verify the live site (og tags, decoder load, no console errors).
+
+## Do Not Touch / Generated Paths
+
+- `node_modules/`: install artifacts, never edit or commit.
+- `test-results/`: Playwright output, gitignored.
+- `preview/`: local preview scratch, gitignored.
+- `.omo/`: agent workspace (ledger, plans, project-context). **NEVER committed** (gitignored).
+- `.wrangler/`: local wrangler state, gitignored.
+- `.codegraph/`: codegraph index symlink, gitignored.
+- Generated `.js` build outputs: `nav.js`, `footer.js`, `theme.js`, `lang-redirect.js`, `ithmb-decoder/*.js` (except the wasm glue) and `ithmb-decoder/fflate-bundle.js` are produced by `npm run build` and gitignored. Edit the `.ts` source, rebuild, and commit the `.ts`.
+- `.env.encrypted`: SOPS-encrypted secrets (`.sops.yaml`). Never edit plaintext; decrypt/re-encrypt with `sops`.
+- `target/` and `dist/` do NOT exist in this repo. There is no Rust build here, and the build writes in place (no `dist/` output).
 
 ## What NOT to Do
 
-- Do NOT commit to `squash-work` directly (it's the public mirror — build it via cherry-pick from dev).
+- Do NOT commit to `squash-work` directly (it's the public mirror; build it via cherry-pick from dev).
 - Do NOT edit `locales/*.json` without running `sync:i18n`.
+- Do NOT edit generated `.js` files; edit the `.ts` source and run `npm run build`.
 - Do NOT copy stock wasm-pack output over `ithmb_wasm.js` / `ithmb_wasm_bg.js`.
 - Do NOT add a wasm import that the loader glue doesn't provide (check-wasm-drift.sh enforces).
-- Do NOT run Playwright against `https://ithmb-codec.dev` during local dev/tests — always set `BASE_URL`.
+- Do NOT run Playwright against `https://ithmb-codec.dev` during local dev/tests; always set `BASE_URL`.
+- Do NOT commit `.omo/` or any secrets.

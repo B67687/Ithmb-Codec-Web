@@ -4,6 +4,7 @@
 
 # ITHMB Codec Web
 
+[![CI](https://github.com/B67687/Ithmb-Codec-Web-Dev/actions/workflows/ci.yml/badge.svg)](https://github.com/B67687/Ithmb-Codec-Web-Dev/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Built with WebAssembly](https://img.shields.io/badge/Built%20with-WebAssembly-654FF0?logo=webassembly&logoColor=white)](https://webassembly.org/)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/thumbnami)
@@ -12,13 +13,16 @@ Free, private, browser-based .ithmb file decoder.
 
 [**Try it live → ithmb-codec.dev**](https://ithmb-codec.dev/ithmb-decoder/)  |  [How to open .ithmb files (guide)](https://ithmb-codec.dev/guide/how-to-open-ithmb-files)
 
-![ITHMB Decoder screenshot](thumb-decoder-preview.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/decoder-ui-dark.svg">
+  <img src="docs/screenshots/decoder-ui.svg" alt="ITHMB Decoder screenshot">
+</picture>
 
-<sub>Built with AI assistance — see <a href="./docs/CREDITS.md">CREDITS.md</a></sub>
+<sub>Built with AI assistance — see <a href="./CREDITS.md">CREDITS.md</a></sub>
 <br>
-<a href="./docs/CREDITS.md"><img src="https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/badges/deepseek.svg" alt="DeepSeek"></a>
-<a href="./docs/CREDITS.md"><img src="https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/badges/opencode.svg" alt="OpenCode"></a>
-<a href="./docs/CREDITS.md"><img src="https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/badges/omo.svg" alt="Oh My OpenAgent"></a>
+<a href="./CREDITS.md"><img src="docs/badges/deepseek.svg" alt="DeepSeek"></a>
+<a href="./CREDITS.md"><img src="docs/badges/opencode.svg" alt="OpenCode"></a>
+<a href="./CREDITS.md"><img src="docs/badges/omo.svg" alt="Oh My OpenAgent"></a>
 
 <br>
 </div>
@@ -33,6 +37,15 @@ ITHMB files are Apple iThumbnail images found in iPod Classic, iPod Nano, and ot
 - **Batch decode.** Decode multiple .ithmb files at once.
 - **Open source.** MIT licensed. Fork it, audit it, improve it.
 
+## Quick Start
+
+```bash
+npm install
+npm run build   # compiles the .ts sources (nav, footer, theme, lang-redirect)
+npm run serve   # serves the site at http://localhost:8899
+```
+
+Open http://localhost:8899 and drag a .ithmb file onto the decoder page.
 
 ## How to use
 
@@ -49,3 +62,7 @@ Enjoying the tool? [Buy me a coffee](https://buymeacoffee.com/thumbnami).
 ## Built with
 
 Rust, WebAssembly, and TypeScript.
+
+## License
+
+MIT — see [LICENSE](LICENSE). Free to fork, audit, and improve.
