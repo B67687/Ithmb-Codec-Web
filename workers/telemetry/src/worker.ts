@@ -468,7 +468,15 @@ export default {
         });
       }
 
-      const body = JSON.parse(bodyText) as TelemetryBody;
+      let body: TelemetryBody;
+      try {
+        body = JSON.parse(bodyText) as TelemetryBody;
+      } catch {
+        return new Response(JSON.stringify({ error: "invalid JSON" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
       const fp = await fingerprint(request, env);
       const ip = request.headers.get("CF-Connecting-IP") || "unknown";
       // Per-IP keys use a hash of the IP alone — the raw IP is never stored.
