@@ -30,7 +30,7 @@ interface StoredRecord {
 }
 
 // Shape of a POST body. All fields optional — the worker validates each one
-// defensively before it is stored (single-record and batch paths).
+// defensively before it is stored.
 interface TelemetryEntry {
   prefix?: number;
   status?: string;
@@ -44,12 +44,7 @@ interface TelemetryEntry {
   extension?: string;
 }
 
-interface TelemetryBatch {
-  batch: boolean;
-  entries: TelemetryEntry[];
-}
-
-type TelemetryBody = TelemetryEntry & Partial<TelemetryBatch>;
+type TelemetryBody = TelemetryEntry;
 
 // 13 MB body cap: allows a full 8 MiB file (base64 ~10.67 MB) plus JSON
 // wrapper. Free-plan CPU: JSON.parse of the largest body is ~5 ms (< 10 ms limit).
@@ -520,97 +515,6 @@ export default {
       await env.FORMAT_TELEMETRY.put(`${ipRatePrefix}${rateUuid}`, "1", {
         expirationTtl: 86400 * 2,
       });
-      // ---- Batch submission (Send All) ----
-      if (body.batch === true && Array.isArray(body.entries)) {
-        if (body.entries.length > 500) {
-          return new Response(JSON.stringify({ error: "too many entries" }), {
-            status: 400,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-          });
-        }
-        // Enforce the per-fp/day + per-ip/day record caps for the whole batch
-        // from list counts (race-free; KV has no atomic counters).
-        const [baseStored, baseIpStored] = await Promise.all([
-          countKeys(env, recordPrefix, MAX_RECORDS_PER_FP_PER_DAY),
-          countKeys(env, ipRecordPrefix, MAX_RECORDS_PER_IP_PER_DAY),
-        ]);
-        let storedCount = baseStored;
-        let ipStoredCount = baseIpStored;
-        let stored = 0;
-        for (const entry of body.entries) {
-          const ePrefix = entry.prefix;
-          if (typeof ePrefix !== "number" || ePrefix < 0 || ePrefix > 99999)
-            continue;
-          const eStatus = VALID_STATUSES.has(entry.status ?? "")
-            ? entry.status
-            : "success";
-          const eDedupKey = `dedup:${fp}:${ePrefix}:${eStatus}:${entry.full_file ? "f" : "h"}`;
-          const eExisting = await env.FORMAT_TELEMETRY.get(eDedupKey);
-          if (eExisting) continue;
-          if (storedCount >= MAX_RECORDS_PER_FP_PER_DAY) continue;
-          if (ipStoredCount >= MAX_RECORDS_PER_IP_PER_DAY) continue;
-          const eFullFile =
-            typeof entry.full_file === "string" &&
-            eStatus !== "success" &&
-            entry.full_file.length <= FULL_FILE_B64_MAX &&
-            validBase64Payload(entry.full_file)
-              ? entry.full_file
-              : null;
-          const uuid = crypto.randomUUID();
-          const eRecord = {
-            prefix: ePrefix,
-            width:
-              typeof entry.width === "number" && entry.width > 0
-                ? entry.width
-                : null,
-            height:
-              typeof entry.height === "number" && entry.height > 0
-                ? entry.height
-                : null,
-            fileSize:
-              typeof entry.fileSize === "number" && entry.fileSize > 0
-                ? entry.fileSize
-                : null,
-            header:
-              typeof entry.header === "string" &&
-              entry.header.length <= 200 &&
-              /^[0-9a-fA-F]+$/.test(entry.header)
-                ? entry.header
-                : null,
-            hasFullFile: eFullFile !== null,
-            fp,
-            timestamp: new Date().toISOString(),
-          };
-          await env.FORMAT_TELEMETRY.put(
-            `fmt_${ePrefix}_${uuid}`,
-            JSON.stringify(eRecord),
-            { expirationTtl: 86400 * 365 },
-          );
-          if (eFullFile !== null) {
-            await env.FORMAT_TELEMETRY.put(`fullfile_${uuid}`, eFullFile, {
-              expirationTtl: 86400 * 365,
-            });
-          }
-          await env.FORMAT_TELEMETRY.put(eDedupKey, "1", {
-            expirationTtl: 86400,
-          });
-          // Per-record cap markers (day-scoped, 2-day TTL).
-          await env.FORMAT_TELEMETRY.put(`${recordPrefix}${uuid}`, "1", {
-            expirationTtl: 86400 * 2,
-          });
-          await env.FORMAT_TELEMETRY.put(`${ipRecordPrefix}${uuid}`, "1", {
-            expirationTtl: 86400 * 2,
-          });
-          stored++;
-          storedCount++;
-          ipStoredCount++;
-        }
-        return new Response(JSON.stringify({ ok: true, stored }), {
-          status: 200,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        });
-      }
-
       // ---- Validate ----
       const prefix = body.prefix;
       if (typeof prefix !== "number" || prefix < 0 || prefix > 99999) {
