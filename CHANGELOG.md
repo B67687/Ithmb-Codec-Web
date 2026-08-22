@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+### Added
+- **Scroll to top on page refresh**: page always starts at top when loaded or refreshed (`history.scrollRestoration = "manual"`).
+
+### Changed
+- **Worker fetch handler split**: monolithic 757-line fetch handler split into focused functions (`handleOptions`, `handleDashboardGet`, `handlePostIngestion`, `validateEntry`, `persistRecord`).
+- **Filmstrip module extracted** from `viewer.ts` (69 LOC).
+- **Report modal extracted** from `share-actions.ts` (183 LOC).
+- **Shared `tsconfig.base.json`** extracted for consistent TypeScript strictness.
+
+### Fixed
+- **Telemetry worker**: returns 400 (not 500) for malformed JSON in POST handler.
+- **Test fixtures**: corrupt-fixture test writes to tmpdir instead of checked-in path.
+
 ## [1.4.17] - 2026-08-13
 
 ### Added
