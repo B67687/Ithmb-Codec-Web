@@ -23,6 +23,7 @@
     "sync:i18n": "tsx scripts/sync-embedded.mts",
     "check:deps": "npm audit && npm outdated --long || true",
     "test:worker": "tsx workers/telemetry/test-worker.ts",
+    "test:journey": "tsx scripts/real-user-journey.mts",
     "check:local": "bash scripts/check-local.sh"
   },
   "homepage": "https://ithmb-codec.dev",
