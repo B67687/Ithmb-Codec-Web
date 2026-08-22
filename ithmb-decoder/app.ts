@@ -14,6 +14,12 @@ import { setupHoldRepeat } from "./input.js";
 import { t } from "./i18n.js";
 import { reRenderCards } from "./card-success-ui.js";
 
+// Always start at top on (re)load
+if ("scrollRestoration" in history) {
+  history.scrollRestoration = "manual";
+}
+window.scrollTo(0, 0);
+
 // DOM references
 const dropzone = document.getElementById("dropzone")!;
 const fileList = document.getElementById("file-list")!;
@@ -39,9 +45,11 @@ function clearDragState(): void {
 }
 // Full-page drop overlay (lastTarget caching pattern from production apps)
 document.addEventListener("dragover", (e) => {
+  console.log("[drag] dragover", e.dataTransfer?.types);
   if (e.dataTransfer!.types.includes("Files")) e.preventDefault();
 });
 document.addEventListener("dragenter", (e) => {
+  console.log("[drag] dragenter", e.dataTransfer?.types, "Files?", e.dataTransfer?.types.includes("Files"));
   if (!e.dataTransfer!.types.includes("Files")) return;
   S.lastTarget = e.target;
   overlay.classList.add("active");
@@ -54,6 +62,7 @@ document.addEventListener("dragleave", (e) => {
   }
 });
 document.addEventListener("drop", (e) => {
+  console.log("[drag] drop", e.dataTransfer?.files?.length, "files");
   e.preventDefault();
   clearDragState();
   if (

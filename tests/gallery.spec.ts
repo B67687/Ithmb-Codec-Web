@@ -3,6 +3,7 @@
  * Tests viewer container, filmstrip thumbnails, navigation.
  */
 import { test, expect } from "@playwright/test";
+import fs from "node:fs";
 import path from "node:path";
 
 const PAGE_URL = "/ithmb-decoder/";
@@ -305,9 +306,34 @@ test.describe("Regression: Viewer pixel content", () => {
     expect(stillHasCanvas).toBe(true);
   });
 
-  // test("failed decode shows placeholder in viewer") — All 8 test fixtures
-  // decode successfully. This gap requires a corrupt .ithmb fixture to test.
-  //
+  test("failed decode shows placeholder in viewer", async ({ page }) => {
+    const corruptFile = path.join(FIXTURES, "corrupt-gallery.ithmb");
+    fs.writeFileSync(
+      corruptFile,
+      fs.readFileSync(path.join(FIXTURES, "test1.ithmb")).subarray(0, 100),
+    );
+    try {
+      const fc = page.waitForEvent("filechooser");
+      await page.locator("#dropzone").click();
+      const fileChooser = await fc;
+      await fileChooser.setFiles([corruptFile]);
+
+      // Card appears with share box
+      await expect(page.locator(".file-card .share-box")).toBeVisible({
+        timeout: 10000,
+      });
+
+      // Viewer auto-opens and shows failed placeholder
+      await expect(
+        page.locator("#viewer-stage .viewer-placeholder.failed"),
+      ).toBeVisible();
+      await expect(
+        page.locator("#viewer-stage .placeholder-title"),
+      ).toContainText("Decode Failed");
+    } finally {
+      fs.rmSync(corruptFile, { force: true });
+    }
+  });
   test("filmstrip shows left-aligned thumbnails", async ({ page }) => {
     const justifyContent = await page.evaluate(() => {
       const fs = document.getElementById("viewer-filmstrip");

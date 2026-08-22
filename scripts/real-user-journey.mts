@@ -2,6 +2,7 @@ import { chromium, firefox } from "playwright";
 import type { BrowserType, Browser } from "playwright";
 import { join } from "node:path";
 import fs from "node:fs";
+import os from "node:os";
 
 // REAL-USER JOURNEY TEST — simulates how an actual person uses the site.
 const FIXTURES = join(import.meta.dirname, "..", "tests", "fixtures");
@@ -75,17 +76,22 @@ async function run(browserType: BrowserType<Browser>, label: string) {
   const zhFooter = await page.evaluate(() => document.querySelector("footer")?.textContent.slice(0, 40));
   check("footer flips to zh", zhFooter?.includes("奶茶") ?? false, zhFooter);
 
-  // 6. Corrupt file -> failure card with share options
-  const src = fs.readFileSync(`${FIXTURES}/test1.ithmb`);
-  fs.writeFileSync(`${FIXTURES}/corrupt-share.ithmb`, src.subarray(0, 100));
-  const [chooser2] = await Promise.all([page.waitForEvent("filechooser", { timeout: 15000 }), page.locator("#dropzone").click()]);
-  await chooser2.setFiles([`${FIXTURES}/corrupt-share.ithmb`]);
-  await page.waitForTimeout(3000);
-  const shareBtns = await page.evaluate(() => {
-    const box = document.querySelector(".share-box");
-    return box ? box.textContent.includes("分享") : false;
-  });
-  check("failure card shows zh share options", shareBtns);
+  const tmpDir = os.tmpdir();
+  const corruptPath = join(tmpDir, "corrupt-share.ithmb");
+  try {
+    const src = fs.readFileSync(`${FIXTURES}/test1.ithmb`);
+    fs.writeFileSync(corruptPath, src.subarray(0, 100));
+    const [chooser2] = await Promise.all([page.waitForEvent("filechooser", { timeout: 15000 }), page.locator("#dropzone").click()]);
+    await chooser2.setFiles([corruptPath]);
+    await page.waitForTimeout(3000);
+    const shareBtns = await page.evaluate(() => {
+      const box = document.querySelector(".share-box");
+      return box ? box.textContent.includes("分享") : false;
+    });
+    check("failure card shows zh share options", shareBtns);
+  } finally {
+    fs.rmSync(corruptPath, { force: true });
+  }
 
   // 7. Report form: open, select issue, stays open on lang switch
   await page.locator(".file-card [data-report]").first().click();
