@@ -1,6 +1,7 @@
 import { addFailure } from "./cards.js";
 import { escapeHtml } from "./utils.js";
-import { addFilmstripThumb, refreshViewerIfCurrent } from "./viewer.js";
+import { refreshViewerIfCurrent } from "./viewer.js";
+import { addFilmstripThumb } from "./filmstrip.js";
 import { createShareBox } from "./share-actions.js";
 import { t } from "./i18n.js";
 

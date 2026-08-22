@@ -1,9 +1,11 @@
 import { S, KNOWN_PREFIXES } from "./state.js";
 import { addSuccess, findSuccess, successCards, failedCards } from "./cards.js";
 import { formatLabels, extMap, formatSize } from "./utils.js";
-import { addFilmstripThumb, refreshViewerIfCurrent } from "./viewer.js";
+import { refreshViewerIfCurrent } from "./viewer.js";
+import { addFilmstripThumb } from "./filmstrip.js";
 import { get_encoding_name } from "./ithmb_wasm.js";
-import { createReportLink, createShareBox } from "./share-actions.js";
+import { createShareBox } from "./share-actions.js";
+import { createReportLink } from "./report-modal.js";
 import { t } from "./i18n.js";
 
 export function renderSuccessCard(

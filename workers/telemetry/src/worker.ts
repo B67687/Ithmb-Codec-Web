@@ -24,6 +24,9 @@ interface StoredRecord {
   issueDetail?: string;
   extension?: string;
   hasFullFile?: boolean;
+  // Legacy compat: old KV records (pre-hasFullFile) stored a boolean flag.
+  // The dashboard reads both fullFile and hasFullFile so legacy records
+  // with 365-day TTL are counted correctly. Remove after Aug 2027.
   fullFile?: boolean;
   fp?: string;
   timestamp?: string;
@@ -295,6 +298,405 @@ tr.warn-row{background:#fffde7}
 </html>`;
 }
 
+// ---- Extracted handler functions ----
+
+interface ValidatedEntry {
+  prefix: number;
+  status: string;
+  issue: string | null;
+  issueDetail: string | null;
+  width: number | null;
+  height: number | null;
+  header: string | null;
+  fullFile: string | null;
+  extension: string | null;
+  hasFullFileInput: boolean;
+}
+
+// ---- CORS preflight ----
+function handleOptions(corsHeaders: Record<string, string>): Response {
+  return new Response(null, { status: 204, headers: corsHeaders });
+}
+
+// ---- Dashboard HTML (GET) ----
+async function handleDashboardGet(
+  env: Env,
+  request: Request,
+  corsHeaders: Record<string, string>,
+): Promise<Response> {
+  // Dashboard auth: Authorization: Bearer <ADMIN_TOKEN> ONLY. The legacy
+  // ?token=<ADMIN_TOKEN> query path is gone — a bearer credential must
+  // never ride in URLs (browser history, access logs, Referer) (CWE-200).
+  const authHeader = request.headers.get("Authorization") || "";
+  const token = authHeader.startsWith("Bearer ")
+    ? authHeader.slice(7)
+    : "";
+  if (token && (await tokensEqual(token, env.ADMIN_TOKEN))) {
+    // ---- HTML dashboard ----
+    const allRecords: StoredRecord[] = [];
+    let cursor: string | null | undefined;
+    let scanned = 0;
+    // Bounded scan: at most 5000 records. Records are slim (full-file
+    // payloads live under their own `fullfile_` key), so this is bounded
+    // memory/CPU work no matter how large the store grows (CWE-400).
+    const MAX_SCAN = 5000;
+    do {
+      const list = await env.FORMAT_TELEMETRY.list({
+        prefix: "fmt_",
+        cursor,
+        limit: 1000,
+      });
+      for (const key of list.keys) {
+        if (scanned >= MAX_SCAN) break;
+        const value = await env.FORMAT_TELEMETRY.get(key.name);
+        if (value) {
+          try {
+            const record = JSON.parse(value) as StoredRecord;
+            allRecords.push(record);
+          } catch (err) {
+            // Unparseable record (legacy write or corrupt KV value). Skip
+            // it — the dashboard is best-effort over the store — but surface
+            // the key in Workers Logs so a systematic corruption is
+            // detectable instead of silently vanishing.
+            console.error(
+              `telemetry: skipping unparseable record at key "${key.name}": ${
+                err instanceof Error ? err.message : String(err)
+              }`,
+            );
+          }
+        }
+        scanned++;
+      }
+      cursor = list.list_complete ? undefined : list.cursor;
+    } while (cursor && scanned < MAX_SCAN);
+
+    // Compute stats
+    const total = allRecords.length;
+    const prefixCounts: Record<string, number> = {};
+    const statuses: Record<string, number> = {};
+    let fullFileCount = 0;
+    for (const r of allRecords) {
+      const p = String(r.prefix);
+      prefixCounts[p] = (prefixCounts[p] || 0) + 1;
+      const s = r.status || "unknown";
+      statuses[s] = (statuses[s] || 0) + 1;
+      if (r.fullFile || r.hasFullFile) fullFileCount++;
+    }
+    const uniquePrefixes = Object.keys(prefixCounts).length;
+    const unknownFailed =
+      (statuses["unknown"] || 0) + (statuses["known-failed"] || 0);
+
+    // Sort prefix counts descending
+    const prefixEntries = Object.entries(prefixCounts).sort(
+      (a, b) => b[1] - a[1],
+    );
+
+    // Recent 50 sorted by timestamp descending
+    const recent50 = allRecords
+      .filter(
+        (r): r is StoredRecord & { timestamp: string } =>
+          Boolean(r.timestamp),
+      )
+      .sort(
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+      )
+      .slice(0, 50);
+
+    const html = buildDashboardHtml({
+      total,
+      uniquePrefixes,
+      unknownFailed,
+      fullFileCount,
+      prefixEntries,
+      recent50,
+    });
+
+    return new Response(html, {
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+        // Defense-in-depth for the stored-XSS fix: even if an unescaped
+        // field ever slips through, no script can run and the admin
+        // page cannot be framed (token exfiltration / clickjacking).
+        "Content-Security-Policy":
+          "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'",
+        "X-Content-Type-Options": "nosniff",
+        // The token arrives via an Authorization header; these stop it
+        // leaking through the browser cache or a Referer (CWE-200).
+        "Cache-Control": "no-store",
+        "Referrer-Policy": "no-referrer",
+        ...corsHeaders,
+      },
+    });
+  }
+
+  // Every other GET — including the old public JSON counts endpoint — is
+  // private: nothing in the app reads counts (the only telemetry call in
+  // ithmb-decoder/*.ts is the POST submit), and the worker promises
+  // "No public exposure". Without a valid bearer token everything else
+  // returns 401 (CWE-200: bearer never rides in URLs).
+  return new Response(
+    JSON.stringify({ ok: false, error: "unauthorized" }),
+    {
+      status: 401,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    },
+  );
+}
+
+// ---- Field validation ----
+function validateEntry(body: TelemetryBody): ValidatedEntry {
+  const status = VALID_STATUSES.has(body.status ?? "")
+    ? body.status
+    : "success";
+  const issue =
+    typeof body.issue === "string" &&
+    body.issue.length <= 40 &&
+    KNOWN_ISSUES.has(body.issue)
+      ? body.issue
+      : null;
+  const issueDetail =
+    typeof body.issue_detail === "string" && body.issue_detail.length <= 200
+      ? body.issue_detail
+      : null;
+  const width =
+    typeof body.width === "number" && body.width > 0 ? body.width : null;
+  const height =
+    typeof body.height === "number" && body.height > 0 ? body.height : null;
+  // Header must be a hex signature (client sends bytesToHex(bytes, "")).
+  // Non-hex values are rejected (stored as null) so a "<script>" payload
+  // can never be persisted and later interpolated into the dashboard.
+  const header =
+    typeof body.header === "string" &&
+    body.header.length <= 200 &&
+    /^[0-9a-fA-F]+$/.test(body.header)
+      ? body.header
+      : null;
+  const fullFile =
+    typeof body.full_file === "string" &&
+    body.full_file.length <= FULL_FILE_B64_MAX &&
+    status !== "success" &&
+    // non-success: known-failed (decoder bug) OR unknown (potential new
+    // format) — the full file is where the research value is
+    validBase64Payload(body.full_file)
+      ? body.full_file
+      : null;
+  const extension =
+    body.extension === "ipm" || body.extension === "ithmb"
+      ? body.extension
+      : null;
+
+  return {
+    prefix: body.prefix as number,
+    status: status as string,
+    issue,
+    issueDetail,
+    width,
+    height,
+    header,
+    fullFile,
+    extension,
+    // Track whether the raw input included a full_file (even if validation
+    // rejected it) so the dedup key matches the original behavior.
+    hasFullFileInput: Boolean(body.full_file),
+  };
+}
+
+// ---- Persist: dedup check + record count cap + KV store ----
+async function persistRecord(
+  env: Env,
+  data: ValidatedEntry,
+  fp: string,
+  ipHash: string,
+  corsHeaders: Record<string, string>,
+): Promise<Response> {
+  // ---- Deduplication ----
+  // Key includes whether a full file was attached so a header share can
+  // be "upgraded" to a full-file share within the same 24h window.
+  const dedupKey = `dedup:${fp}:${data.prefix}:${data.status}:${data.hasFullFileInput ? "f" : "h"}`;
+  const existing = await env.FORMAT_TELEMETRY.get(dedupKey);
+  if (existing) {
+    // Duplicate within 24h — silently accept but don't store
+    return new Response(JSON.stringify({ ok: true, dedup: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  // Day-scoped marker prefixes, counted not incremented (race-free caps).
+  const recordPrefix = `records:${fp}:${today}:`;
+  const ipRecordPrefix = `records-ip:${ipHash}:${today}:`;
+
+  // ---- Record count cap (per fp + per IP per day) — list-based ----
+  // KV has no atomic counters; read-then-write counters drifted under
+  // concurrency (lost updates made the caps permanently bypassable).
+  // Counting actual per-record keys self-corrects (CWE-362).
+  const [storedCount, ipStoredCount] = await Promise.all([
+    countKeys(env, recordPrefix, MAX_RECORDS_PER_FP_PER_DAY),
+    countKeys(env, ipRecordPrefix, MAX_RECORDS_PER_IP_PER_DAY),
+  ]);
+  if (storedCount >= MAX_RECORDS_PER_FP_PER_DAY) {
+    return new Response(
+      JSON.stringify({ ok: false, error: "too many records" }),
+      {
+        status: 429,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      },
+    );
+  }
+  if (ipStoredCount >= MAX_RECORDS_PER_IP_PER_DAY) {
+    return new Response(
+      JSON.stringify({ ok: false, error: "too many records" }),
+      {
+        status: 429,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      },
+    );
+  }
+
+  // ---- Store ----
+  // Records are slim: the full-file payload (up to ~11 MB base64) lives
+  // under its own `fullfile_<uuid>` key so dashboard/JSON renders never
+  // pull multi-MB values (CWE-400). hasFullFile tracks presence.
+  const uuid = crypto.randomUUID();
+  const record = {
+    prefix: data.prefix,
+    width: data.width,
+    height: data.height,
+    status: data.status,
+    issue: data.issue,
+    issueDetail: data.issueDetail,
+    header: data.header,
+    hasFullFile: data.fullFile !== null,
+    extension: data.extension,
+    fp,
+    timestamp: new Date().toISOString(),
+  };
+  const key = `fmt_${data.prefix}_${uuid}`;
+  await env.FORMAT_TELEMETRY.put(key, JSON.stringify(record), {
+    expirationTtl: 86400 * 365,
+  });
+  if (data.fullFile !== null) {
+    await env.FORMAT_TELEMETRY.put(`fullfile_${uuid}`, data.fullFile, {
+      expirationTtl: 86400 * 365,
+    });
+  }
+  // Per-record cap markers (day-scoped, 2-day TTL).
+  await env.FORMAT_TELEMETRY.put(`${recordPrefix}${uuid}`, "1", {
+    expirationTtl: 86400 * 2,
+  });
+  await env.FORMAT_TELEMETRY.put(`${ipRecordPrefix}${uuid}`, "1", {
+    expirationTtl: 86400 * 2,
+  });
+  // (Rate markers are written for every accepted request at the top of
+  // the POST handler — before dedup/validation — so no path can replay
+  // without consuming the per-day budget.)
+
+  // ---- Set dedup marker (24h TTL) ----
+  await env.FORMAT_TELEMETRY.put(dedupKey, "1", { expirationTtl: 86400 });
+
+  return new Response(JSON.stringify({ ok: true }), {
+    status: 200,
+    headers: { "Content-Type": "application/json", ...corsHeaders },
+  });
+}
+
+// ---- POST ingestion: content-type + body parse + rate limit + validate + persist ----
+async function handlePostIngestion(
+  env: Env,
+  request: Request,
+  corsHeaders: Record<string, string>,
+): Promise<Response> {
+  const contentType = request.headers.get("Content-Type") || "";
+  if (!contentType.startsWith("application/json")) {
+    return new Response(
+      JSON.stringify({ error: "expected application/json" }),
+      {
+        status: 415,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      },
+    );
+  }
+
+  const bodyText = await request.text();
+  // Byte-accurate cap: bodyText.length counts UTF-16 units, so a
+  // multi-byte (e.g. CJK) body could slip ~3x the intended limit past
+  // JSON.parse (CWE-770). Measure true UTF-8 bytes instead.
+  if (new TextEncoder().encode(bodyText).byteLength > MAX_BODY_BYTES) {
+    return new Response(JSON.stringify({ error: "body too large" }), {
+      status: 413,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
+  }
+
+  let body: TelemetryBody;
+  try {
+    body = JSON.parse(bodyText) as TelemetryBody;
+  } catch {
+    return new Response(JSON.stringify({ error: "invalid JSON" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
+  }
+  const fp = await fingerprint(request, env);
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  // Per-IP keys use a hash of the IP alone — the raw IP is never stored.
+  const ipHash = await ipFingerprint(env, ip);
+  const today = new Date().toISOString().slice(0, 10);
+  // Day-scoped marker prefixes, counted not incremented (race-free caps).
+  const ratePrefix = `rate:${fp}:${today}:`;
+  const ipRatePrefix = `rate-ip:${ipHash}:${today}:`;
+
+  // ---- Rate limit check (per fp + per IP) — race-free list counts ----
+  const [rateCount, ipRateCount] = await Promise.all([
+    countKeys(env, ratePrefix, RATE_LIMIT_PER_DAY),
+    countKeys(env, ipRatePrefix, RATE_LIMIT_PER_IP_PER_DAY),
+  ]);
+  if (rateCount >= RATE_LIMIT_PER_DAY) {
+    return new Response(
+      JSON.stringify({ ok: false, error: "rate limited" }),
+      {
+        status: 429,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      },
+    );
+  }
+  if (ipRateCount >= RATE_LIMIT_PER_IP_PER_DAY) {
+    return new Response(
+      JSON.stringify({ ok: false, error: "rate limited" }),
+      {
+        status: 429,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      },
+    );
+  }
+  // Rate markers are written for EVERY request that passes the rate
+  // check — before dedup/validation early-returns — so an attacker can't
+  // replay dedup'd or invalid POSTs forever without consuming the
+  // 100/500-per-day budget (each such request still costs body read +
+  // KV list scans + fingerprint).
+  const rateUuid = crypto.randomUUID();
+  await env.FORMAT_TELEMETRY.put(`${ratePrefix}${rateUuid}`, "1", {
+    expirationTtl: 86400 * 2,
+  });
+  await env.FORMAT_TELEMETRY.put(`${ipRatePrefix}${rateUuid}`, "1", {
+    expirationTtl: 86400 * 2,
+  });
+
+  // ---- Validate prefix (hard error) ----
+  const prefix = body.prefix;
+  if (typeof prefix !== "number" || prefix < 0 || prefix > 99999) {
+    return new Response(JSON.stringify({ error: "invalid prefix" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
+  }
+
+  const validated = validateEntry(body);
+  return persistRecord(env, validated, fp, ipHash, corsHeaders);
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     // CORS: echo the request origin back when it matches the allowlist
@@ -315,348 +717,19 @@ export default {
     };
 
     if (request.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: corsHeaders });
+      return handleOptions(corsHeaders);
     }
     if (request.method === "GET") {
-      // Dashboard auth: Authorization: Bearer <ADMIN_TOKEN> ONLY. The legacy
-      // ?token=<ADMIN_TOKEN> query path is gone — a bearer credential must
-      // never ride in URLs (browser history, access logs, Referer) (CWE-200).
-      const authHeader = request.headers.get("Authorization") || "";
-      const token = authHeader.startsWith("Bearer ")
-        ? authHeader.slice(7)
-        : "";
-      if (token && (await tokensEqual(token, env.ADMIN_TOKEN))) {
-        // ---- HTML dashboard ----
-        const allRecords: StoredRecord[] = [];
-        let cursor: string | null | undefined;
-        let scanned = 0;
-        // Bounded scan: at most 5000 records. Records are slim (full-file
-        // payloads live under their own `fullfile_` key), so this is bounded
-        // memory/CPU work no matter how large the store grows (CWE-400).
-        const MAX_SCAN = 5000;
-        do {
-          const list = await env.FORMAT_TELEMETRY.list({
-            prefix: "fmt_",
-            cursor,
-            limit: 1000,
-          });
-          for (const key of list.keys) {
-            if (scanned >= MAX_SCAN) break;
-            const value = await env.FORMAT_TELEMETRY.get(key.name);
-            if (value) {
-              try {
-                const record = JSON.parse(value) as StoredRecord;
-                allRecords.push(record);
-              } catch (err) {
-                // Unparseable record (legacy write or corrupt KV value). Skip
-                // it — the dashboard is best-effort over the store — but surface
-                // the key in Workers Logs so a systematic corruption is
-                // detectable instead of silently vanishing.
-                console.error(
-                  `telemetry: skipping unparseable record at key "${key.name}": ${
-                    err instanceof Error ? err.message : String(err)
-                  }`,
-                );
-              }
-            }
-            scanned++;
-          }
-          cursor = list.list_complete ? undefined : list.cursor;
-        } while (cursor && scanned < MAX_SCAN);
-
-        // Compute stats
-        const total = allRecords.length;
-        const prefixCounts: Record<string, number> = {};
-        const statuses: Record<string, number> = {};
-        let fullFileCount = 0;
-        for (const r of allRecords) {
-          const p = String(r.prefix);
-          prefixCounts[p] = (prefixCounts[p] || 0) + 1;
-          const s = r.status || "unknown";
-          statuses[s] = (statuses[s] || 0) + 1;
-          if (r.fullFile || r.hasFullFile) fullFileCount++;
-        }
-        const uniquePrefixes = Object.keys(prefixCounts).length;
-        const unknownFailed =
-          (statuses["unknown"] || 0) + (statuses["known-failed"] || 0);
-
-        // Sort prefix counts descending
-        const prefixEntries = Object.entries(prefixCounts).sort(
-          (a, b) => b[1] - a[1],
-        );
-
-        // Recent 50 sorted by timestamp descending
-        const recent50 = allRecords
-          .filter(
-            (r): r is StoredRecord & { timestamp: string } =>
-              Boolean(r.timestamp),
-          )
-          .sort(
-            (a, b) =>
-              new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-          )
-          .slice(0, 50);
-
-        const html = buildDashboardHtml({
-          total,
-          uniquePrefixes,
-          unknownFailed,
-          fullFileCount,
-          prefixEntries,
-          recent50,
-        });
-
-        return new Response(html, {
-          headers: {
-            "Content-Type": "text/html; charset=utf-8",
-            // Defense-in-depth for the stored-XSS fix: even if an unescaped
-            // field ever slips through, no script can run and the admin
-            // page cannot be framed (token exfiltration / clickjacking).
-            "Content-Security-Policy":
-              "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'",
-            "X-Content-Type-Options": "nosniff",
-            // The token arrives via an Authorization header; these stop it
-            // leaking through the browser cache or a Referer (CWE-200).
-            "Cache-Control": "no-store",
-            "Referrer-Policy": "no-referrer",
-            ...corsHeaders,
-          },
-        });
-      }
-
-      // Every other GET — including the old public JSON counts endpoint — is
-      // private: nothing in the app reads counts (the only telemetry call in
-      // ithmb-decoder/*.ts is the POST submit), and the worker promises
-      // "No public exposure". Without a valid bearer token everything else
-      // returns 401 (CWE-200: bearer never rides in URLs).
-      return new Response(
-        JSON.stringify({ ok: false, error: "unauthorized" }),
-        {
-          status: 401,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        },
-      );
+      return handleDashboardGet(env, request, corsHeaders);
     }
-
     if (request.method !== "POST") {
       return new Response("Method not allowed", {
         status: 405,
         headers: corsHeaders,
       });
     }
-
     try {
-      const contentType = request.headers.get("Content-Type") || "";
-      if (!contentType.startsWith("application/json")) {
-        return new Response(
-          JSON.stringify({ error: "expected application/json" }),
-          {
-            status: 415,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-          },
-        );
-      }
-
-      const bodyText = await request.text();
-      // Byte-accurate cap: bodyText.length counts UTF-16 units, so a
-      // multi-byte (e.g. CJK) body could slip ~3× the intended limit past
-      // JSON.parse (CWE-770). Measure true UTF-8 bytes instead.
-      if (new TextEncoder().encode(bodyText).byteLength > MAX_BODY_BYTES) {
-        return new Response(JSON.stringify({ error: "body too large" }), {
-          status: 413,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        });
-      }
-
-      let body: TelemetryBody;
-      try {
-        body = JSON.parse(bodyText) as TelemetryBody;
-      } catch {
-        return new Response(JSON.stringify({ error: "invalid JSON" }), {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        });
-      }
-      const fp = await fingerprint(request, env);
-      const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-      // Per-IP keys use a hash of the IP alone — the raw IP is never stored.
-      const ipHash = await ipFingerprint(env, ip);
-      const today = new Date().toISOString().slice(0, 10);
-      // Day-scoped marker prefixes, counted not incremented (race-free caps).
-      const ratePrefix = `rate:${fp}:${today}:`;
-      const ipRatePrefix = `rate-ip:${ipHash}:${today}:`;
-      const recordPrefix = `records:${fp}:${today}:`;
-      const ipRecordPrefix = `records-ip:${ipHash}:${today}:`;
-
-      // ---- Rate limit check (per fp + per IP) — race-free list counts ----
-      const [rateCount, ipRateCount] = await Promise.all([
-        countKeys(env, ratePrefix, RATE_LIMIT_PER_DAY),
-        countKeys(env, ipRatePrefix, RATE_LIMIT_PER_IP_PER_DAY),
-      ]);
-      if (rateCount >= RATE_LIMIT_PER_DAY) {
-        return new Response(
-          JSON.stringify({ ok: false, error: "rate limited" }),
-          {
-            status: 429,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-          },
-        );
-      }
-      if (ipRateCount >= RATE_LIMIT_PER_IP_PER_DAY) {
-        return new Response(
-          JSON.stringify({ ok: false, error: "rate limited" }),
-          {
-            status: 429,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-          },
-        );
-      }
-      // Rate markers are written for EVERY request that passes the rate
-      // check — before dedup/validation early-returns — so an attacker can't
-      // replay dedup'd or invalid POSTs forever without consuming the
-      // 100/500-per-day budget (each such request still costs body read +
-      // KV list scans + fingerprint).
-      const rateUuid = crypto.randomUUID();
-      await env.FORMAT_TELEMETRY.put(`${ratePrefix}${rateUuid}`, "1", {
-        expirationTtl: 86400 * 2,
-      });
-      await env.FORMAT_TELEMETRY.put(`${ipRatePrefix}${rateUuid}`, "1", {
-        expirationTtl: 86400 * 2,
-      });
-      // ---- Validate ----
-      const prefix = body.prefix;
-      if (typeof prefix !== "number" || prefix < 0 || prefix > 99999) {
-        return new Response(JSON.stringify({ error: "invalid prefix" }), {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        });
-      }
-
-      const status = VALID_STATUSES.has(body.status ?? "")
-        ? body.status
-        : "success";
-      const issue =
-        typeof body.issue === "string" &&
-        body.issue.length <= 40 &&
-        KNOWN_ISSUES.has(body.issue)
-          ? body.issue
-          : null;
-      const issueDetail =
-        typeof body.issue_detail === "string" && body.issue_detail.length <= 200
-          ? body.issue_detail
-          : null;
-      const width =
-        typeof body.width === "number" && body.width > 0 ? body.width : null;
-      const height =
-        typeof body.height === "number" && body.height > 0 ? body.height : null;
-      // Header must be a hex signature (client sends bytesToHex(bytes, "")).
-      // Non-hex values are rejected (stored as null) so a "<script>" payload
-      // can never be persisted and later interpolated into the dashboard.
-      const header =
-        typeof body.header === "string" &&
-        body.header.length <= 200 &&
-        /^[0-9a-fA-F]+$/.test(body.header)
-          ? body.header
-          : null;
-      const fullFile =
-        typeof body.full_file === "string" &&
-        body.full_file.length <= FULL_FILE_B64_MAX &&
-        status !== "success" &&
-        // non-success: known-failed (decoder bug) OR unknown (potential new
-        // format) — the full file is where the research value is
-        validBase64Payload(body.full_file)
-          ? body.full_file
-          : null;
-      const extension =
-        body.extension === "ipm" || body.extension === "ithmb"
-          ? body.extension
-          : null;
-
-      // ---- Deduplication ----
-      // Key includes whether a full file was attached so a header share can
-      // be "upgraded" to a full-file share within the same 24h window.
-      const dedupKey = `dedup:${fp}:${prefix}:${status}:${body.full_file ? "f" : "h"}`;
-      const existing = await env.FORMAT_TELEMETRY.get(dedupKey);
-      if (existing) {
-        // Duplicate within 24h — silently accept but don't store
-        return new Response(JSON.stringify({ ok: true, dedup: true }), {
-          status: 200,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        });
-      }
-
-      // ---- Record count cap (per fp + per IP per day) — list-based ----
-      // KV has no atomic counters; read-then-write counters drifted under
-      // concurrency (lost updates made the caps permanently bypassable).
-      // Counting actual per-record keys self-corrects (CWE-362).
-      const [storedCount, ipStoredCount] = await Promise.all([
-        countKeys(env, recordPrefix, MAX_RECORDS_PER_FP_PER_DAY),
-        countKeys(env, ipRecordPrefix, MAX_RECORDS_PER_IP_PER_DAY),
-      ]);
-      if (storedCount >= MAX_RECORDS_PER_FP_PER_DAY) {
-        return new Response(
-          JSON.stringify({ ok: false, error: "too many records" }),
-          {
-            status: 429,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-          },
-        );
-      }
-      if (ipStoredCount >= MAX_RECORDS_PER_IP_PER_DAY) {
-        return new Response(
-          JSON.stringify({ ok: false, error: "too many records" }),
-          {
-            status: 429,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-          },
-        );
-      }
-
-      // ---- Store ----
-      // Records are slim: the full-file payload (up to ~11 MB base64) lives
-      // under its own `fullfile_<uuid>` key so dashboard/JSON renders never
-      // pull multi-MB values (CWE-400). hasFullFile tracks presence.
-      const uuid = crypto.randomUUID();
-      const record = {
-        prefix,
-        width,
-        height,
-        status,
-        issue,
-        issueDetail,
-        header,
-        hasFullFile: fullFile !== null,
-        extension,
-        fp,
-        timestamp: new Date().toISOString(),
-      };
-      const key = `fmt_${prefix}_${uuid}`;
-      await env.FORMAT_TELEMETRY.put(key, JSON.stringify(record), {
-        expirationTtl: 86400 * 365,
-      });
-      if (fullFile !== null) {
-        await env.FORMAT_TELEMETRY.put(`fullfile_${uuid}`, fullFile, {
-          expirationTtl: 86400 * 365,
-        });
-      }
-      // Per-record cap markers (day-scoped, 2-day TTL).
-      await env.FORMAT_TELEMETRY.put(`${recordPrefix}${uuid}`, "1", {
-        expirationTtl: 86400 * 2,
-      });
-      await env.FORMAT_TELEMETRY.put(`${ipRecordPrefix}${uuid}`, "1", {
-        expirationTtl: 86400 * 2,
-      });
-      // (Rate markers are written for every accepted request at the top of
-      // the POST handler — before dedup/validation — so no path can replay
-      // without consuming the per-day budget.)
-
-      // ---- Set dedup marker (24h TTL) ----
-      await env.FORMAT_TELEMETRY.put(dedupKey, "1", { expirationTtl: 86400 });
-
-      return new Response(JSON.stringify({ ok: true }), {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+      return await handlePostIngestion(env, request, corsHeaders);
     } catch {
       return new Response(JSON.stringify({ error: "internal error" }), {
         status: 500,
