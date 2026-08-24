@@ -1,14 +1,13 @@
 # ci.yml — the web repo's only automated gate.
-# Runs on the DEV repo (B67687/Ithmb-Codec-Web-Dev) where CI is the source of
-# truth per the four-layer model (local -> github-dev CI -> public append-only).
-# check-parity.config queries this same Dev repo for same-commit parity; the
-# public repo (Ithmb-Codec-Web) is append-only on explicit user go and does not
-# run CI. (REVIEW warning: comment was stale — claimed public CI; now aligned.)
+# Runs on BOTH repos (dev + public). CI is the source of truth per the
+# four-layer model (local -> github CI -> public mirror). Public repos get
+# unlimited free Actions minutes, so public CI is a free fallback when the
+# private dev repo exhausts its 2,000-min private limit.
 name: ci
 on:
   push: { branches: [main] }
+  workflow_dispatch: {} # allow manual re-run, e.g. after enabling on a repo
   pull_request:
-    branches: [main]
     # Skip the whole CI for doc-only PRs (no code changed): preserves free
     # Actions minutes with negligible quality loss. Code PRs always run full.
     paths-ignore:
