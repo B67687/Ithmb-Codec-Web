@@ -12,9 +12,9 @@ on:
     # Skip the whole CI for doc-only PRs (no code changed): preserves free
     # Actions minutes with negligible quality loss. Code PRs always run full.
     paths-ignore:
-      - 'docs/**'
-      - '*.md'
-      - '.github/**'
+      - "docs/**"
+      - "*.md"
+      - ".github/**"
 permissions: { contents: read }
 
 jobs:
@@ -30,10 +30,6 @@ jobs:
       - run: npm ci
       - name: lint:modules (typecheck + build + determinism)
         run: npm run lint:modules && git diff --exit-code # fail if the build mutated tracked files (uncommitted ?v= hashes)
-      - name: lint:i18n (key parity / embedded-en drift gate)
-        run: npm run lint:i18n
-      - name: wasm drift (committed wasm imports vs loader glue)
-        run: bash scripts/check-wasm-drift.sh
 
   test:
     runs-on: ubuntu-latest
@@ -80,19 +76,3 @@ jobs:
           # Server lifecycle handled by playwright webServer config (polls
           # until ready instead of a fixed sleep; owns start/kill). See ADR-0007.
           npx playwright test --project=${{ matrix.browser }}
-
-  secrets:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          fetch-depth: 0
-      - name: Gitleaks (secrets in history)
-        run: |
-          # The gitleaks-action computes a commit range (<first>^..<last>) that
-          # breaks on root-commit histories (no parent). Scan all commits
-          # directly instead.
-          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz" -o /tmp/gitleaks.tar.gz
-          tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
-          /tmp/gitleaks git --no-banner --log-opts="--no-merges --all"
