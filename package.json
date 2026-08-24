@@ -17,6 +17,7 @@
     "test:full": "playwright test",
     "ci": "npm run lint:modules && npm run lint:i18n && playwright test",
     "build": "tsx scripts/build.mts",
+    "build:pages": "rm -rf _site && npm run build && mkdir _site && tar --exclude='./node_modules' --exclude='./.git' --exclude='./.github' --exclude='./_site' --exclude='./test-results' --exclude='./preview' --exclude='./CNAME' -cf - . | tar -xf - -C _site",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.worker.json --noEmit",
     "lint:modules": "npm run typecheck && npm run build",
     "lint:i18n": "tsx scripts/check-i18n.mts && tsx scripts/check-mirror-parity.mts",

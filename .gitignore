@@ -22,6 +22,7 @@ ithmb-decoder/*.js
 .playwright-mcp/
 test-results/
 preview/
+_site/
 *.log
 
 # OS
