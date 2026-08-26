@@ -18,11 +18,11 @@ Free, private, browser-based .ithmb file decoder.
   <img src="docs/screenshots/decoder-ui.svg" alt="ITHMB Decoder screenshot">
 </picture>
 
-<sub>Built with AI assistance — see <a href="./CREDITS.md">CREDITS.md</a></sub>
+<sub>Built with AI assistance — see <a href="./docs/CREDITS.md">CREDITS.md</a></sub>
 <br>
-<a href="./CREDITS.md"><img src="docs/badges/deepseek.svg" alt="DeepSeek"></a>
-<a href="./CREDITS.md"><img src="docs/badges/opencode.svg" alt="OpenCode"></a>
-<a href="./CREDITS.md"><img src="docs/badges/omo.svg" alt="Oh My OpenAgent"></a>
+<a href="./docs/CREDITS.md"><img src="https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec-Web@main/docs/badges/deepseek.svg" alt="DeepSeek"></a>
+<a href="./docs/CREDITS.md"><img src="https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec-Web@main/docs/badges/opencode.svg" alt="OpenCode"></a>
+<a href="./docs/CREDITS.md"><img src="https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec-Web@main/docs/badges/omo.svg" alt="Oh My OpenAgent"></a>
 
 <br>
 </div>
