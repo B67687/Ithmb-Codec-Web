@@ -95,10 +95,10 @@ header p {
 }
 header p a {
   color: var(--accent);
-  text-decoration: none;
+  text-decoration: underline;
 }
 header p a:hover {
-  text-decoration: underline;
+  text-decoration-thickness: 2px;
 }
 
 .logo {
@@ -1268,10 +1268,10 @@ body {
 }
 .decoder-info a {
   color: var(--accent);
-  text-decoration: none;
+  text-decoration: underline;
 }
 .decoder-info a:hover {
-  text-decoration: underline;
+  text-decoration-thickness: 2px;
 }
 
 /* ─── Dark mode (follows the system preference) ─── */
