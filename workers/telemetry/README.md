@@ -67,8 +67,7 @@ Covers: valid + garbage-base64 POSTs, Bearer-only auth (`?token=` dead), no raw 
 - **Records:** max 50 stored / day / fingerprint and 250 / day / IP, enforced by counting per-record marker keys; dedup per `prefix+status` + full-file flag (`:h`/`:f`) for 24 h
 - **Privacy:** the raw IP is **never stored in the clear** — per-IP keys use an HMAC-SHA256 keyed pseudonym (server secret `IP_HMAC_SECRET`, falling back to `ADMIN_TOKEN`; set in the CF dashboard). Without the secret the hash is cryptographically irreversible — a KV dump/backup/leak reveals nothing — and the 128-bit truncation keeps cross-IP collisions negligible
 - **Records are slim:** `full_file` payloads are stored under a separate `fullfile_<uuid>` key so dashboard/JSON renders never fetch multi-MB values; `hasFullFile` tracks presence
-- **Batch:** ≤ 500 entries per POST; client chunks sends to stay ≤ 13 MB body. Entries may carry `full_file` (same cap) — the batch record caps apply to stored records
-- **Batch endpoint**: no longer used by the client — the single-record path (`POST /`) is the live one.
+- **Batch endpoint:** removed — the single-record path (`POST /`) is the only live ingest path.
 - **Retention:** records + full-file payloads expire after 365 days; rate/dedup/record markers after 1-2 days
 - **Keep `FULL_FILE_MAX_BYTES` in `ithmb-decoder/card-failure-ui.js` in sync**: the client disables full-file upload above 8 MB raw (the app's own decode limit), matching the worker's 11,184,812-char field cap
 ## Reading Data

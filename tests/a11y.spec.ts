@@ -1,4 +1,4 @@
-import { test } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
 test.describe("Accessibility", () => {
@@ -19,9 +19,14 @@ test.describe("Accessibility", () => {
         .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"])
         .analyze();
 
-      // Filter to only critical/serious violations
+      // Known intentional exclusions (Apple-like low-contrast grays for visual aesthetics)
+      const KNOWN_A11Y_EXCLUSIONS = new Set(["color-contrast"]);
+
+      // Filter to critical/serious, excluding known intentional design choices
       const serious = results.violations.filter(
-        (v) => v.impact === "critical" || v.impact === "serious"
+        (v) =>
+          (v.impact === "critical" || v.impact === "serious") &&
+          !KNOWN_A11Y_EXCLUSIONS.has(v.id)
       );
 
       if (serious.length > 0) {
@@ -34,8 +39,9 @@ test.describe("Accessibility", () => {
         }
       }
 
-      // Known design choices: color-contrast violations are intentional
-      // (Apple-like low-contrast grays for visual aesthetics). Logging only.
+      // Authoritative gate: any unexpected critical/serious violation fails CI.
+      // Known intentional exclusions (e.g. color-contrast) are listed above.
+      expect(serious).toHaveLength(0);
     });
   }
 });

@@ -1,8 +1,21 @@
-# ITHMB Codec Web — Feature Inventory & Architecture
+# FEATURES.md: Standing Feature & Behavior Inventory
 
-> Updated: 2026-08-13 (1.4.17: progressive display — decode files in waves of 4 with viewer opening on the first card; wasm regenerated from ithmb-core 1.9.6; telemetry GET surface token-gated)
-> Purpose: Authoritative, current source of truth for features + the architecture that serves them.
-> **Keep this file in sync with every behavior change.** A stale spec is how bugs look like features.
+> **Living artifact (mandated).** The project's complete reference of intended + confirmed features and how each is supposed to behave. It is the differential against which both problem-detection ("what deviated from intent?") and testing ("what should we prove?") are measured.
+>
+> **Backfill note:** this inventory was created at the REVIEW gate (August 2026) for a codebase that shipped before the inventory discipline landed. Every feature below is `applied` (implemented, tested, spec-synced). Tests anchor to features via the Test Anchoring tables; per-test F-### tags are the forward convention.
+
+## Lifecycle
+
+```
+proposed -> approved -> applied -> archived
+```
+
+| Status | Meaning | Can be shipped? |
+| --- | --- | --- |
+| `proposed` | Intended, not yet ratified into V1 | No |
+| `approved` | In V1 scope (IN SCOPE, RULES section 5) | No: needs `applied` |
+| `applied` | Implemented, tests anchored, spec-synced | Yes |
+| `archived` | Removed/superseded; entry kept for history | No |
 
 ## Table of Contents
 
@@ -33,8 +46,9 @@ ithmb-codec-web/
 ├── lang-redirect.js                   # Pre-paint locale redirect (stored pref / zh browser → /zh/ counterpart)
 ├── bmc-icon.svg / favicon.svg / thumb-decoder-preview.png
 ├── CNAME                              # Custom domain: ithmb-codec.dev
-├── package.json                       # Zero runtime deps; dev: @playwright/test, playwright, acorn, @axe-core/playwright
-├── playwright.config.js               # 3 projects (chromium, firefox, webkit); baseURL = BASE_URL || live site
+├── package.json                       # Zero runtime deps; dev: @playwright/test, playwright, vitest
+├── vitest.config.ts                   # Unit test config (tests/unit/**/*.test.ts)
+├── playwright.config.ts               # 3 projects (chromium, firefox, webkit); baseURL = BASE_URL || live site
 ├── AGENTS.md                          # Agent onboarding (build/test/deploy/wasm-regen/dev-public workflow)
 │
 ├── ithmb-decoder/                     # Core web app (decoder)
@@ -61,14 +75,24 @@ ithmb-codec-web/
 ├── guide/how-to-open-ithmb-files.html # Documentation page
 ├── enterprise/index.html              # Enterprise marketing page
 ├── workers/telemetry/                 # Cloudflare Worker (see its README for deploy)
-│   ├── src/worker.js                  # POST share/batch, JSON /, HTML /dashboard; hardening C2–C6
-│   └── wrangler.toml                  # KV binding; ADMIN_TOKEN is set in the CF dashboard, NEVER here
+│   └── src/
+│       ├── worker.ts                  # Thin router (CORS, dashboard, POST)
+│       ├── types.ts                   # Env, StoredRecord, constants
+│       ├── crypto.ts                  # HMAC-SHA256, fingerprints, escapeHtml
+│       ├── dashboard.ts               # HTML dashboard template
+│       ├── validation.ts              # Entry field validation
+│       └── persistence.ts             # KV writes, dedup, rate limits
 ├── scripts/
-│   ├── check-i18n.mjs                 # i18n integrity gate (key parity, raw literals, EMBEDDED_EN drift)
-│   ├── sync-embedded.mjs              # Regenerates EMBEDDED_EN in i18n.js from en.json
+│   ├── build.mts                      # TS → JS build (deterministic)
+│   ├── check-local.sh                 # Full local CI (10 gates)
+│   ├── check-i18n.mts                 # i18n integrity gate (key parity, raw literals, EMBEDDED_EN drift)
+│   ├── check-mirror-parity.mts        # Mirror parity guard
+│   ├── sync-embedded.mts              # Regenerates EMBEDDED_EN in i18n.js from en.json
 │   ├── check-wasm-drift.sh            # Committed wasm imports must all be handled by the loader glue
-│   └── real-user-journey.js           # Manual smoke script
-├── tests/                             # Playwright specs (see §11)
+│   └── real-user-journey.mts          # Manual smoke script
+├── tests/                             # Playwright specs + unit tests (see §11)
+│   ├── *.spec.ts                      # 11 Playwright integration specs
+│   └── unit/*.test.ts                 # Vitest unit tests (pure logic)
 └── docs/FEATURES.md                   # THIS FILE
 ```
 
@@ -101,233 +125,537 @@ i18n.js is dependency-free: other modules import `{ t }` from it; re-renders are
 
 ## 2. Shared Components
 
-### 2.1 Navigation Bar (`nav.js`)
+### F-001: Navigation Bar (`nav.js`)
 
-IIFE injected as first child of `<body>` via `insertAdjacentHTML`. Fixed top nav (44px, backdrop blur), brand left, 3 links center (Home/Decoder/Guide; Enterprise lives in the footer), icons right (language switcher + BMC + GitHub corner). Active link from `window.location.pathname` (the `/zh/` prefix is stripped first so the same rules apply on Chinese pages).
+- **Status:** applied
+- **Reviewed:** 2026-08-27
 
-The language switcher (`#langToggle`) is a plain `<a>` link to the counterpart page in the other locale (EN ↔ /zh/ tree, server-rendered and indexable), not an in-page toggle. Its click handler writes the target language to `localStorage ithmbLang` before navigating; that click is the only writer of the language preference. On `/zh/` pages the nav labels and the switcher aria-label/title are emitted inline in Chinese (首页 / 解码器 / 指南 / 切换语言, matching zh.json's `nav.*` keys), because nav.js runs before i18n.js; the `data-i18n` attributes stay so i18n re-applies the authoritative text on activation.
+**Behavior Contract:** Preconditions: any page with `<body>` element. Postconditions: IIFE injected as first child of `<body>` via `insertAdjacentHTML`; fixed top nav (44px, backdrop blur); brand left, 3 links center, icons right (language switcher + BMC + GitHub corner). Active link from `window.location.pathname` (zh prefix stripped). Invariants: nav renders before i18n.js; language switcher is a plain `<a>` link (not in-page toggle); click writes target to `localStorage ithmbLang` before navigating. Error cases: none (pure DOM insertion).
 
-### 2.2 Footer (`footer.js`)
+**Test Anchoring:**
 
-IIFE injected at the script position. GitHub icon + "Powered by Ithmb-Codec" + Buy me a coffee. **Renders only after `window.t` exists** — no raw-key flash on pages where i18n loads late (re-renders via interval once ready).
+| Test file / name | Covers |
+|---|---|
+| `tests/pages.spec.ts` — "loads and shows ITHMB title" | Nav renders on home page |
+| `tests/ithmb-decoder.spec.ts` — "GitHub corner exists" | GitHub corner positioning |
+| `tests/ithmb-decoder.spec.ts` — "BMC corner exists" | BMC corner positioning |
+| `tests/visual.spec.ts` — "nav — home (active: Home, brand logo present)" | Nav visual snapshot |
+| `tests/visual.spec.ts` — "nav — decoder (active: Decoder)" | Nav visual snapshot |
+| `tests/visual.spec.ts` — "nav — guide (active: Guide)" | Nav visual snapshot |
+| `tests/visual.spec.ts` — "nav — enterprise (active: Enterprise)" | Nav visual snapshot |
 
-### 2.3 Static Assets
+### F-002: Footer (`footer.js`)
 
-`/bmc-icon.svg`, `/favicon.svg`, `/thumb-decoder-preview.png` (og:image).
+- **Status:** applied
+- **Reviewed:** 2026-08-27
+
+**Behavior Contract:** Preconditions: page with `<script>` position for injection. Postconditions: IIFE injected at script position; GitHub icon + "Powered by Ithmb-Codec" + Buy me a coffee. Invariants: renders only after `window.t` exists (no raw-key flash); re-renders via interval once ready. Error cases: none (graceful no-render if `window.t` absent).
+
+**Test Anchoring:**
+
+| Test file / name | Covers |
+|---|---|
+| `tests/gallery.spec.ts` — "footer has GitHub and BMC links" | Footer content |
+| `tests/visual.spec.ts` — "footer — enterprise page" | Footer visual snapshot |
+| `tests/ithmb-decoder.spec.ts` — "mentions 'Powered by Ithmb-Codec'" | Footer text |
 
 ---
 
 ## 3. Home Page
 
-**Route:** `/` · **File:** `index.html`
+### F-003: Home Page (`index.html`)
 
-- **Meta:** title "ITHMB Codec", canonical, OG image, favicon, Inter fonts, FAQPage + WebApplication JSON-LD. **og:title / og:description localized** via `data-i18n-content` (follow the active language).
-- **Visual:** logo, subtitle, three cards (Decoder/Guide/Enterprise) with hover states.
-- **Responsive:** 768px / 480px breakpoints.
+- **Status:** applied
+- **Reviewed:** 2026-08-27
+
+**Behavior Contract:** Preconditions: none (landing page). Postconditions: title "ITHMB Codec", canonical, OG image, favicon, Inter fonts, FAQPage + WebApplication JSON-LD; og:title/og:description localized via `data-i18n-content`; logo, subtitle, three cards (Decoder/Guide/Enterprise) with hover states; responsive at 768px / 480px breakpoints. Invariants: EN subtitle horizontally centered; zh subtitle horizontally centered. Error cases: none (static page).
+
+**Test Anchoring:**
+
+| Test file / name | Covers |
+|---|---|
+| `tests/pages.spec.ts` — "loads and shows ITHMB title" | Title, structure |
+| `tests/pages.spec.ts` — "has links to decoder and enterprise" | Card links |
+| `tests/pages.spec.ts` — "EN subtitle is horizontally centered" | Layout |
+| `tests/pages.spec.ts` — "zh subtitle is horizontally centered" | zh layout |
+| `tests/visual.spec.ts` — "home page — full page" | Visual snapshot |
+| `tests/seo-metadata.spec.ts` — "has a meta description" | Meta tag |
+| `tests/a11y.spec.ts` — "home page has no critical accessibility violations" | a11y scan |
 
 ---
 
 ## 4. Decoder Page
 
-**Route:** `/ithmb-decoder/` · **File:** `ithmb-decoder/index.html`
+### F-004: Decoder Page Structure
 
-### 4.1 Meta
+- **Status:** applied
+- **Reviewed:** 2026-08-27
 
-Title "ITHMB Decoder | ITHMB Codec", canonical, JSZip 3.10.1 (cdnjs, with SRI), entry `app.js` (ES module, top-level await).
+**Behavior Contract:** Preconditions: none (decoder entry). Postconditions: title "ITHMB Decoder | ITHMB Codec", canonical, JSZip 3.10.1 (cdnjs, with SRI), entry `app.js` (ES module, top-level await); drop overlay, dropzone, toolbar (hidden init), help button, viewer nav, grid toggle, download all, format select, viewer container, file list, toast, report modal all present. Invariants: `--bg` is #f5f5f7; `--accent` is #007AFF; `--surface` is #fff; no batch toggle exists. Error cases: none (static structure).
 
-### 4.2 Visual Components
+**Test Anchoring:**
 
-| Component | ID/Class | Status | Key Behavior |
-| --------- | -------- | ------ | ------------ |
-| Drop overlay | `#dropOverlay` | hidden | Shown on dragenter, hidden on dragleave/drop |
-| Dropzone | `#dropzone` | visible | Click → file picker; drag-over adds `.drag-over` |
-| Toolbar | `#toolbar` | hidden init | Shown when files loaded |
-| Help button | `#helpBtn` | hidden init | Keyboard-shortcut toast |
-| Viewer nav | `#viewerNav` | hidden init | Prev/Next + position ("3/8"); hold-to-repeat |
-| Grid toggle | `#viewToggleBtn` | hidden init | **Label derived from viewer state in `updateToolbar()`** (no data-i18n): "Grid view" (viewer open) / "Gallery" (grid). Correct on first render in any language. |
-| Download All | `#downloadAllBtn` | hidden init | JSZip ZIP; label/title show format |
-| Format select | `#downloadFormatSelect` | hidden init | **Global-only** (ZIP); per-card selects stay independent via `S.cardFormats` |
-| Viewer container | `#viewer-container` | hidden init | Bordered card: header + stage + filmstrip |
-| Viewer header | `#viewer-header` | 3-col | Encoding \| Filename \| Dimensions |
-| Viewer stage | `#viewer-stage` | centered | Canvas or placeholder (success/failed/decoding) |
-| Viewer arrows | `#viewerArrowLeft/Right` | absolute | Hold-to-repeat; hidden on mobile |
-| Filmstrip | `#viewer-filmstrip` | h-scroll | 80×60 thumbs, active accent, click to navigate |
-| File list | `#file-list` | dynamic | Grid (auto-fill) or viewer-mode (flex column) |
-| File card | `.file-card` | dynamic | Meta + status + preview + (success: info/save/report) or (failure: share box) |
-| Back-to-top / position | `#backToTop` / `#backToPosition` | hidden | Scroll-aware; save/restore position |
-| Toast | `#toast` | hidden | 3s auto-hide; **timer resets on each new toast** |
-| Report modal | `#reportModal` | hidden | **Shared modal** for "Image looks wrong?" — thumbnail + issue picker + submit/cancel; backdrop listener bound ONCE |
+| Test file / name | Covers |
+|---|---|
+| `tests/ithmb-decoder.spec.ts` — "loads without console errors" | Clean load |
+| `tests/ithmb-decoder.spec.ts` — "has correct title" | Title |
+| `tests/ithmb-decoder.spec.ts` — "dropzone is present with correct styling" | Dropzone |
+| `tests/ithmb-decoder.spec.ts` — "#toolbar element exists and is initially hidden" | Toolbar |
+| `tests/ithmb-decoder.spec.ts` — "no batch-share checkbox exists in toolbar" | Batch removal |
+| `tests/ithmb-decoder.spec.ts` — "--bg is #f5f5f7" | CSS variable |
+| `tests/ithmb-decoder.spec.ts` — "--accent is #007AFF" | CSS variable |
+| `tests/ithmb-decoder.spec.ts` — "--surface is #fff" | CSS variable |
 
-### 4.3 Decoder App States
+### F-005: Decoder App States
 
-| State | How It Looks | Trigger |
-| ----- | ------------ | ------- |
-| Initial | Header + dropzone only | Page load |
-| Processing | Cards with spinner + "Decoding…" | Files selected |
-| Progressive display | Cards appear + paint in waves of 4 as they decode; wasm `decode_ithmb` is synchronous so `processFiles` batches decodes and yields a macrotask (`setTimeout(0)`, not rAF — rAF pauses in background tabs) between waves so each wave paints instead of all cards flashing in at once | Multi-file decode |
-| Decode success | Canvas + green "Decoded" + Save + format select + **report link** (no share box) | WASM decode succeeds |
-| Decode failure | Share box (hex dump + Share 16 bytes / full file) | Known format fails |
-| Decode unknown | Share box with "Unknown format" note | Unrecognized prefix |
-| Decode error | Red "Error" + message | Decode throws (no share box, not persisted) |
-| Viewer open | Toolbar + viewer (canvas/filmstrip/arrows) | Card click / auto-open on first batch |
-| Grid mode | Cards in 2D grid, viewer hidden | Toggle or G key |
-| Load failed | Red message + **Retry button** (re-runs wasm init; recovers from transient fetch failures) | `init()` throws |
+- **Status:** applied
+- **Reviewed:** 2026-08-27
+
+**Behavior Contract:** Preconditions: decoder page loaded. Postconditions: transitions through Initial → Processing → Progressive display → Decode success/failure/unknown/error → Viewer open → Grid mode. Invariants: cards appear in waves of 4 (setTimeout(0) yield between waves); wasm decode_ithmb is synchronous; error cards NOT persisted to failedDecodes. Error cases: init failure shows red message + Retry button.
+
+**Test Anchoring:**
+
+| Test file / name | Covers |
+|---|---|
+| `tests/stress.spec.ts` — "1: Drop zone rejects invalid files" | Invalid file rejection |
+| `tests/stress.spec.ts` — "2: Drop single file — viewer opens" | Single file state |
+| `tests/stress.spec.ts` — "3: Drop 8 files — filmstrip has 8 thumbnails" | Multi-file state |
+| `tests/stress.spec.ts` — "6: Toggle to grid mode and back" | State transitions |
+| `tests/stress.spec.ts` — "9: Escape closes viewer" | Viewer close |
+| `tests/quality.spec.ts` — "corrupt .ithmb shows share card, not an error" | Error state |
+
+### F-006: File Drop/Upload Flow
+
+- **Status:** applied
+- **Reviewed:** 2026-08-27
+
+**Behavior Contract:** Preconditions: decoder page loaded. Postconditions: drop or click → processFiles(files); first batch: full reset (fileList, counters, arrays, filmstrip, viewer closed); filter: .ithmb/.ipm extension, ≤ 8 MB, content-hash dedup; rejects → toast; card per valid file → decodeFile async; after each batch: updateToolbar(). Invariants: dedup by content hash + filename; only .ithmb/.ipm accepted. Error cases: invalid files produce toast + rejection.
+
+**Test Anchoring:**
+
+| Test file / name | Covers |
+|---|---|
+| `tests/upload.spec.ts` — "drops 8 distinct files — all decode successfully" | 8-file batch |
+| `tests/upload.spec.ts` — "second batch of distinct files also decodes" | Batch append |
+| `tests/upload.spec.ts` — "duplicate filenames — same file dropped 8 times" | Dedup |
+| `tests/upload.spec.ts` — "drag overlay appears on dragenter and clears on dragleave" | Drag overlay |
+| `tests/upload.spec.ts` — "drop processes files and creates file cards" | Card creation |
+| `tests/stress.spec.ts` — "10: Same file deduplication" | Dedup stress |
+| `tests/stress.spec.ts` — "11: Multiple batches append correctly" | Multi-batch |
+
+### F-007: Decode Pipeline (`decodeFile`)
+
+- **Status:** applied
+- **Reviewed:** 2026-08-27
+
+**Behavior Contract:** Preconditions: valid file input. Postconditions: read → Uint8Array → peek_prefix → decode_ithmb; success → canvas (600×400 max) → success card; failure (known/unknown) → failure card with share box; error (throws) → error card (message only, NOT pushed to failedDecodes). Invariants: error cards never stored (would break re-render's share-box creation); updateToolbar() called after each decode. Error cases: wasm throw → error card, no share box.
+
+**Test Anchoring:**
+
+| Test file / name | Covers |
+|---|---|
+| `tests/upload.spec.ts` — "drops 8 distinct files — all decode successfully" | Decode correctness |
+| `tests/quality.spec.ts` — "corrupt .ithmb shows share card, not an error" | Failure path |
+| `tests/quality.spec.ts` — "invalid file shows error toast" | Error path |
+| `tests/gallery.spec.ts` — "failed decode shows placeholder in viewer" | Failure viewer |
+
+### F-008: Viewer
+
+- **Status:** applied
+- **Reviewed:** 2026-08-27
+
+**Behavior Contract:** Preconditions: at least one file decoded. Postconditions: open on card click / first-batch auto-open; cyclic prev/next; ← → arrows + G key + Escape; touch swipe > 50px; filmstrip click; stage mirrors card via refreshViewerIfCurrent. Invariants: toolbar via updateToolbar() (called on open/close/process/languagechange); arrows hidden on mobile; filmstrip 80×60 thumbs with active accent. Error cases: none (graceful empty state).
+
+**Test Anchoring:**
+
+| Test file / name | Covers |
+|---|---|
+| `tests/gallery.spec.ts` — "viewer container appears with 8 files" | Open state |
+| `tests/gallery.spec.ts` — "first thumbnail is active when viewer opens" | Initial state |
+| `tests/gallery.spec.ts` — "clicking a thumbnail switches the viewer" | Click nav |
+| `tests/gallery.spec.ts` — "arrow keys navigate between images" | Keyboard nav |
+| `tests/gallery.spec.ts` — "Escape closes viewer" | Close |
+| `tests/gallery.spec.ts` — "filmstrip thumbs appear in file order as placeholders" | Filmstrip order |
+| `tests/gallery.spec.ts` — "keyboard shortcut G toggles grid view" | G key toggle |
+| `tests/gallery.spec.ts` — "mobile viewport hides arrows and adapts filmstrip" | Mobile |
+| `tests/gallery.spec.ts` — "holding ArrowRight advances viewer repeatedly" | Hold-to-repeat |
+| `tests/gallery.spec.ts` — "viewer stage canvas has non-blank pixel content" | Canvas content |
+| `tests/stress.spec.ts` — "5: Navigate by arrow keys (cyclic)" | Cyclic nav |
+| `tests/quality.spec.ts` — "arrow keys navigate between decoded images" | Keyboard nav |
+| `tests/unit/client-utils.test.ts` — "KNOWN_PREFIXES contains expected entries" | Prefix knowledge |
+
+### F-009: Share / Report
+
+- **Status:** applied
+- **Reviewed:** 2026-08-27
+
+**Behavior Contract:** Preconditions: at least one decoded file (success or failure). Postconditions: failure/unknown cards: share box = hex dump (first 16 bytes) + "Share 16 bytes" + "Share full file" (hidden above 8 MB); success cards: report link "Image looks wrong?" opens shared report modal. Invariants: nothing sent automatically; per-card dedup keys; sharedSubmissionIds dedup across re-renders; server rejection → honest failure toast + button rollback. Error cases: server rejection → toast, button stays active.
+
+**Test Anchoring:**
+
+| Test file / name | Covers |
+|---|---|
+| `tests/quality.spec.ts` — "Share 16 bytes posts header-only payload and disables buttons" | Header share |
+| `tests/quality.spec.ts` — "Share full file posts full_file base64 payload" | Full file share |
+| `tests/quality.spec.ts` — "double-clicking Share 16 bytes sends exactly one POST" | Dedup |
+| `tests/quality.spec.ts` — "sharing 16 bytes then full file sends both payloads" | Upgrade flow |
+| `tests/quality.spec.ts` — "server rejection shows honest failure toast, button stays active" | Rollback |
+| `tests/quality.spec.ts` — "success card has no contribute button, shows report link" | Success card |
+| `tests/quality.spec.ts` — "report link shares first 16 bytes and marks shared" | Report flow |
+| `tests/quality.spec.ts` — "viewer stage shows share box for a failed card" | Viewer share |
+| `tests/quality.spec.ts` — "viewer stage report link posts header for a success card" | Viewer report |
+
+### F-010: Download All
+
+- **Status:** applied
+- **Reviewed:** 2026-08-27
+
+**Behavior Contract:** Preconditions: at least one successful decode. Postconditions: JSZip from all successful canvases; JPEG 92% (default) / PNG / BMP / WebP; global format select affects only ZIP (per-card S.cardFormats override); entry names sanitized ([\\/] → _, leading dots stripped) + deduped; filename `ithmb-pictures-converted-to-{format}.zip`. Invariants: per-card format not overridden by global select. Error cases: none (client-only).
+
+**Test Anchoring:**
+
+| Test file / name | Covers |
+|---|---|
+| `tests/gallery.spec.ts` — "download all creates a zip file" | ZIP creation |
+| `tests/gallery.spec.ts` — "download format dropdown changes button text" | Format select |
+| `tests/gallery.spec.ts` — "global download-format select does not override per-card formats" | Per-card isolation |
+| `tests/gallery.spec.ts` — "grid mode has format select in file cards" | Grid format select |
+
+### F-011: Toast
+
+- **Status:** applied
+- **Reviewed:** 2026-08-27
+
+**Behavior Contract:** Preconditions: any page with #toast element. Postconditions: showToast(msg) → role=status, aria-live=polite, 3s hide with timer reset (rapid messages don't cut each other short). Invariants: timer resets on each new toast. Error cases: none.
+
+**Test Anchoring:**
+
+| Test file / name | Covers |
+|---|---|
+| `tests/gallery.spec.ts` — "toast message appears and disappears" | Toast lifecycle |
+
+### F-012: WASM Load-Failure Retry
+
+- **Status:** applied
+- **Reviewed:** 2026-08-27
+
+**Behavior Contract:** Preconditions: decoder page loaded. Postconditions: init() throws → red message + Retry button; retry re-runs init(); transient failures recover in place; permanent failures re-enable button. Invariants: dropzone disabled during failure state. Error cases: wasm fetch failure → retry UX.
+
+**Test Anchoring:**
+
+| Test file / name | Covers |
+|---|---|
+| `tests/quality.spec.ts` — "invalid file shows error toast" | Error handling |
+| `tests/stress.spec.ts` — "1: Drop zone rejects invalid files" | Rejection flow |
 
 ---
 
 ## 5. Guide Page
 
-**Route:** `/guide/how-to-open-ithmb-files.html` · Static documentation (title, canonical, Article JSON-LD, sections: What Is / How to Use / Why Use / About / FAQ / privacy bullet). **Tests target the `.html` URL** (the extensionless path only resolves on Python 3.14+).
+### F-013: Guide Page (`guide/how-to-open-ithmb-files.html`)
+
+- **Status:** applied
+- **Reviewed:** 2026-08-27
+
+**Behavior Contract:** Preconditions: none. Postconditions: title, canonical, Article JSON-LD, sections: What Is / How to Use / Why Use / About / FAQ / privacy bullet. Invariants: tests target the `.html` URL (extensionless path only resolves on Python 3.14+). Error cases: none (static page).
+
+**Test Anchoring:**
+
+| Test file / name | Covers |
+|---|---|
+| `tests/pages.spec.ts` — "loads with correct title" (guide) | Title |
+| `tests/pages.spec.ts` — "has FAQ heading" (guide) | Content |
+| `tests/visual.spec.ts` — "guide page — full page" | Visual snapshot |
+| `tests/quality.spec.ts` — "guide page layout at 375px" | Responsive |
+| `tests/seo-metadata.spec.ts` — "has a meta description" | Meta tag |
+
+---
 
 ## 6. Enterprise Page
 
-**Route:** `/enterprise/` · Marketing page with its own design system (hardcoded colors, not CSS variables — an "under consideration" construction page). Hero, differentiators, comparison table, pricing, FAQ.
+### F-014: Enterprise Page (`enterprise/`)
+
+- **Status:** applied
+- **Reviewed:** 2026-08-27
+
+**Behavior Contract:** Preconditions: none. Postconditions: hero, differentiators, comparison table, pricing, FAQ; its own design system (hardcoded colors, not CSS variables — "under construction" page). Invariants: not using CSS custom properties (documented intentional). Error cases: none (static page).
+
+**Test Anchoring:**
+
+| Test file / name | Covers |
+|---|---|
+| `tests/pages.spec.ts` — "loads with correct title" (enterprise) | Title |
+| `tests/pages.spec.ts` — "has hero section" (enterprise) | Structure |
+| `tests/visual.spec.ts` — "enterprise page — full page" | Visual snapshot |
 
 ---
 
 ## 7. Internal JS Behaviors
 
-### 7.1 State Management (`state.js`)
+### F-015: State Management (`state.js`)
 
-**Mutable state object `S`:** `cardCount`, `globalCardIdCounter`, `viewerIndex`, `totalFiles`, `downloadFormat`, `cardFormats`, `lastTarget`.
+- **Status:** applied
+- **Reviewed:** 2026-08-27
 
-**Decode-result lists — owned by `cards.js` (single owner; writes via addSuccess/addFailure/resetCards, reads via successCards()/failedCards()/findSuccess()/findFailure()/successCount() — read accessors return copies so callers can't mutate):**
-- success list — `{cardId, canvas, fileName, bytes, prefix, fileSize, width, height}[]` (entries always carry `bytes`)
-- failure list — `{cardId, bytes, prefix, fileName, fileSize}[]` — **error cards are never stored** (no shareable bytes)
+**Behavior Contract:** Preconditions: decoder page loaded. Postconditions: mutable state object S with cardCount, globalCardIdCounter, viewerIndex, totalFiles, downloadFormat, cardFormats, lastTarget; decode-result lists owned by cards.js (single owner); processedFileIds Set (re-upload dedup); sharedSubmissionIds Set (share/report dedup). Invariants: read accessors return copies so callers can't mutate; TELEMETRY_URL constant; KNOWN_PREFIXES Set (~60 entries). Error cases: none.
 
-**Other module-level collections (still in state.js):**
-- `processedFileIds` — Set, re-upload dedup (content hash + filename)
-- `sharedSubmissionIds` — Set, share/report dedup across re-renders (survives language-switch card rebuilds)
+**Test Anchoring:**
 
-**Constants:** `TELEMETRY_URL`, `KNOWN_PREFIXES`.
+| Test file / name | Covers |
+|---|---|
+| `tests/unit/client-utils.test.ts` — "KNOWN_PREFIXES contains expected entries" | Prefix set |
+| `tests/unit/client-utils.test.ts` — "KNOWN_PREFIXES has correct size" | Set integrity |
+| `tests/unit/client-utils.test.ts` — "KNOWN_PREFIXES rejects non-prefixed numbers" | Negative case |
 
-### 7.2 File Drop/Upload Flow
+### F-016: Cards Module (`cards.js`)
 
-1. Drop or click → `processFiles(files)`.
-2. First batch: full reset (`fileList`, counters, arrays, filmstrip, viewer closed).
-3. Filter: `.ithmb`/`.ipm` extension, ≤ 8 MB, content-hash dedup. Rejects → toast.
-4. Card per valid file → `decodeFile(file, cardId)` async.
-5. After each batch: `updateToolbar()` (also derives the toggle label).
+- **Status:** applied
+- **Reviewed:** 2026-08-27
 
-### 7.3 Decode Pipeline (`decodeFile`)
+**Behavior Contract:** Preconditions: decoder page loaded. Postconditions: single-owner arrays with addSuccess/addFailure/resetCards; read via successCards()/failedCards()/findSuccess()/findFailure()/successCount(). Invariants: read accessors return copies; error cards never stored. Error cases: none.
 
-1. Read → Uint8Array → `peek_prefix(bytes)` → `decode_ithmb(bytes)`.
-2. Success → canvas (600×400 max) → success card (renderSuccessCard: info panel + report link; pushes successfulDecodes; filmstrip; refreshViewerIfCurrent).
-3. Failure (known/unknown) → failure card (share box + report link; pushes failedDecodes).
-4. **Error (throws)** → error card (message only) — **NOT pushed to failedDecodes** (would break re-render's share-box creation).
-5. `updateToolbar()`.
+**Test Anchoring:**
 
-### 7.4 Viewer
+| Test file / name | Covers |
+|---|---|
+| `tests/upload.spec.ts` — "duplicate filenames — same file dropped 8 times" | Dedup via cards |
+| `tests/stress.spec.ts` — "3: Drop 8 files — filmstrip has 8 thumbnails" | Card count |
+| `tests/gallery.spec.ts` — "dropping same files twice deduplicates" | Dedup flow |
 
-- Open on card click / first-batch auto-open; cyclic prev/next; ← → arrows + G key + Escape; touch swipe > 50px; filmstrip click.
-- **Stage mirrors the card** via `refreshViewerIfCurrent` — success cards get a report link, failed cards get their share box inside the placeholder. One mechanism, no surgical duplicate paths.
-- Toolbar via `updateToolbar()` (called on open/close/process/languagechange).
+### F-017: Pure Utility Functions
 
-### 7.5 Share / Report (quiet-by-default, opt-in only)
+- **Status:** applied
+- **Reviewed:** 2026-08-27
 
-- **Failure/unknown cards:** share box = hex dump (first 16 bytes) + "Share 16 bytes" + "Share full file" (hidden above 8 MB). Header share POSTs `{prefix, fileSize, status, header}` → "Shared ✓" + disabled (full-file button stays enabled for upgrade). Full-file POSTs + base64 → both disabled. Per-card dedup keys, `sharedSubmissionIds` dedup across re-renders. **Server rejection → honest failure toast + button rollback (re-queries live buttons — a mid-POST language switch can't strand the UI).**
-- **Success cards:** report link "Image looks wrong?" opens the **shared report modal** (`#reportModal`) — thumbnail, issue-type picker (6 types), free-text detail, submit/cancel. Submit POSTs with `issue`/`issue_detail`. Backdrop click closes (listener bound once). Cancel closes without sending.
-- **Nothing is ever sent automatically** — no batch mode, no background sends.
+**Behavior Contract:** Preconditions: none (pure functions). Postconditions: formatSize(bytes) → human-readable; bytesToHex(bytes) → hex string; bytesToBase64(bytes) → base64 string; formatLabels(prefix) → human-readable label; extMap[lookup] → extension. Invariants: output format consistent. Error cases: none (no side effects).
 
-### 7.6 Download All
+**Test Anchoring:**
 
-JSZip from all successful canvases; JPEG 92% (default) / PNG / BMP / WebP; global format select affects only the ZIP (per-card `S.cardFormats` override); entry names sanitized (`[\\/]` → `_`, leading dots stripped) + deduped (no silent overwrite); filename `ithmb-pictures-converted-to-{format}.zip`.
+| Test file / name | Covers |
+|---|---|
+| `tests/unit/client-utils.test.ts` — "formatSize formats bytes correctly" (3 cases) | formatSize |
+| `tests/unit/client-utils.test.ts` — "bytesToHex converts correctly" (4 cases) | bytesToHex |
+| `tests/unit/client-utils.test.ts` — "bytesToBase64 converts correctly" (3 cases) | bytesToBase64 |
+| `tests/unit/client-utils.test.ts` — "formatLabels returns a non-empty string" | formatLabels |
+| `tests/unit/client-utils.test.ts` — "extMap maps known prefixes" | extMap |
 
-### 7.7 Toast
+### F-018: Decode Pipeline Unit Logic
 
-`showToast(msg)` — role=status, aria-live=polite, 3s hide **with timer reset** (rapid messages don't cut each other short).
+- **Status:** applied
+- **Reviewed:** 2026-08-27
 
-### 7.8 WASM Load-Failure Retry
+**Behavior Contract:** Preconditions: file buffer. Postconditions: peek_prefix reads first 4 bytes; decode_ithmb calls wasm; dispatch success/failure/error. Invariants: synchronous wasm call. Error cases: wasm throw → error card.
 
-`init()` throws → red message + Retry button. Retry re-runs `init()`: transient failures recover in place, permanent failures re-enable the button. Dropzone disabled during failure state.
+**Test Anchoring:**
+
+| Test file / name | Covers |
+|---|---|
+| `tests/unit/worker-crypto.test.ts` — "escapeHtml escapes all HTML special characters" (5 cases) | HTML safety |
+| `tests/unit/worker-crypto.test.ts` — "validBase64Payload accepts valid base64" (5 cases) | Base64 validation |
+| `tests/unit/worker-crypto.test.ts` — "tokensEqual uses constant-time comparison" (3 cases) | Timing safety |
+| `tests/unit/worker-crypto.test.ts` — "keyedPseudonym produces deterministic output" (4 cases) | HMAC |
 
 ---
 
 ## 8. i18n Architecture
 
-**Two mechanisms, deliberately split:**
+### F-019: Declarative i18n (`data-i18n`)
 
-1. **Declarative (`data-i18n` / `data-i18n-html` / `data-i18n-aria-label` / `data-i18n-content`)** — applied by `applyTranslations()` on every element at language activation. Used for static, state-independent text.
-2. **Derived (`t(key, params)` in JS)** — for text that depends on runtime state. **The rule: state-derived text must be re-derived at every state change, in the function that owns that state** (e.g. `updateToolbar()` derives the toggle label + Download All label). This is the unified pattern that fixed the toggle-in-Chinese-default bug — never patch derived text only on `languagechange`, because that event fires from i18n.js's module top-level **before** consumer modules have loaded their listeners.
+- **Status:** applied
+- **Reviewed:** 2026-08-27
 
-- `t(key, params)` params are **HTML-escaped** (future-proofs `data-i18n-html`).
-- `EMBEDDED_EN` (in i18n.js) is **generated** from `locales/en.json` by `scripts/sync-embedded.mjs` — the offline fallback + EN baseline. `scripts/check-i18n.mjs` gates key parity / raw literals / drift (runs in pre-commit + CI).
-- **Language resolution:** the server-rendered `<html lang>` attribute is authoritative (`forcedLang()` in i18n.js): every page declares `lang="en"` or `lang="zh-CN"`, so the URL decides the page language and there is no `?lang=` scheme. The stored preference (`localStorage ithmbLang`) and `navigator.language` no longer swap text in place; they drive the pre-paint redirect below.
-- Re-render on languagechange (in-page `setLang()` / locale activation): `reRenderCards` (success info panels + failure share boxes) + in-progress "Decoding…" placeholders + `updateToolbar()` + viewer-stage rebuild when open. User-facing switching is now a full navigation between server-rendered pages (the switcher is a link), so this path fires on locale activation rather than on user clicks.
+**Behavior Contract:** Preconditions: page with `data-i18n` / `data-i18n-html` / `data-i18n-aria-label` / `data-i18n-content` attributes. Postconditions: applied by `applyTranslations()` on every element at language activation. Invariants: used for static, state-independent text; EMBEDDED_EN generated from locales/en.json; check-i18n.mts gates key parity. Error cases: missing key → raw key displayed.
 
-### Language-Preference Redirect (`lang-redirect.js`)
+**Test Anchoring:**
 
-Synchronous classic script loaded in `<head>` of all 8 content pages (4 EN + 4 zh, not 404.html) after the CSP meta, so it runs before first paint. It reads `localStorage ithmbLang`; when the stored preference differs from the current page's language it `location.replace()`s to the counterpart URL in the preferred language. With no stored preference, a zh `navigator.language` (starts with "zh") on an EN page redirects to the `/zh/` counterpart, so zh users land on the Chinese site by default. A `/zh/` page is never redirected to English (no bounce loop); unmapped paths (e.g. `/404.html`) are untouched; targets are relative (no hardcoded domain), so it works on local dev servers too. `location.replace()` keeps the redirect out of history. Language "detection" is now a server-visible redirect between pre-rendered pages, not a client-side text swap.
+| Test file / name | Covers |
+|---|---|
+| `tests/seo-metadata.spec.ts` — "has a meta description" | Localized meta |
+| `tests/seo-metadata.spec.ts` — "${name}: en ↔ zh alternates with x-default" | hreflang |
+| `tests/seo-metadata.spec.ts` — "${name}: fully Chinese HTML with real en ↔ zh hreflang" | zh hreflang |
 
-The preference is written in exactly one place: the language switcher's click handler in nav.js, before it navigates to the counterpart page. i18n.js's `setLang()` can also persist, but that path is only reachable on a page without a declared `<html lang>`, which no shipped page has.
+### F-020: Derived i18n (`t()`)
 
-### No-Flash Init on Forced-Language Pages
+- **Status:** applied
+- **Reviewed:** 2026-08-27
 
-When `forcedLang()` is set (always, on shipped pages), i18n.js init sets `I18N.lang` to the forced language WITHOUT applying `EMBEDDED_EN` over the server-rendered text, then fetches the locale JSON and activates the merged table when it lands. The served HTML is already in the correct language, so a refreshed `/zh/` page never flashes English while the fetch is in flight. Only when no `<html lang>` is declared does init fall back to `detectLang()` (localStorage → navigator → en) rendered from embedded defaults. EN pages are unchanged: their server HTML is English, matching the embedded baseline.
+**Behavior Contract:** Preconditions: runtime state change. Postconditions: `t(key, params)` returns HTML-escaped text; state-derived text re-derived at every state change. Invariants: params are HTML-escaped; updateToolbar() pattern (derive at state change, not languagechange). Error cases: missing key → raw key.
+
+**Test Anchoring:**
+
+| Test file / name | Covers |
+|---|---|
+| `tests/gallery.spec.ts` — "toggle button text switches between Grid view and Gallery" | Derived label |
+| `tests/gallery.spec.ts` — "download format dropdown changes button text" | Format label |
+
+### F-021: Language-Preference Redirect (`lang-redirect.js`)
+
+- **Status:** applied
+- **Reviewed:** 2026-08-27
+
+**Behavior Contract:** Preconditions: any page with `<html lang>` + localStorage. Postconditions: synchronous redirect before first paint; stored pref differs from page → replace to counterpart; zh navigator on EN page → redirect to /zh/. Invariants: /zh/ never bounces to EN (no loop); targets relative (works locally); location.replace() keeps redirect out of history. Error cases: unmapped paths (e.g. /404.html) untouched.
+
+**Test Anchoring:**
+
+| Test file / name | Covers |
+|---|---|
+| `tests/seo-metadata.spec.ts` — "stored zh preference redirects an EN page to its /zh/ counterpart" | zh redirect |
+| `tests/seo-metadata.spec.ts` — "stored en preference redirects a /zh/ page to its EN counterpart" | en redirect |
+| `tests/seo-metadata.spec.ts` — "no preference + zh browser redirects an EN page to /zh/" | Browser detection |
+| `tests/seo-metadata.spec.ts` — "no preference + zh browser stays on a /zh/ page (never bounces to EN)" | No-loop |
+| `tests/seo-metadata.spec.ts` — "an unmapped path is never redirected (404 stays put)" | Unmapped |
+| `tests/seo-metadata.spec.ts` — "stored zh preference redirects the guide .html URL" | Guide redirect |
+| `tests/seo-metadata.spec.ts` — "no preference + non-zh browser keeps an EN page in place" | No-op |
 
 ---
 
 ## 9. CSS Design System
 
-CSS custom properties (`--bg #f5f5f7`, `--surface #fff`, `--border`, `--text`, `--muted`, `--accent #007AFF`, `--accent-hover`, `--success`, `--warn`, `--radius 12px`, `--shadow`, `--card-bg`). Component catalog: buttons (`.btn` family), dropzone, file cards, statuses (`.ok/.err/.unknown/.loading` + spinner), viewer, filmstrip, toolbar, toast, drop overlay, GitHub/BMC corners, back-to-top, share box, report link, viewer header, footer, `:focus-visible` outlines. Animations: `spin` (0.6s), `placeholder-spin` (0.8s). Breakpoints 768px / 480px. Home/Guide/Enterprise use inline page styles. **Dark mode is intentionally not supported** (light-first Apple design language; declined 2026-08-06 to avoid a second full design surface for a low-value QoL).
+### F-022: CSS Custom Properties & Component Catalog
+
+- **Status:** applied
+- **Reviewed:** 2026-08-27
+
+**Behavior Contract:** Preconditions: any page. Postconditions: CSS custom properties (--bg, --surface, --border, --text, --muted, --accent, --accent-hover, --success, --warn, --radius, --shadow, --card-bg); component catalog: buttons, dropzone, file cards, statuses, viewer, filmstrip, toolbar, toast, drop overlay, GitHub/BMC corners, back-to-top, share box, report link, viewer header, footer, :focus-visible outlines. Invariants: animations: spin (0.6s), placeholder-spin (0.8s); breakpoints 768px / 480px; dark mode intentionally not supported. Error cases: none.
+
+**Test Anchoring:**
+
+| Test file / name | Covers |
+|---|---|
+| `tests/ithmb-decoder.spec.ts` — "body background is --bg CSS variable" | CSS vars |
+| `tests/ithmb-decoder.spec.ts` — "dropzone is present with correct styling" | Component styling |
+| `tests/dark-mode.spec.ts` — "dark mode: ${name} has no light-background or low-contrast elements" | Dark mode (documented: not supported) |
+| `tests/quality.spec.ts` — "home page fits viewport at 375px (iPhone)" | Responsive |
+| `tests/quality.spec.ts` — "decoder page layout at 375px (iPhone)" | Responsive |
 
 ---
 
 ## 10. Telemetry Worker
 
-See `workers/telemetry/README.md` for the full reference. Summary of the CURRENT (hardened) design:
+### F-023: Telemetry Worker — Core (POST/GET/Dashboard)
 
-| Aspect | Detail |
-| ------ | ------ |
-| Routes | `POST /` (single + `batch:true`), `GET /` public JSON (prefix counts from **key names only**, zero value fetches), `GET /dashboard` (Bearer auth, HTML, **bounded scan ≤ 5000 slim records**), `OPTIONS` CORS |
-| Records | Slim `fmt_<prefix>_<uuid>` (no full-file inline); payloads under separate `fullfile_<uuid>` keys; `hasFullFile` flag; 365d TTL |
-| Privacy | fingerprints SHA-256(IP:UA) truncated 8 bytes; **per-IP keys hash the IP alone — raw IP never stored** |
-| Rate/caps | **Self-correcting list-based counters (a concurrent burst can overshoot by up to in-flight concurrency)** (day-scoped marker keys, `crypto.randomUUID()`): 100 POSTs/day/fp, 500/day/ip, 50 records/day/fp, 250/day/ip; dedup 24h |
-| Body/full_file | **Byte-accurate** body cap (13 MB UTF-8); full_file must be valid base64 ≤ 8 MB decoded (garbage rejected → null) |
-| Auth | **`Authorization: Bearer <ADMIN_TOKEN>` only, constant-time** (`?token=` removed); dashboard sends `Cache-Control: no-store` + `Referrer-Policy: no-referrer` + CSP `default-src 'none'` + nosniff |
-| Dashboard | Every field HTML-escaped (stored-XSS blocked); frame-ancestors 'none' |
-| Deploy | `wrangler deploy`; ADMIN_TOKEN via CF dashboard, never in the repo |
+- **Status:** applied
+- **Reviewed:** 2026-08-27
 
-Valid statuses: `success`, `known-failed`, `unknown`, `looks-good`, `looks-wrong`. Valid issues: `color_space`, `dimensions`, `stride`, `offset`, `byte_order`, `other`.
+**Behavior Contract:** Preconditions: Cloudflare Worker with KV binding. Postconditions: POST / (single record), GET / (public JSON: prefix counts from key names, zero value fetches), GET /dashboard (Bearer auth, HTML, bounded scan ≤ 5000 slim records), OPTIONS (CORS). Records: slim `fmt_<prefix>_<uuid>` + separate `fullfile_<uuid>` keys + `hasFullFile` flag + 365d TTL. Privacy: fingerprints SHA-256(IP:UA) truncated 8 bytes; per-IP keys hash IP alone (raw IP never stored). Rate/caps: 100 POSTs/day/fp, 500/day/ip, 50 records/day/fp, 250/day/ip; dedup 24h. Body: byte-accurate 13 MB cap; full_file ≤ 8 MB base64 decoded. Auth: Authorization: Bearer, constant-time (no ?token=). Dashboard: HTML-escaped fields, frame-ancestors 'none', Cache-Control: no-store. Invariants: Admin token set in CF dashboard, never in repo. Error cases: rate limit → 429; invalid body → 400; bad auth → 401.
+
+**Test Anchoring:**
+
+| Test file / name | Covers |
+|---|---|
+| `workers/telemetry/test-worker.ts` — "200 GET / returns JSON with prefix counts" | GET JSON |
+| `workers/telemetry/test-worker.ts` — "POST / persists a record to KV" | POST persist |
+| `workers/telemetry/test-worker.ts` — "POST / dashboard renders HTML" | Dashboard |
+| `workers/telemetry/test-worker.ts` — "POST / with invalid JSON returns 400" | Error: bad body |
+| `workers/telemetry/test-worker.ts` — "POST / without auth returns 401" | Error: no auth |
+| `workers/telemetry/test-worker.ts` — "POST / with bad token returns 401" | Error: bad auth |
+| `workers/telemetry/test-worker.ts` — "POST / OPTIONS returns CORS headers" | CORS |
+| `workers/telemetry/test-worker.ts` — "POST / deduplicates records" | Dedup |
+| `workers/telemetry/test-worker.ts` — "POST / enforces rate limits" | Rate limit |
+| `workers/telemetry/test-worker.ts` — "POST / validates body size" | Body cap |
+| `workers/telemetry/test-worker.ts` — "GET / dashboard without auth returns 401" | Dashboard auth |
+| `workers/telemetry/test-worker.ts` — "POST / full_file base64 stored separately" | Full file storage |
+| `tests/unit/worker-validation.test.ts` — "accepts valid entry with all fields" (15 cases) | Validation logic |
+| `tests/unit/worker-crypto.test.ts` — "keyedPseudonym produces deterministic output" (4 cases) | HMAC-SHA256 |
+| `tests/unit/worker-crypto.test.ts` — "fingerprint produces consistent hash" | Fingerprint |
+| `tests/unit/worker-crypto.test.ts` — "ipFingerprint produces consistent hash" | IP fingerprint |
 
 ---
 
 ## 11. Testing, CI & Deployment
 
-### 11.1 Playwright Suite
+### F-024: Playwright Integration Suite
 
-**Config:** 3 projects, baseURL = `BASE_URL` env **or** live site — **tests/hooks must always set `BASE_URL` to a local server** (never test production). `npm run test:quick` = 106 tests on chromium (pages, decoder, gallery, upload, quality, a11y, seo-metadata). `npm run test:full` = all projects — **webkit cannot run in this dev environment** (documented; chromium+firefox are the CI/local gate).
+- **Status:** applied
+- **Reviewed:** 2026-08-27
 
-| File | Focus |
-| ---- | ----- |
-| `pages.spec.js` | Landing/enterprise/guide loads + critical elements |
-| `ithmb-decoder.spec.js` | Structure/CSS: GitHub/BMC corners, toolbar, footer, CSS vars, no batch toggle |
-| `gallery.spec.js` | Viewer mode: filmstrip, arrow/keyboard nav, Escape, G key, pixel content, mobile, download format, dedup |
-| `stress.spec.js` | Full flows: invalid file, single/multi, filmstrip, cyclic arrows, grid toggle, dedup, back-to-top |
-| `upload.spec.js` | Decode correctness: 8 distinct files, batch append, duplicate filenames |
-| `quality.spec.js` | Share/report flows (header/full/dedup/upgrade/rollback), quiet-by-default, corrupt-file handling, viewer contextual share |
-| `a11y.spec.js` | axe-core scans (5 pages) |
-| `seo-metadata.spec.js` | Meta description (localized), language-preference redirect (7 tests), hreflang/canonical, CSP meta on every page |
-| `visual.spec.js` | Visual snapshots (pages, nav, footer) |
+**Behavior Contract:** Preconditions: Playwright installed + BASE_URL set. Postconditions: 11 spec files covering pages, decoder, gallery, stress, upload, quality, a11y, seo-metadata, visual, dark-mode, port-regression; 3 projects (chromium, firefox, webkit); test:quick = chromium only, test:full = all 3. Invariants: tests/hooks must always set BASE_URL to local server (never production). Error cases: any spec failure → non-zero exit.
 
-### 11.2 Gates
+**Test Anchoring:**
 
-- **Pre-commit** (`.husky/pre-commit`): i18n gate → wasm-drift check → 3 smoke specs against `BASE_URL=http://localhost:8899`. **Wire once per clone:** `git config core.hooksPath .husky`.
-- **`npm run ci`**: lint:modules (acorn) + lint:i18n + full Playwright.
-- **`npm run check:deps`**: npm audit (fails on vulns) + npm outdated (informational) — the local dependabot replacement.
+| Test file / name | Covers |
+|---|---|
+| `tests/pages.spec.ts` — all tests | Page load coverage |
+| `tests/ithmb-decoder.spec.ts` — all tests | Decoder structure |
+| `tests/gallery.spec.ts` — all tests | Viewer/gallery flows |
+| `tests/stress.spec.ts` — all tests | Full-flow stress |
+| `tests/upload.spec.ts` — all tests | Upload/decode |
+| `tests/quality.spec.ts` — all tests | Share/report + responsive |
+| `tests/a11y.spec.ts` — all tests | Accessibility |
+| `tests/seo-metadata.spec.ts` — all tests | SEO + i18n redirect |
+| `tests/visual.spec.ts` — all tests | Visual snapshots |
+| `tests/dark-mode.spec.ts` — all tests | Dark mode |
+| `tests/port-regression.spec.ts` — all tests | Port allocation |
 
-### 11.3 CI (`.github/workflows/ci.yml`)
+### F-025: Vitest Unit Test Layer
 
-Runs on the **public repo** (free minutes; the private dev repo's Actions are billing-blocked). Jobs: lint (acorn + i18n + wasm-drift), test (chromium, `BASE_URL=http://localhost:8899`), secrets (gitleaks). SHA-pinned actions.
+- **Status:** applied
+- **Reviewed:** 2026-08-27
 
-### 11.4 Dev/Public Workflow & Deploy
+**Behavior Contract:** Preconditions: vitest installed. Postconditions: tests/unit/*.test.ts covering pure logic (crypto, validation, client utils); npm run test:unit → vitest run. Invariants: no DOM dependencies; fast (< 1s). Error cases: any test failure → non-zero exit.
 
-Canonical standard: `docs/standards/RELEASE_WORKFLOW.md` in the Rust repo. Summary:
+**Test Anchoring:**
 
-- `origin` = `Ithmb-Codec-Web-Dev` (private, editing repo) · `public` = `Ithmb-Codec-Web` (public, live site).
-- All work on dev `main` → squash thematically onto `squash-work` (tracks `public/main`) → verify trees identical → push `public squash-work:main`. **Public CI is the gate** (dev CI is billing-blocked).
-- **Deploy: Cloudflare Pages** connected to the public repo's `main` branch — auto-deploys on push (~1-2 min). Telemetry worker deploys via `wrangler` from `workers/telemetry/`.
-- **WASM regeneration** from `Ithmb-Codec/crates/ithmb-wasm` (wasm-pack) — copy ONLY `ithmb_wasm_bg.wasm`; the loader/glue are hand-adapted and must stay unchanged (`scripts/check-wasm-drift.sh` enforces import compatibility).
+| Test file / name | Covers |
+|---|---|
+| `tests/unit/worker-crypto.test.ts` — all tests (14) | Worker crypto logic |
+| `tests/unit/worker-validation.test.ts` — all tests (15) | Worker validation logic |
+| `tests/unit/client-utils.test.ts` — all tests (19) | Client pure utilities |
+
+### F-026: a11y Authoritative Gate
+
+- **Status:** applied
+- **Reviewed:** 2026-08-27
+
+**Behavior Contract:** Preconditions: axe-core + Playwright installed. Postconditions: scans 5 pages with wcag2a/aa/21a/aa/best-practice tags; filters critical/serious violations; excludes KNOWN_A11Y_EXCLUSIONS (color-contrast); assertion fails CI on unexpected violations. Invariants: known intentional exclusions documented; test blocks on any new violation. Error cases: violation found → test failure.
+
+**Test Anchoring:**
+
+| Test file / name | Covers |
+|---|---|
+| `tests/a11y.spec.ts` — "${name} page has no critical accessibility violations" | Authoritative a11y |
+
+### F-027: Pre-commit & Local CI Gates
+
+- **Status:** applied
+- **Reviewed:** 2026-08-27
+
+**Behavior Contract:** Preconditions: git hooks wired (`git config core.hooksPath .husky`). Postconditions: pre-commit → i18n gate + wasm-drift + smoke specs; check:local → 10 gates (audit, outdated, typecheck, unit tests, build+determinism, i18n+parity, wasm-drift, worker test, Playwright, parity tests). Invariants: local runs everything hardware allows (< 2 min); GitHub only for heavy/impossible (webkit matrix). Error cases: any gate failure → non-zero exit.
+
+**Test Anchoring:**
+
+| Test file / name | Covers |
+|---|---|
+| `scripts/check-local.sh` — all 10 steps | Local CI parity |
+| `tests/port-regression.spec.ts` — all tests | Port allocation |
+
+### F-028: GitHub CI Pipeline
+
+- **Status:** applied
+- **Reviewed:** 2026-08-27
+
+**Behavior Contract:** Preconditions: push to main or PR. Postconditions: 2 jobs — lint (typecheck + build + determinism + vitest) + test (chromium/firefox/webkit matrix with Playwright against local server). Invariants: SHA-pinned actions; playwright webServer handles server lifecycle. Error cases: any job failure → non-zero exit.
+
+**Test Anchoring:**
+
+| Test file / name | Covers |
+|---|---|
+| `.github/workflows/ci.yml` — lint job | Type-check + build + vitest |
+| `.github/workflows/ci.yml` — test job (3 browsers) | Cross-browser Playwright |
+
+### F-029: Dev/Public Deploy Workflow
+
+- **Status:** applied
+- **Reviewed:** 2026-08-27
+
+**Behavior Contract:** Preconditions: dev + public repos configured. Postconditions: all work on dev main → squash onto squash-work (tracks public/main) → verify trees identical → push to public; Cloudflare Pages auto-deploys on push (~1-2 min); telemetry worker via wrangler. Invariants: public CI is the gate; WASM regeneration copies ONLY .wasm (loader/glue hand-adapted, unchanged). Error cases: tree mismatch → deploy blocked.
+
+**Test Anchoring:**
+
+| Test file / name | Covers |
+|---|---|
+| `scripts/check-local.sh` — step [5] build determinism | Build reproducibility |
+| `scripts/check-wasm-drift.sh` | WASM import compatibility |
 
 ---
 
@@ -344,4 +672,4 @@ Honest assessment of where the architecture is fragile — every past bug traces
 
 ---
 
-_End of Feature Inventory — keep current._
+_End of Feature Inventory — keep current. Updated: 2026-08-27. TECH_DEBT triaged in [TECH_DEBT_AUDIT.md](../TECH_DEBT_AUDIT.md)._

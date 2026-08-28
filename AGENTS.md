@@ -74,6 +74,19 @@ Ithmb-Codec-Web/
 └── CHANGELOG.md README.md CREDITS.md LICENSE
 ```
 
+## SE Lifecycle Artifacts
+
+| Artifact | Path | Purpose |
+----------|------|---------|
+| FEATURES.md | `docs/FEATURES.md` | Feature inventory (F-001..F-029), behavior contracts, test anchoring |
+| SPECIFICATION.md | `SPECIFICATION.md` | AS-BUILT spec (MACRO/MESO/MICRO layers) |
+| ARCHITECTURE.md | `ARCHITECTURE.md` | C4 Level 1 diagram, module map, fitness functions, CI split |
+| TECH_DEBT_AUDIT.md | `TECH_DEBT_AUDIT.md` | Debt inventory with severity × effort triage |
+| ADRs | `docs/adr/` | Architecture Decision Records (ADR-0006, ADR-0007) |
+| check-local.sh | `scripts/check-local.sh` | Full local CI — 10 gates, < 2 min target |
+
+Feature lifecycle follows Development-Protocol `docs/engineering-plugin.md` §1.1: `proposed → approved → applied → archived`.
+
 ## Quick Start (build / test / lint)
 
 ```bash

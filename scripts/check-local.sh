@@ -7,12 +7,13 @@
 #   1. dependency security  (npm audit — FAILS on any vulnerability)
 #   2. dependency staleness (npm outdated — informational only)
 #   3. typecheck            (browser + node + worker tsconfigs)
-#   4. build + determinism  (build must not dirty the tracked tree)
-#   5. i18n + mirror parity + zero-third-party guard
-#   6. wasm-drift           (committed wasm imports vs loader glue)
-#   7. telemetry worker test (miniflare)
-#   8. full Playwright suite, all three browsers, against localhost:8899
-#   9. parity gate hermetic tests (mocked gh/jq — edge cases, no network)
+#   4. unit tests           (vitest — pure logic, fast)
+#   5. build + determinism  (build must not dirty the tracked tree)
+#   6. i18n + mirror parity + zero-third-party guard
+#   7. wasm-drift           (committed wasm imports vs loader glue)
+#   8. telemetry worker test (miniflare)
+#   9. full Playwright suite, all three browsers, against localhost:8899
+#  10. parity gate hermetic tests (mocked gh/jq — edge cases, no network)
 #
 # Exit 0 = everything green. Non-zero = a gate failed.
 set -e
@@ -29,7 +30,10 @@ npm outdated --long || true
 echo "── [3] typecheck (browser + node + worker)"
 npm run typecheck
 
-echo "── [4] build + determinism"
+echo "── [4] unit tests (vitest)"
+npm run test:unit
+
+echo "── [5] build + determinism"
 BEFORE="$(git status --porcelain | md5sum)"
 npm run build
 AFTER="$(git status --porcelain | md5sum)"
@@ -39,16 +43,16 @@ if [ "$BEFORE" != "$AFTER" ]; then
   exit 1
 fi
 
-echo "── [5] i18n integrity + mirror parity + zero third-party"
+echo "── [6] i18n integrity + mirror parity + zero third-party"
 npm run lint:i18n
 
-echo "── [6] wasm-drift"
+echo "── [7] wasm-drift"
 bash scripts/check-wasm-drift.sh
 
-echo "── [7] telemetry worker test"
+echo "── [8] telemetry worker test"
 npm run test:worker
 
-echo "── [8] full Playwright suite (all browsers, localhost:8899)"
+echo "── [9] full Playwright suite (all browsers, localhost:8899)"
 if curl -s -o /dev/null --max-time 2 http://localhost:8899/; then
   echo "    (using the server already running on :8899)"
 else
@@ -60,7 +64,7 @@ else
 fi
 BASE_URL=http://localhost:8899 npx playwright test
 
-echo "── [9] parity gate hermetic tests (REVIEW 5.3)"
+echo "── [10] parity gate hermetic tests (REVIEW 5.3)"
 bash scripts/test-check-parity.sh
 
 echo

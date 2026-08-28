@@ -29,7 +29,7 @@ async function main(): Promise<void> {
 
   const { outputFiles } = await build({
     entryPoints: [WORKER_SRC],
-    bundle: false,
+    bundle: true,
     format: "esm",
     target: "es2022",
     write: false,

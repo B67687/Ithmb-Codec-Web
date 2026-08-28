@@ -29,6 +29,8 @@ jobs:
       - run: npm ci
       - name: lint:modules (typecheck + build + determinism)
         run: npm run lint:modules && git diff --exit-code # fail if the build mutated tracked files (uncommitted ?v= hashes)
+      - name: unit tests (vitest)
+        run: npm run test:unit
 
   test:
     runs-on: ubuntu-latest

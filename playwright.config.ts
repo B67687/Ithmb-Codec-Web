@@ -20,6 +20,7 @@ const webPort = resolveWebPort(underAct, process.env.PLAYWRIGHT_BROWSER);
 
 export default defineConfig({
   testDir: "./tests",
+  testIgnore: ["**/unit/**"],
   timeout: 30000,
   expect: { timeout: 10000 },
   fullyParallel: true,

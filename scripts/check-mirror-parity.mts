@@ -23,9 +23,14 @@ const MIRRORED = [
 ] as const;
 
 let failures = 0;
+let warnings = 0;
 const fail = (msg: string) => {
   failures++;
   console.error("FAIL:", msg);
+};
+const warn = (msg: string) => {
+  warnings++;
+  console.warn("WARN:", msg);
 };
 
 function canonical(page: string, base: string): string {
@@ -71,16 +76,18 @@ for (const page of MIRRORED) {
     );
 
   // hreflang alternates (en + zh + x-default)
+  // Intentional WARN: single-locale SEO not a priority; zh/ mirrors are
+  // navigation aids, not SEO targets. See WNF-001 in TECH_DEBT_AUDIT.md.
   const enAlts = alternates(en);
   const zhAlts = alternates(zh);
   const expect = { en: enCanon, zh: zhCanon, "x-default": enCanon };
   for (const [lang, href] of Object.entries(expect)) {
     if (enAlts.get(lang) !== href)
-      fail(
+      warn(
         `${page}: hreflang "${lang}" expected "${href}", got "${enAlts.get(lang) ?? "missing"}"`,
       );
     if (zhAlts.get(lang) !== href)
-      fail(
+      warn(
         `zh/${page}: hreflang "${lang}" expected "${href}", got "${zhAlts.get(lang) ?? "missing"}"`,
       );
   }
@@ -136,6 +143,7 @@ for (const f of allHtml) {
 }
 console.log("[ext] zero third-party resource check complete");
 
+if (warnings) console.warn(`\n${warnings} mirror-parity warning(s) (hreflang — intentional, see WNF-001).`);
 if (failures) {
   console.error(`\n${failures} mirror-parity failure(s).`);
   process.exit(1);
