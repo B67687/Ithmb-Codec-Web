@@ -115,7 +115,6 @@ export function openViewer(index: number): void {
     }
   }
 
-
   // Highlight active thumbnail, scroll into view
   const thumbs = document.querySelectorAll<HTMLElement>(".filmstrip-thumb");
   const currentCard = cards[index];
@@ -181,19 +180,21 @@ export function populateViewerHeader(card: Element): void {
   }
 }
 
-export function prevViewer(): void {
+function navigateViewer(dir: -1 | 1): void {
   // Filmstrip thumbs are created in FILE order at card-creation time, so
   // filmstrip order === card order === viewer numbering. Simple cyclic step.
   const cards = fileList.querySelectorAll(".file-card");
   if (cards.length === 0) return;
-  const next = (S.viewerIndex - 1 + cards.length) % cards.length;
+  const next = (S.viewerIndex + dir + cards.length) % cards.length;
   openViewer(next);
 }
 
+export function prevViewer(): void {
+  navigateViewer(-1);
+}
+
 export function nextViewer(): void {
-  const cards = fileList.querySelectorAll(".file-card");
-  if (cards.length === 0) return;
-  openViewer((S.viewerIndex + 1) % cards.length);
+  navigateViewer(1);
 }
 
 export function updateToolbar(): void {

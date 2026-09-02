@@ -37,7 +37,6 @@ dropzone.addEventListener("click", () => {
   input.click();
 });
 
-
 function clearDragState(): void {
   overlay.classList.remove("active");
   dropzone.classList.remove("drag-over");
@@ -45,11 +44,9 @@ function clearDragState(): void {
 }
 // Full-page drop overlay (lastTarget caching pattern from production apps)
 document.addEventListener("dragover", (e) => {
-  console.log("[drag] dragover", e.dataTransfer?.types);
   if (e.dataTransfer!.types.includes("Files")) e.preventDefault();
 });
 document.addEventListener("dragenter", (e) => {
-  console.log("[drag] dragenter", e.dataTransfer?.types, "Files?", e.dataTransfer?.types.includes("Files"));
   if (!e.dataTransfer!.types.includes("Files")) return;
   S.lastTarget = e.target;
   overlay.classList.add("active");
@@ -62,7 +59,6 @@ document.addEventListener("dragleave", (e) => {
   }
 });
 document.addEventListener("drop", (e) => {
-  console.log("[drag] drop", e.dataTransfer?.files?.length, "files");
   e.preventDefault();
   clearDragState();
   if (
@@ -112,7 +108,8 @@ let touchStartY = 0;
 function isViewerSwipeActive(e: TouchEvent): boolean {
   if (document.querySelectorAll(".file-card").length === 0 || S.viewerIndex < 0)
     return false;
-  if (!(e.target instanceof Element) || !e.target.closest("#viewer-stage")) return false;
+  if (!(e.target instanceof Element) || !e.target.closest("#viewer-stage"))
+    return false;
   return true;
 }
 document.addEventListener(
@@ -302,7 +299,10 @@ window.addEventListener("languagechange", () => {
   // If the viewer is open, rebuild its stage + toolbar so the report link,
   // share box, header, and download button re-translate immediately (not
   // just on the next image navigation).
-  if (S.viewerIndex >= 0 && document.getElementById("viewer-container")?.style.display !== "none") {
+  if (
+    S.viewerIndex >= 0 &&
+    document.getElementById("viewer-container")?.style.display !== "none"
+  ) {
     openViewer(S.viewerIndex);
     updateToolbar();
   }
