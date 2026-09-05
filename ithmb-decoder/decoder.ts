@@ -1,4 +1,4 @@
-import { KNOWN_PREFIXES } from "./state.js";
+import { classifyResult, parsePixelHeader } from "./decode-pipeline.js";
 import { escapeHtml } from "./utils.js";
 import { updateToolbar } from "./viewer.js";
 import { decode_ithmb, peek_prefix } from "./ithmb_wasm.js";
@@ -17,14 +17,11 @@ export async function decodeFile(file: File, cardId: string): Promise<void> {
     const buf = await file.arrayBuffer();
     bytes = new Uint8Array(buf);
     prefix = peek_prefix(bytes);
-    const isKnown = KNOWN_PREFIXES.has(prefix);
     const result = decode_ithmb(bytes);
 
     if (result) {
       // Success!
-      const width = new DataView(result.buffer).getUint32(0, true);
-      const height = new DataView(result.buffer).getUint32(4, true);
-      const pixels = result.slice(8);
+      const { width, height, pixels } = parsePixelHeader(result);
 
       const canvas = document.createElement("canvas");
       canvas.width = width;
@@ -37,11 +34,13 @@ export async function decodeFile(file: File, cardId: string): Promise<void> {
       renderSuccessCard(cardId, file, canvas, prefix, width, height, bytes);
     } else {
       // Decode failed
-      if (isKnown) {
-        renderFailureCard(cardId, file, bytes, prefix, "known-failed");
-      } else {
-        renderFailureCard(cardId, file, bytes, prefix, "unknown");
-      }
+      renderFailureCard(
+        cardId,
+        file,
+        bytes,
+        prefix,
+        classifyResult(prefix, result),
+      );
     }
   } catch (err) {
     const message = (err instanceof Error && err.message) || String(err);

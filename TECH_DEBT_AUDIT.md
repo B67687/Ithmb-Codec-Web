@@ -1,6 +1,6 @@
 # TECH_DEBT_AUDIT.md — Ithmb-Codec-Web
 
-> **Generated:** 2026-09-02 | **HEAD:** main | **Method:** 9-dim audit (grep + ast-grep + tsc) | **Auditor:** Sisyphus
+> **Generated:** 2026-09-05 (refresh) | **HEAD:** 753e67c | **Method:** 9-dim audit (grep + ast-grep + tsc) | **Auditor:** Sisyphus | **Health:** 8.5/10 (WB-04 closed)
 > **Stack:** TypeScript (strict), Vite/WASM, Playwright + Vitest, Cloudflare Worker | **LOC:** ~10k TS
 
 ## Severity × Effort Matrix
@@ -14,17 +14,17 @@
 
 | Effort | S <30m single file | M 1-2h multi-file | L half-day+ arch |
 
-## Active (2026-09-02 scan — 5 Trivial/Low + 1 Moderate)
+## Active (2026-09-05 refresh — 1 Open trivial + 0 Moderate; WB-01/03/04 fixed)
 
-| ID      | Description                                                       | File:Line                                                               | Severity     | Effort | Status    | Recommendation                                                                  |
-| ------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------ | ------ | --------- | ------------------------------------------------------------------------------- |
-| WB-01   | 3 `console.log` left in prod                                      | `src/ithmb-decoder/app.ts:48,52,65`                                     | Trivial      | S      | Open      | Remove or gate behind `import.meta.env.DEV`, keep `console.warn/error` for prod |
-| WB-02   | 3 over-exported symbols never imported                            | `src/ithmb-decoder/share-actions.ts:10,12` `src/telemetry.ts:13`        | Trivial      | S      | Open      | Remove `export` or add `// exported for test` comment                           |
-| WB-03   | `prevViewer`/`nextViewer` near-duplicate                          | `src/ithmb-decoder/viewer.ts:184-197`                                   | Trivial      | S      | Open      | Collapse to `navigateViewer(dir: -1                                             | 1)` |
-| WB-04   | `ithmb-decoder/decoder.ts` has 0 unit tests (only Playwright e2e) | `src/ithmb-decoder/decoder.ts`                                          | **Moderate** | M      | Open      | **Highest priority** — add Vitest unit layer for core decoder (mock WASM)       |
-| WB-05   | `escapeHtml` duplicated `utils.ts:20` vs `workers/crypto.ts:117`  | `src/ithmb-decoder/utils.ts:20` ↔ `workers/telemetry/src/crypto.ts:117` | Low          | —      | Accepted  | Intentional — browser vs Worker boundary isolates; no change                    |
-| WB-06   | Unused `app.ts:14` `lastToastParams` flagged dead                 | `src/ithmb-decoder/app.ts:14`                                           | Trivial      | S      | **Fixed** | Was false positive — now used for toast dedup                                   |
-| WNF-001 | hreflang alternates missing (26) — intentional WARN               | `check-local.sh`                                                        | Low          | S      | Wont-Fix  | Single-locale SEO not priority; zh/ mirrors are navigation aids                 |
+| ID      | Description                                                      | File:Line                                                               | Severity     | Effort | Status    | Recommendation                                                                                    |
+| ------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------ | ------ | --------- | ------------------------------------------------------------------------------------------------- |
+| WB-01   | console.log in prod (was 3)                                      | `ithmb-decoder/` (paths were stale `src/...`)                           | Trivial      | S      | **Fixed** | Verified 2026-09-05: zero matches — removed                                                       |
+| WB-02   | 2 over-exported symbols, never imported elsewhere                | `ithmb-decoder/share-actions.ts:10,12` (corrected)                      | Trivial      | S      | Open      | Re-verified 2026-09-05: still file-local only — remove `export` or keep; sole remaining open item |
+| WB-03   | prev/nextViewer duplication                                      | `ithmb-decoder/viewer.ts:183-197` (corrected)                           | Trivial      | S      | **Fixed** | Collapsed to `navigateViewer(-1\|1)` + thin wrappers, verified 2026-09-05                         |
+| WB-04   | decoder.ts 0 unit tests (only Playwright e2e)                    | `ithmb-decoder/decoder.ts`                                              | **Moderate** | M      | **Fixed** | 753e67c: `decode-pipeline.ts` extracted + 3 suites, 69 vitest green, typecheck clean              |
+| WB-05   | `escapeHtml` duplicated `utils.ts:20` vs `workers/crypto.ts:117` | `src/ithmb-decoder/utils.ts:20` ↔ `workers/telemetry/src/crypto.ts:117` | Low          | —      | Accepted  | Intentional — browser vs Worker boundary isolates; no change                                      |
+| WB-06   | Unused `app.ts:14` `lastToastParams` flagged dead                | `src/ithmb-decoder/app.ts:14`                                           | Trivial      | S      | **Fixed** | Was false positive — now used for toast dedup                                                     |
+| WNF-001 | hreflang alternates missing (26) — intentional WARN              | `check-local.sh`                                                        | Low          | S      | Wont-Fix  | Single-locale SEO not priority; zh/ mirrors are navigation aids                                   |
 
 Full 9 dims otherwise clean: **0 `as any`/`@ts-ignore`, 0 `TODO`/`FIXME`, 0 `eval`/`innerHTML`, 0 `await` in loop, 0 empty `catch`, 0 `SELECT *`**. `npm audit` clean (WSL run may show `ETARGET` but CI `audit` is green).
 
@@ -49,18 +49,18 @@ Full 9 dims otherwise clean: **0 `as any`/`@ts-ignore`, 0 `TODO`/`FIXME`, 0 `eva
 
 ## Top 5 Priorities (impact/effort)
 
-1. **WB-04** — decoder unit tests (M) — only real coverage gap
-2. **WB-03** — collapse viewer nav duplication (S) — 5 min
-3. **WB-01** — remove console.log (S) — 10 min
-4. **WB-02** — trim exports (S) — 5 min
+1. **WB-04** — DONE (753e67c) — was the only real coverage gap
+2. **WB-02** — re-triage 2 exports (S) — sole remaining open trivial
+3. **WB-01/WB-03** — DONE, verified 2026-09-05
+4. **WB-05** — accepted, no action
 5. **WB-05** — accepted, no action
 
 ## Quick Wins Checklist (<30m each)
 
-- [ ] `app.ts:48,52,65` remove `console.log` (10 min)
+- [x] `console.log` removed — verified zero 2026-09-05
 - [ ] `share-actions.ts:10,12` + `telemetry.ts:13` remove `export` (5 min)
-- [ ] `viewer.ts:184-197` merge prev/next → `navigate(dir)` (15 min)
-- [ ] Add 3 decoder unit tests mocking WASM (follow existing `tests/unit/` pattern)
+- [x] `viewer.ts` merged to `navigateViewer(-1\|1)` — verified 2026-09-05
+- [x] Decoder wiring tests — shipped 3 suites / 69 tests (753e67c)
 
 ## "Looks Bad But Is Fine"
 
