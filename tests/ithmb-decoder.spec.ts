@@ -25,7 +25,9 @@ test.describe("WASM Decoder Page", () => {
     });
 
     test("has correct title", async ({ page }) => {
-      await expect(page).toHaveTitle("ITHMB Decoder | ITHMB Codec");
+      await expect(page).toHaveTitle(
+        "Free .ITHMB File Viewer & Converter | ITHMB Codec",
+      );
     });
 
     test("body background is --bg CSS variable", async ({ page }) => {
@@ -109,7 +111,6 @@ test.describe("WASM Decoder Page", () => {
     });
   });
 
-
   test.describe("Toolbar Features", () => {
     test("#toolbar element exists and is initially hidden", async ({
       page,
@@ -129,7 +130,6 @@ test.describe("WASM Decoder Page", () => {
       await expect(page.locator("#toolbar .batch-toggle")).toHaveCount(0);
       await expect(page.locator("#batchShareCheck")).toHaveCount(0);
     });
-
 
     test("#downloadAllBtn exists and is initially hidden", async ({ page }) => {
       const btn = page.locator("#toolbar #downloadAllBtn");
@@ -180,4 +180,3 @@ test.describe("WASM Decoder Page", () => {
     });
   });
 });
-

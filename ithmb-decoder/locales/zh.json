@@ -67,7 +67,7 @@
   "decoder.nextImage": "下一张图片",
   "decoder.backToTop": "返回顶部",
   "decoder.backToPosition": "返回上次位置",
-  "decoder.h1": "ITHMB 解码器",
+  "decoder.h1": "免费 .ITHMB 文件查看器和转换器",
   "decoder.convertH2": "将 ITHMB 转换为 JPG 或 PNG",
   "decoder.convertP1": "将你的 .ithmb 文件拖到本页面，容器中的每张缩略图都会被立即解码并显示。下载单张图片时可以选择 JPG、PNG、BMP 或 WebP，也可以把全部图片打包为 ZIP 压缩包保存。",
   "decoder.convertP2": "转换完全在浏览器本地通过 WebAssembly 完成 — 无需上传、无需安装、无需注册账号。",
